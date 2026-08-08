@@ -10,10 +10,10 @@ type ReminderSchedule = {
 
 export async function scheduleLocalReminders(
   schedules: readonly ReminderSchedule[],
-): Promise<void> {
-  if (!schedules.some((schedule) => schedule.reminderEnabled)) return;
+): Promise<'notRequested' | 'denied' | 'scheduled'> {
+  if (!schedules.some((schedule) => schedule.reminderEnabled)) return 'notRequested';
   const permission = await Notifications.requestPermissionsAsync();
-  if (!permission.granted) return;
+  if (!permission.granted) return 'denied';
 
   for (const schedule of schedules) {
     if (!schedule.reminderEnabled) continue;
@@ -36,4 +36,5 @@ export async function scheduleLocalReminders(
       });
     }
   }
+  return 'scheduled';
 }
