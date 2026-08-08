@@ -35,16 +35,18 @@ export function PillyBanner({
       style={[styles.base, compact && styles.compact, backgrounds[kind]]}
     >
       <PillyIcon name={icons[kind]} size={22} color={foregrounds[kind]} />
-      <View style={styles.copy}>
-        {title ? <PillyText role="headline">{title}</PillyText> : null}
-        <PillyText role="caption">{message}</PillyText>
+      <View style={[styles.copy, compact && styles.compactCopy]}>
+        <View style={styles.text}>
+          {title ? <PillyText role="headline">{title}</PillyText> : null}
+          <PillyText role="caption">{message}</PillyText>
+        </View>
         {actionLabel && onAction ? (
           <PillyButton
             label={actionLabel}
             variant="quiet"
             size="compact"
             onPress={onAction}
-            style={styles.action}
+            style={compact ? styles.compactAction : styles.action}
           />
         ) : null}
       </View>
@@ -60,9 +62,12 @@ const styles = StyleSheet.create({
     borderRadius: radii.md,
     padding: spacing.lg,
   },
-  compact: { paddingVertical: spacing.md, paddingHorizontal: spacing.md },
+  compact: { alignItems: 'center', paddingVertical: spacing.sm, paddingHorizontal: spacing.md },
   copy: { flex: 1, gap: spacing.xs },
+  compactCopy: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  text: { flex: 1, gap: spacing.xs },
   action: { alignSelf: 'flex-start', marginLeft: -spacing.md },
+  compactAction: { alignSelf: 'center' },
 });
 const backgrounds = StyleSheet.create({
   info: { backgroundColor: colors.lavenderSoft },

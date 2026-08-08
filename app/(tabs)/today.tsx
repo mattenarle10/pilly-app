@@ -1,26 +1,28 @@
 import { useState } from 'react';
-import { Pressable, StyleSheet, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 import { router } from 'expo-router';
+import Animated, { FadeInDown, ReduceMotion } from 'react-native-reanimated';
 
 import type { ScheduledDose } from '@/data/repositories';
 import {
   PillyBanner,
   PillyCard,
   PillyIconButton,
-  PillyIconTile,
   PillyModal,
   PillyText,
   Screen,
   WeekStatusStrip,
 } from '@/design/components';
-import { PillyIcon } from '@/design/icons';
 import { colors, radii, spacing } from '@/design/tokens';
 import { useDoseActions } from '@/hooks';
 import {
   buildOrganizerDays,
+  groupTodayDoses,
   greetingFor,
-  TodayDoseCard,
+  TodayCompanion,
+  TodayDoseList,
   TodayStarter,
+  todayProgress,
   useTodayData,
 } from '@/today';
 
@@ -30,6 +32,8 @@ export default function Today() {
   const { mutation, recentDose, recordDose, undoRecent } = useDoseActions();
   const [correction, setCorrection] = useState<ScheduledDose | null>(null);
   const organizerDays = buildOrganizerDays(dates, weekDoses.data);
+  const doseGroups = groupTodayDoses(doses.data);
+  const progress = todayProgress(doses.data);
   const nextScheduledDay = organizerDays.slice(1).find((day) => day.state !== 'empty');
 
   const correctDose = () => {
@@ -39,10 +43,25 @@ export default function Today() {
   };
 
   return (
-    <Screen contentStyle={styles.screen}>
+    <Screen
+      contentStyle={styles.screen}
+      footer={
+        recentDose ? (
+          <Animated.View entering={FadeInDown.duration(180).reduceMotion(ReduceMotion.System)}>
+            <PillyBanner
+              kind="success"
+              message="Dose recorded"
+              actionLabel="Undo"
+              onAction={undoRecent}
+              compact
+            />
+          </Animated.View>
+        ) : undefined
+      }
+    >
       <View style={styles.titleRow}>
         <View style={styles.titleCopy}>
-          <PillyText role="label" style={styles.greeting}>
+          <PillyText role="caption" numberOfLines={1} style={styles.greeting}>
             {greetingFor(today, firstName)}
           </PillyText>
           <PillyText role="large-title" accessibilityRole="header">
@@ -58,23 +77,26 @@ export default function Today() {
         </View>
         <PillyIconButton icon="profile" label="Profile" onPress={() => router.push('/profile')} />
       </View>
-      <View style={styles.weekSection}>
-        <View style={styles.sectionHeading}>
-          <PillyText role="headline">Next 7 days</PillyText>
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel="View week"
-            onPress={() => router.push('/(tabs)/week')}
-            style={({ pressed }) => [styles.weekLink, pressed && styles.weekLinkPressed]}
-          >
-            <PillyText role="caption" style={styles.weekLinkText}>
-              View week
+      {progress.total > 0 ? (
+        <View style={styles.summary}>
+          <TodayCompanion recorded={progress.recorded} total={progress.total} size="compact" />
+          <View style={styles.summaryCopy}>
+            <PillyText role="headline">
+              {progress.recorded} of {progress.total} recorded
             </PillyText>
-            <PillyIcon name="next" size={15} color={colors.brand} />
-          </Pressable>
+            <PillyText role="caption" muted>
+              {progress.recorded === progress.total
+                ? 'Everything is recorded for today.'
+                : `${progress.total - progress.recorded} ${progress.total - progress.recorded === 1 ? 'dose' : 'doses'} not recorded yet.`}
+            </PillyText>
+          </View>
         </View>
+      ) : null}
+      <View style={styles.weekSection}>
+        <PillyText role="headline">This week</PillyText>
         <WeekStatusStrip
           days={organizerDays}
+          variant="compact"
           onDayPress={(index) =>
             router.push({ pathname: '/(tabs)/week', params: { day: `${index}` } })
           }
@@ -112,22 +134,12 @@ export default function Today() {
       {mutation.isError ? (
         <PillyBanner kind="error" title="Change not saved" message="Try that action again." />
       ) : null}
-      {recentDose ? (
-        <PillyBanner
-          kind="success"
-          title="Recorded"
-          message="You can undo this change."
-          actionLabel="Undo"
-          onAction={undoRecent}
-          compact
-        />
-      ) : null}
       {doses.data?.length === 0 && medicines.data?.length === 0 ? (
         <TodayStarter onPress={() => router.push('/medicine/new')} />
       ) : null}
       {doses.data?.length === 0 && medicines.data && medicines.data.length > 0 ? (
         <PillyCard tone="peach" padding="medium" style={styles.restDay}>
-          <PillyIconTile icon="calendar" tone="peach" />
+          <TodayCompanion recorded={0} total={0} />
           <View style={styles.restCopy}>
             <PillyText role="headline">Nothing due today</PillyText>
             <PillyText role="caption" muted>
@@ -138,17 +150,13 @@ export default function Today() {
           </View>
         </PillyCard>
       ) : null}
-      <View style={styles.list}>
-        {doses.data?.map((dose) => (
-          <TodayDoseCard
-            key={dose.occurrenceId}
-            dose={dose}
-            busy={mutation.isPending}
-            onRecord={(status) => recordDose(dose, status)}
-            onCorrect={() => setCorrection(dose)}
-          />
-        ))}
-      </View>
+      <TodayDoseList
+        groups={doseGroups}
+        busy={mutation.isPending}
+        pendingOccurrenceId={mutation.variables?.dose.occurrenceId}
+        onRecord={recordDose}
+        onCorrect={setCorrection}
+      />
       <PillyModal
         visible={correction !== null}
         title="Change this record?"
@@ -170,26 +178,19 @@ const styles = StyleSheet.create({
     gap: spacing.lg,
   },
   titleCopy: { flex: 1, gap: spacing.xs },
-  greeting: { color: colors.brand },
-  weekSection: { gap: spacing.sm },
-  sectionHeading: {
-    minHeight: 44,
+  greeting: { color: colors.brand, fontWeight: '600' },
+  summary: {
+    minHeight: 72,
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
     gap: spacing.md,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.sm,
+    borderRadius: radii.xl,
+    backgroundColor: colors.lavenderSoft,
   },
-  weekLink: {
-    minHeight: 44,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.xs,
-    paddingHorizontal: spacing.sm,
-    borderRadius: radii.round,
-  },
-  weekLinkPressed: { backgroundColor: colors.brandSoft },
-  weekLinkText: { color: colors.brand, fontWeight: '600' },
+  summaryCopy: { flex: 1, gap: spacing.xs },
+  weekSection: { gap: spacing.sm },
   restDay: { minHeight: 76, flexDirection: 'row', alignItems: 'center', gap: spacing.md },
   restCopy: { flex: 1, gap: spacing.xs },
-  list: { gap: spacing.lg },
 });

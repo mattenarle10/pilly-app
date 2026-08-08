@@ -15,17 +15,31 @@ const stateIcon = {
   skipped: 'remove',
 } as const satisfies Record<OrganizerDayState, PillyIconName>;
 
+const stateLabel = {
+  empty: 'no medicines',
+  scheduled: 'scheduled',
+  notRecorded: 'not recorded',
+  taken: 'taken',
+  skipped: 'skipped',
+} as const satisfies Record<OrganizerDayState, string>;
+
 export function WeekStatusStrip({
   days,
   selectedIndex = 0,
+  variant = 'default',
   onDayPress,
 }: {
   days: Day[];
   selectedIndex?: number;
+  variant?: 'default' | 'compact';
   onDayPress?: (index: number) => void;
 }) {
+  const compact = variant === 'compact';
   return (
-    <View accessibilityLabel="Seven-day medicine status" style={styles.strip}>
+    <View
+      accessibilityLabel="Seven-day medicine status"
+      style={[styles.strip, compact && styles.compactStrip]}
+    >
       {days.map((day, index) => {
         const selected = index === selectedIndex;
         const color =
@@ -40,25 +54,37 @@ export function WeekStatusStrip({
           <Pressable
             key={day.key}
             accessibilityRole="button"
-            accessibilityLabel={`${day.label} ${day.dateNumber}, ${day.state}`}
+            accessibilityLabel={`${day.label} ${day.dateNumber}, ${stateLabel[day.state]}`}
             accessibilityState={{ selected }}
             onPress={() => onDayPress?.(index)}
             style={({ pressed }) => [
               styles.day,
+              compact && styles.compactDay,
               selected && styles.selected,
               pressed && styles.pressed,
             ]}
           >
             <View style={styles.dateCopy}>
               <PillyText role="caption" muted={!selected} style={styles.weekday}>
-                {day.label.slice(0, 1)}
+                {day.label.slice(0, compact ? 2 : 1)}
               </PillyText>
               <PillyText role="headline" style={selected ? styles.selectedText : undefined}>
                 {day.dateNumber}
               </PillyText>
             </View>
             <View style={styles.statusSlot}>
-              <PillyIcon name={stateIcon[day.state]} size={13} color={color} />
+              {compact && (day.state === 'empty' || day.state === 'notRecorded') ? (
+                <View
+                  style={[
+                    styles.statusDot,
+                    day.state === 'empty'
+                      ? { borderColor: color, backgroundColor: 'transparent' }
+                      : { borderColor: color, backgroundColor: color },
+                  ]}
+                />
+              ) : (
+                <PillyIcon name={stateIcon[day.state]} size={13} color={color} />
+              )}
             </View>
           </Pressable>
         );
@@ -77,6 +103,7 @@ const styles = StyleSheet.create({
     borderRadius: radii.lg,
     backgroundColor: colors.glass,
   },
+  compactStrip: { minHeight: 70, padding: 3 },
   day: {
     flex: 1,
     minWidth: 0,
@@ -87,9 +114,11 @@ const styles = StyleSheet.create({
     gap: spacing.xs,
     paddingVertical: spacing.xs,
   },
+  compactDay: { minHeight: 64, paddingVertical: 3 },
   dateCopy: { alignItems: 'center', gap: 1 },
   weekday: { fontWeight: '500' },
   statusSlot: { width: 18, height: 18, alignItems: 'center', justifyContent: 'center' },
+  statusDot: { width: 8, height: 8, borderRadius: 4, borderWidth: 1.5 },
   selected: { backgroundColor: colors.brandSoft },
   selectedText: { color: colors.brandStrong },
   pressed: { opacity: 0.72, transform: [{ scale: 0.96 }] },

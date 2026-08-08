@@ -1,8 +1,10 @@
 import type { ScheduledDose } from '@/data/repositories';
 import type { OrganizerDay } from '@/design/illustrations';
-import { toLocalDate } from '@/domain/schedule';
+import { formatTime, toLocalDate } from '@/domain/schedule';
 
 export type TodayOrganizerDay = OrganizerDay & { dateNumber: number };
+export type TodayDoseGroup = { key: string; time: string; doses: ScheduledDose[] };
+export type TodayProgress = { recorded: number; total: number };
 
 export function greetingFor(date: Date, firstName?: string | null): string {
   const greeting =
@@ -35,4 +37,30 @@ export function buildOrganizerDays(
       state,
     };
   });
+}
+
+export function groupTodayDoses(doses: ScheduledDose[] | undefined): TodayDoseGroup[] {
+  const groups = new Map<string, TodayDoseGroup>();
+  for (const dose of doses ?? []) {
+    const key = `${dose.schedule.hour}:${dose.schedule.minute}`;
+    const group = groups.get(key);
+    if (group) {
+      group.doses.push(dose);
+    } else {
+      groups.set(key, {
+        key,
+        time: formatTime(dose.schedule.hour, dose.schedule.minute),
+        doses: [dose],
+      });
+    }
+  }
+  return [...groups.values()];
+}
+
+export function todayProgress(doses: ScheduledDose[] | undefined): TodayProgress {
+  const items = doses ?? [];
+  return {
+    recorded: items.filter((dose) => dose.status !== 'notRecorded').length,
+    total: items.length,
+  };
 }
