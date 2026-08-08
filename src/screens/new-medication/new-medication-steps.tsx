@@ -12,7 +12,7 @@ import {
   PillyText,
   PillyToggle,
 } from '@/design/components';
-import { TimeOrbit, WeeklyOrganizer, type OrganizerDay } from '@/design/illustrations';
+import { TimeOrbit } from '@/design/illustrations';
 import { colors, radii, spacing } from '@/design/tokens';
 import { parseTime } from './new-medication-form';
 
@@ -54,7 +54,6 @@ export function NameStep({
 }) {
   return (
     <View style={styles.section}>
-      <StepHeading title="Medicine" message="Copy the printed label." />
       <PillyField
         label="Name"
         icon="medkit-outline"
@@ -88,21 +87,9 @@ export function DaysStep({
 }) {
   const toggle = (day: number) =>
     onChange(selected.includes(day) ? selected.filter((item) => item !== day) : [...selected, day]);
-  const organizerDays: OrganizerDay[] = days.map((day) => ({
-    key: `${day.value}`,
-    label: day.fullLabel,
-    state: selected.includes(day.value) ? 'notRecorded' : 'empty',
-  }));
   return (
     <View style={styles.section}>
-      <StepHeading title="Days" message="Choose the days it appears." />
-      <WeeklyOrganizer
-        days={organizerDays}
-        selectedIndex={-1}
-        presentation="week"
-        height={112}
-        onDayPress={(index) => toggle(days[index]!.value)}
-      />
+      <StepHeading title="Schedule" message="Choose days." />
       <View style={styles.days}>
         {days.map((day) => {
           const active = selected.includes(day.value);
@@ -158,7 +145,7 @@ export function TimeStep({
   const time = parseTime(value);
   return (
     <View style={styles.section}>
-      <StepHeading title="Time" message="When should it appear?" />
+      <StepHeading title="Time" message="Choose a local time." />
       <PillyCard padding="medium" style={styles.timeRow}>
         <TimeOrbit hour={time.getHours()} minute={time.getMinutes()} />
         <View style={styles.timeCopy}>
@@ -198,7 +185,7 @@ export function DetailsStep({
 }) {
   return (
     <View style={styles.section}>
-      <StepHeading title="Last details" message="You can change these later." />
+      <StepHeading title="Supply and reminder" message="Optional." />
       <PillyNumberPicker
         label="Doses left"
         value={supply.trim() === '' ? null : Number(supply)}

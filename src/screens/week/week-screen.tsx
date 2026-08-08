@@ -10,7 +10,6 @@ import {
   Screen,
   StatusLabel,
 } from '@/design/components';
-import { WeeklyOrganizer, type OrganizerDay } from '@/design/illustrations';
 import { colors, radii, spacing } from '@/design/tokens';
 import { formatTime, toLocalDate, weekStartingToday } from '@/domain/schedule';
 import { useRepository } from '@/providers';
@@ -24,22 +23,6 @@ export function WeekScreen() {
     queryFn: () => Promise.all(dates.map((date) => repository.listScheduledDoses(date))),
     networkMode: 'always',
   });
-  const organizerDays: OrganizerDay[] = dates.map((date, index) => {
-    const doses = query.data?.[index] ?? [];
-    const state =
-      doses.length === 0
-        ? 'empty'
-        : doses.every((dose) => dose.status === 'taken')
-          ? 'taken'
-          : doses.some((dose) => dose.status === 'skipped')
-            ? 'skipped'
-            : 'notRecorded';
-    return {
-      key: toLocalDate(date),
-      label: new Intl.DateTimeFormat(undefined, { weekday: 'short' }).format(date),
-      state,
-    };
-  });
   const selectedDate = dates[selectedIndex]!;
   const selectedDoses = query.data?.[selectedIndex] ?? [];
   return (
@@ -50,13 +33,6 @@ export function WeekScreen() {
           Tap a day.
         </PillyText>
       </View>
-      <WeeklyOrganizer
-        days={organizerDays}
-        selectedIndex={selectedIndex}
-        presentation="week"
-        height={154}
-        onDayPress={setSelectedIndex}
-      />
       <View accessibilityRole="tablist" style={styles.days}>
         {dates.map((date, index) => (
           <Pressable

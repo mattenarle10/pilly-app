@@ -1,16 +1,10 @@
 import { StyleSheet, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { PillyButton, PillyText, Screen } from '@/design/components';
-import { WeeklyOrganizer, type OrganizerDay } from '@/design/illustrations';
+import { PillyButton, PillyIconTile, PillyText, Screen } from '@/design/components';
 import { spacing } from '@/design/tokens';
 import { useRepository } from '@/providers';
 
-const days: OrganizerDay[] = Array.from({ length: 7 }, (_, index) => ({
-  key: `${index}`,
-  label: '',
-  state: 'empty',
-}));
 export function StartSmallScreen() {
   const router = useRouter();
   const repository = useRepository();
@@ -27,7 +21,11 @@ export function StartSmallScreen() {
   return (
     <Screen scroll={false} contentStyle={styles.content}>
       <View style={styles.center}>
-        <WeeklyOrganizer days={days} height={210} />
+        <View style={styles.steps}>
+          <SetupItem icon="medkit-outline" label="Name" />
+          <SetupItem icon="calendar-outline" label="Days" />
+          <SetupItem icon="time-outline" label="Time" />
+        </View>
         <View style={styles.copy}>
           <PillyText role="large-title" accessibilityRole="header">
             Start with one medicine
@@ -53,9 +51,30 @@ export function StartSmallScreen() {
     </Screen>
   );
 }
+function SetupItem({
+  icon,
+  label,
+}: {
+  icon: 'medkit-outline' | 'calendar-outline' | 'time-outline';
+  label: string;
+}) {
+  return (
+    <View style={styles.step}>
+      <PillyIconTile icon={icon} />
+      <PillyText role="caption">{label}</PillyText>
+    </View>
+  );
+}
 const styles = StyleSheet.create({
   content: { justifyContent: 'space-between' },
   center: { flex: 1, justifyContent: 'center' },
   copy: { gap: spacing.md },
+  steps: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    gap: spacing.xxl,
+    marginBottom: spacing.xxxl,
+  },
+  step: { alignItems: 'center', gap: spacing.sm },
   actions: { gap: spacing.sm },
 });

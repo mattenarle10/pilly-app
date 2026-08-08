@@ -45,7 +45,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  plain: { backgroundColor: colors.glass, ...shadows.soft },
+  plain: { backgroundColor: 'transparent' },
   brand: { backgroundColor: colors.brand, ...shadows.soft },
   pressed: { opacity: 0.72, transform: [{ scale: 0.97 }] },
   disabled: { opacity: 0.35 },

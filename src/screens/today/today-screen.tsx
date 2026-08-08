@@ -14,8 +14,9 @@ import {
   PillyText,
   Screen,
   StatusLabel,
+  WeekStatusStrip,
 } from '@/design/components';
-import { WeeklyOrganizer, type OrganizerDay } from '@/design/illustrations';
+import type { OrganizerDay } from '@/design/illustrations';
 import { spacing } from '@/design/tokens';
 import { formatTime, toLocalDate, weekStartingToday } from '@/domain/schedule';
 import { estimatedDaysLeft } from '@/domain/supply';
@@ -114,7 +115,7 @@ export function TodayScreen() {
           />
         </View>
       </View>
-      <WeeklyOrganizer days={organizerDays} selectedIndex={0} presentation="today" height={154} />
+      <WeekStatusStrip days={organizerDays} />
       {reminderNotice.data === 'denied' || reminderNotice.data === 'failed' ? (
         <PillyBanner
           kind="warning"

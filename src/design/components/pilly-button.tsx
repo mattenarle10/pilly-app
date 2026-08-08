@@ -47,7 +47,7 @@ export function PillyButton({
         ) : icon ? (
           <Ionicons
             name={icon}
-            size={20}
+            size={18}
             color={
               variant === 'primary'
                 ? colors.surface
@@ -75,7 +75,7 @@ export function PillyButton({
 }
 const styles = StyleSheet.create({
   base: {
-    borderRadius: radii.md,
+    borderRadius: radii.round,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -88,13 +88,13 @@ const styles = StyleSheet.create({
   fullWidth: { width: '100%' },
   primaryLabel: { color: colors.surface },
   dangerLabel: { color: colors.danger },
-  pressed: { opacity: 0.78, transform: [{ scale: 0.99 }] },
+  pressed: { opacity: 0.76, transform: [{ scale: 0.98 }] },
   disabled: { opacity: 0.42 },
 });
 const sizeStyles = StyleSheet.create({
-  compact: { minHeight: controlHeights.compact, paddingHorizontal: spacing.md },
-  medium: { minHeight: controlHeights.medium, paddingHorizontal: spacing.lg },
-  large: { minHeight: controlHeights.large, paddingHorizontal: spacing.xl },
+  compact: { minHeight: controlHeights.compact, paddingHorizontal: spacing.lg },
+  medium: { minHeight: controlHeights.medium, paddingHorizontal: spacing.xl },
+  large: { minHeight: controlHeights.large, paddingHorizontal: spacing.xxl },
 });
 const variantStyles = StyleSheet.create({
   primary: { backgroundColor: colors.brand, ...shadows.soft },

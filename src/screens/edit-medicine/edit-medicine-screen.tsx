@@ -4,7 +4,14 @@ import { useForm } from '@tanstack/react-form';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
 import type { MedicationDetail } from '@/data/repositories';
-import { EmptyState, PillyBanner, PillyButton, PillyIconButton, Screen } from '@/design/components';
+import {
+  EmptyState,
+  PillyBanner,
+  PillyButton,
+  PillyIconButton,
+  PillyText,
+  Screen,
+} from '@/design/components';
 import { spacing } from '@/design/tokens';
 import { weekdayMask } from '@/domain/schedule';
 import { scheduleLocalReminders } from '@/platform/notifications';
@@ -94,6 +101,9 @@ function EditMedicineForm({ detail }: { detail: MedicationDetail }) {
     >
       <View style={styles.header}>
         <PillyIconButton icon="chevron-back" label="Back" onPress={() => router.back()} />
+        <PillyText role="title" accessibilityRole="header">
+          Edit medicine
+        </PillyText>
       </View>
       {saveMutation.isError ? (
         <PillyBanner

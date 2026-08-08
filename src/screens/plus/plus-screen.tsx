@@ -14,16 +14,10 @@ import {
   PillyText,
   Screen,
 } from '@/design/components';
-import { WeeklyOrganizer } from '@/design/illustrations';
 import { colors, spacing } from '@/design/tokens';
 import { purchasePlus, refreshPlusEntitlement, restorePlus } from '@/platform/purchases';
 import { useRepository } from '@/providers';
 
-const previewDays = Array.from({ length: 7 }, (_, index) => ({
-  key: `${index}`,
-  label: '',
-  state: index < 4 ? ('taken' as const) : ('scheduled' as const),
-}));
 type Notice = { kind: 'error' | 'success'; message: string };
 
 export function PlusScreen() {
@@ -72,7 +66,6 @@ export function PlusScreen() {
   return (
     <Screen>
       <PillyIconButton icon="chevron-back" label="Back" onPress={() => router.back()} />
-      <WeeklyOrganizer days={previewDays} presentation="supply" height={138} />
       <View style={styles.title}>
         <PillyText role="large-title">Pilly Plus</PillyText>
         <PillyText muted>

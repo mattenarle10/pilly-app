@@ -5,8 +5,15 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { router } from 'expo-router';
 import Storage from 'expo-sqlite/kv-store';
 
-import { PillyBanner, PillyButton, PillyIconButton, PillyModal, Screen } from '@/design/components';
-import { colors, radii, spacing } from '@/design/tokens';
+import {
+  PillyBanner,
+  PillyButton,
+  PillyIconButton,
+  PillyModal,
+  PillyText,
+  Screen,
+} from '@/design/components';
+import { spacing } from '@/design/tokens';
 import { weekdayMask } from '@/domain/schedule';
 import { scheduleLocalReminders } from '@/platform/notifications';
 import { useRepository } from '@/providers';
@@ -27,7 +34,6 @@ export function NewMedicationScreen() {
   const repository = useRepository();
   const queryClient = useQueryClient();
   const validation = useMedicationValidation();
-  const [step, setStep] = useState(0);
   const [draftWarning, setDraftWarning] = useState<string | null>(null);
   const [showExit, setShowExit] = useState(false);
   const form = useForm({
@@ -92,65 +98,38 @@ export function NewMedicationScreen() {
       setDraftWarning(draftMessages.unavailable);
     }
   };
-  const next = (value: MedicationDraft) => {
-    if (!validation.checkStep(value, step)) return;
-    void saveDraft(value);
-    setStep((current) => Math.min(3, current + 1));
-  };
-  const goBack = () => {
-    if (step === 0) setShowExit(true);
-    else {
-      validation.clear();
-      setStep((value) => value - 1);
-    }
-  };
   const clearErrors = () => {
     validation.clear();
     createMutation.reset();
   };
   const submit = (value: MedicationDraft) => {
     const issue = validation.checkAll(value);
-    if (issue) {
-      setStep(issue.step);
-      return;
-    }
+    if (issue) return;
     void form.handleSubmit();
   };
-  const fieldError =
-    validation.fieldIssue?.step === step ? validation.fieldIssue.message : undefined;
+  const fieldError = validation.fieldIssue;
 
   return (
     <Screen
       footer={
         <form.Subscribe selector={(state) => state.values}>
-          {(value) =>
-            step < 3 ? (
-              <PillyButton
-                label="Next"
-                icon="arrow-forward"
-                onPress={() => next(value)}
-                fullWidth
-              />
-            ) : (
-              <PillyButton
-                label="Save"
-                icon="checkmark"
-                loading={createMutation.isPending}
-                onPress={() => submit(value)}
-                fullWidth
-              />
-            )
-          }
+          {(value) => (
+            <PillyButton
+              label="Add medicine"
+              icon="checkmark"
+              loading={createMutation.isPending}
+              onPress={() => submit(value)}
+              fullWidth
+            />
+          )}
         </form.Subscribe>
       }
     >
       <View style={styles.header}>
-        <PillyIconButton icon="chevron-back" label="Back" onPress={goBack} />
-        <View accessibilityLabel={`Step ${step + 1} of 4`} style={styles.progress}>
-          {[0, 1, 2, 3].map((item) => (
-            <View key={item} style={[styles.progressPart, item <= step && styles.progressActive]} />
-          ))}
-        </View>
+        <PillyIconButton icon="chevron-back" label="Back" onPress={() => setShowExit(true)} />
+        <PillyText role="title" accessibilityRole="header">
+          Add medicine
+        </PillyText>
       </View>
       {validation.bannerIssue ? (
         <PillyBanner kind="error" message={validation.bannerIssue.message} compact />
@@ -167,73 +146,41 @@ export function NewMedicationScreen() {
       <form.Subscribe selector={(state) => state.values}>
         {(value) => (
           <>
-            {step === 0 ? (
-              <form.Field name="name">
-                {(nameField) => (
-                  <form.Field name="instructions">
-                    {(instructionsField) => (
-                      <NameStep
-                        name={nameField.state.value}
-                        instructions={instructionsField.state.value}
-                        error={fieldError}
-                        onNameChange={(text) => {
-                          clearErrors();
-                          nameField.handleChange(text);
-                        }}
-                        onInstructionsChange={instructionsField.handleChange}
-                      />
-                    )}
-                  </form.Field>
-                )}
-              </form.Field>
-            ) : null}
-            {step === 1 ? (
-              <form.Field name="selectedDays">
-                {(field) => (
-                  <DaysStep
-                    selected={field.state.value}
-                    error={fieldError}
-                    onChange={(days) => {
-                      clearErrors();
-                      field.handleChange(days);
-                    }}
-                  />
-                )}
-              </form.Field>
-            ) : null}
-            {step === 2 ? (
-              <form.Field name="time">
-                {(field) => (
-                  <TimeStep
-                    value={field.state.value}
-                    onChange={(time) => {
-                      clearErrors();
-                      field.handleChange(time);
-                    }}
-                  />
-                )}
-              </form.Field>
-            ) : null}
-            {step === 3 ? (
-              <form.Field name="supply">
-                {(supplyField) => (
-                  <form.Field name="reminderEnabled">
-                    {(reminderField) => (
-                      <DetailsStep
-                        supply={supplyField.state.value}
-                        reminderEnabled={reminderField.state.value}
-                        error={fieldError}
-                        onSupplyChange={(text) => {
-                          clearErrors();
-                          supplyField.handleChange(text);
-                        }}
-                        onReminderChange={reminderField.handleChange}
-                      />
-                    )}
-                  </form.Field>
-                )}
-              </form.Field>
-            ) : null}
+            <NameStep
+              name={value.name}
+              instructions={value.instructions}
+              error={fieldError?.field === 'name' ? fieldError.message : undefined}
+              onNameChange={(text) => {
+                clearErrors();
+                form.setFieldValue('name', text);
+              }}
+              onInstructionsChange={(text) => form.setFieldValue('instructions', text)}
+            />
+            <DaysStep
+              selected={value.selectedDays}
+              error={fieldError?.field === 'selectedDays' ? fieldError.message : undefined}
+              onChange={(days) => {
+                clearErrors();
+                form.setFieldValue('selectedDays', days);
+              }}
+            />
+            <TimeStep
+              value={value.time}
+              onChange={(time) => {
+                clearErrors();
+                form.setFieldValue('time', time);
+              }}
+            />
+            <DetailsStep
+              supply={value.supply}
+              reminderEnabled={value.reminderEnabled}
+              error={fieldError?.field === 'supply' ? fieldError.message : undefined}
+              onSupplyChange={(supply) => {
+                clearErrors();
+                form.setFieldValue('supply', supply);
+              }}
+              onReminderChange={(enabled) => form.setFieldValue('reminderEnabled', enabled)}
+            />
           </>
         )}
       </form.Subscribe>
@@ -243,7 +190,9 @@ export function NewMedicationScreen() {
         message="Your draft stays on this iPhone."
         confirmLabel="Leave"
         cancelLabel="Keep editing"
-        onConfirm={() => router.back()}
+        onConfirm={() => {
+          void saveDraft(form.state.values).finally(() => router.back());
+        }}
         onClose={() => setShowExit(false)}
       />
     </Screen>
@@ -251,8 +200,5 @@ export function NewMedicationScreen() {
 }
 
 const styles = StyleSheet.create({
-  header: { minHeight: 52, flexDirection: 'row', alignItems: 'center', gap: spacing.lg },
-  progress: { flex: 1, flexDirection: 'row', gap: spacing.xs },
-  progressPart: { flex: 1, height: 5, borderRadius: radii.round, backgroundColor: colors.border },
-  progressActive: { backgroundColor: colors.brand },
+  header: { minHeight: 52, flexDirection: 'row', alignItems: 'center', gap: spacing.md },
 });

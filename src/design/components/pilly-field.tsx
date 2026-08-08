@@ -1,6 +1,12 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
 import type { ComponentProps } from 'react';
-import { StyleSheet, TextInput, View, type TextInputProps } from 'react-native';
+import {
+  StyleSheet,
+  TextInput,
+  useWindowDimensions,
+  View,
+  type TextInputProps,
+} from 'react-native';
 
 import { PillyText } from './pilly-text';
 import {
@@ -30,6 +36,7 @@ export function PillyField({
   multiline,
   ...props
 }: Props) {
+  const { fontScale } = useWindowDimensions();
   const describedBy = error ? `${label}-error` : hint ? `${label}-hint` : undefined;
   return (
     <View style={styles.group}>
@@ -56,7 +63,12 @@ export function PillyField({
           allowFontScaling
           multiline={multiline}
           placeholderTextColor={colors.textSecondary}
-          style={[styles.input, multiline && styles.multilineInput, style]}
+          style={[
+            styles.input,
+            fontScale >= 1.3 && styles.inputLargeText,
+            multiline && styles.multilineInput,
+            style,
+          ]}
           {...props}
         />
       </View>
@@ -94,7 +106,7 @@ const styles = StyleSheet.create({
   },
   input: {
     flex: 1,
-    minHeight: 24,
+    height: 24,
     color: colors.textPrimary,
     lineHeight: 20,
     padding: 0,
@@ -102,6 +114,7 @@ const styles = StyleSheet.create({
     includeFontPadding: false,
     ...controlTypography,
   },
+  inputLargeText: { height: undefined, minHeight: 32 },
   label: { fontWeight: '600' },
   iconSlot: {
     width: 24,
@@ -117,6 +130,7 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.lg,
   },
   multilineInput: {
+    height: 64,
     minHeight: 64,
     lineHeight: 21,
     textAlignVertical: 'top',

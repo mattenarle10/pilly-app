@@ -1,12 +1,10 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
-import { StyleSheet, View } from 'react-native';
+import { Pressable, StyleSheet, View } from 'react-native';
 import { router } from 'expo-router';
 import { useQuery } from '@tanstack/react-query';
 
 import {
   PillyBanner,
-  PillyButton,
-  PillyCard,
   PillyIconButton,
   PillyIconTile,
   PillyText,
@@ -32,56 +30,48 @@ export function SettingsScreen() {
         </PillyText>
       </View>
 
-      <PillyCard style={styles.card}>
-        <PillyIconTile icon="phone-portrait-outline" />
-        <View style={styles.copy}>
-          <PillyText role="headline">Saved on this device</PillyText>
-          <PillyText role="caption" muted>
-            No account is required. Core tracking works offline.
-          </PillyText>
-        </View>
-      </PillyCard>
-
-      <PillyCard style={styles.card}>
-        <PillyIconTile icon="notifications-outline" tone="peach" />
-        <View style={styles.copy}>
-          <PillyText role="headline">Private reminders</PillyText>
-          <PillyText role="caption" muted>
-            Notifications never show medicine names.
-          </PillyText>
-        </View>
-      </PillyCard>
+      <View style={styles.section}>
+        <PillyText role="caption" muted>
+          ON THIS IPHONE
+        </PillyText>
+        <SettingRow
+          icon="phone-portrait-outline"
+          title="Saved on this device"
+          message="No account. Works offline."
+        />
+        <SettingRow
+          icon="notifications-outline"
+          title="Private reminders"
+          message="Medicine names stay hidden."
+          tone="peach"
+        />
+      </View>
 
       {medicines.isError ? (
         <PillyBanner kind="error" message="Couldn’t load local settings." compact />
       ) : null}
-      <PillyCard style={styles.section}>
-        <View style={styles.sectionTitle}>
-          <Ionicons name="archive-outline" size={21} color={colors.brand} />
-          <PillyText role="headline">Archived medicines</PillyText>
-        </View>
+      <View style={styles.section}>
         <PillyText role="caption" muted>
-          {archivedCount === 0
-            ? 'Nothing archived.'
-            : `${archivedCount} ${archivedCount === 1 ? 'medicine' : 'medicines'} archived.`}
+          MANAGE
         </PillyText>
-        <PillyButton
-          label="View medicines"
-          icon="medkit-outline"
-          variant="secondary"
-          size="medium"
+        <SettingRow
+          icon="archive-outline"
+          title="Archived medicines"
+          message={
+            archivedCount === 0
+              ? 'Nothing archived.'
+              : `${archivedCount} ${archivedCount === 1 ? 'medicine' : 'medicines'}.`
+          }
           onPress={() => router.push('/(tabs)/medicines')}
-          fullWidth
         />
-      </PillyCard>
-
-      <PillyButton
-        label="Pilly Plus"
-        icon="color-palette-outline"
-        variant="secondary"
-        onPress={() => router.push('/plus')}
-        fullWidth
-      />
+        <SettingRow
+          icon="color-palette-outline"
+          title="Pilly Plus"
+          message="Themes, print, and export."
+          tone="lavender"
+          onPress={() => router.push('/plus')}
+        />
+      </View>
       <PillyText role="caption" muted style={styles.boundary}>
         Pilly records what you enter. It does not give medical advice.
       </PillyText>
@@ -89,11 +79,54 @@ export function SettingsScreen() {
   );
 }
 
+function SettingRow({
+  icon,
+  title,
+  message,
+  tone,
+  onPress,
+}: {
+  icon:
+    | 'phone-portrait-outline'
+    | 'notifications-outline'
+    | 'archive-outline'
+    | 'color-palette-outline';
+  title: string;
+  message: string;
+  tone?: 'brand' | 'peach' | 'lavender';
+  onPress?: () => void;
+}) {
+  const content = (
+    <>
+      <PillyIconTile icon={icon} tone={tone} />
+      <View style={styles.copy}>
+        <PillyText role="headline">{title}</PillyText>
+        <PillyText role="caption" muted>
+          {message}
+        </PillyText>
+      </View>
+      {onPress ? <Ionicons name="chevron-forward" size={20} color={colors.textSecondary} /> : null}
+    </>
+  );
+  return onPress ? (
+    <Pressable accessibilityRole="button" onPress={onPress} style={styles.row}>
+      {content}
+    </Pressable>
+  ) : (
+    <View style={styles.row}>{content}</View>
+  );
+}
+
 const styles = StyleSheet.create({
   header: { minHeight: 52, flexDirection: 'row', alignItems: 'center', gap: spacing.md },
-  card: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
+  row: {
+    minHeight: 64,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+    paddingVertical: spacing.sm,
+  },
   copy: { flex: 1, gap: spacing.xs },
-  section: { gap: spacing.md },
-  sectionTitle: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
+  section: { gap: spacing.sm, marginTop: spacing.md },
   boundary: { textAlign: 'center', marginTop: spacing.lg },
 });
