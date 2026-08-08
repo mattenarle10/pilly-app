@@ -1,14 +1,26 @@
-import { Pressable, StyleSheet, type PressableProps } from 'react-native';
+import Ionicons from '@expo/vector-icons/Ionicons';
+import type { ComponentProps } from 'react';
+import { ActivityIndicator, Pressable, StyleSheet, View, type PressableProps } from 'react-native';
 import { PillyText } from './pilly-text';
-import { colors, spacing } from '@/design/tokens';
+import { colors, controlHeights, radii, shadows, spacing } from '@/design/tokens';
+
+type IconName = ComponentProps<typeof Ionicons>['name'];
 
 type PillyButtonProps = Omit<PressableProps, 'children'> & {
   label: string;
   variant?: 'primary' | 'secondary' | 'quiet' | 'danger';
+  size?: 'compact' | 'medium' | 'large';
+  icon?: IconName;
+  fullWidth?: boolean;
+  loading?: boolean;
 };
 export function PillyButton({
   label,
   variant = 'primary',
+  size = 'large',
+  icon,
+  fullWidth = false,
+  loading = false,
   disabled,
   style,
   ...props
@@ -16,37 +28,77 @@ export function PillyButton({
   return (
     <Pressable
       accessibilityRole="button"
-      disabled={disabled}
+      accessibilityState={{ disabled: disabled || loading, busy: loading }}
+      disabled={disabled || loading}
       style={(state) => [
         styles.base,
+        sizeStyles[size],
         variantStyles[variant],
+        fullWidth && styles.fullWidth,
         state.pressed && styles.pressed,
-        disabled && styles.disabled,
+        (disabled || loading) && styles.disabled,
         typeof style === 'function' ? style(state) : style,
       ]}
       {...props}
     >
-      <PillyText role="label" style={variant === 'primary' ? styles.primaryLabel : undefined}>
-        {label}
-      </PillyText>
+      <View style={styles.content}>
+        {loading ? (
+          <ActivityIndicator color={variant === 'primary' ? colors.surface : colors.brand} />
+        ) : icon ? (
+          <Ionicons
+            name={icon}
+            size={20}
+            color={
+              variant === 'primary'
+                ? colors.surface
+                : variant === 'danger'
+                  ? colors.danger
+                  : colors.textPrimary
+            }
+          />
+        ) : null}
+        <PillyText
+          role="label"
+          style={
+            variant === 'primary'
+              ? styles.primaryLabel
+              : variant === 'danger'
+                ? styles.dangerLabel
+                : undefined
+          }
+        >
+          {label}
+        </PillyText>
+      </View>
     </Pressable>
   );
 }
 const styles = StyleSheet.create({
   base: {
-    minHeight: 56,
-    borderRadius: 16,
-    paddingHorizontal: spacing.xl,
+    borderRadius: radii.md,
     alignItems: 'center',
     justifyContent: 'center',
   },
+  content: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.sm,
+  },
+  fullWidth: { width: '100%' },
   primaryLabel: { color: colors.surface },
+  dangerLabel: { color: colors.danger },
   pressed: { opacity: 0.78, transform: [{ scale: 0.99 }] },
   disabled: { opacity: 0.42 },
 });
+const sizeStyles = StyleSheet.create({
+  compact: { minHeight: controlHeights.compact, paddingHorizontal: spacing.md },
+  medium: { minHeight: controlHeights.medium, paddingHorizontal: spacing.lg },
+  large: { minHeight: controlHeights.large, paddingHorizontal: spacing.xl },
+});
 const variantStyles = StyleSheet.create({
-  primary: { backgroundColor: colors.brand },
-  secondary: { backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border },
+  primary: { backgroundColor: colors.brand, ...shadows.soft },
+  secondary: { backgroundColor: colors.glass, ...shadows.soft },
   quiet: { backgroundColor: 'transparent' },
-  danger: { backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.danger },
+  danger: { backgroundColor: colors.glass },
 });
