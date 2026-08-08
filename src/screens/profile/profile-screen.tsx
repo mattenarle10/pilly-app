@@ -22,7 +22,11 @@ import {
 } from '@/design/components';
 import { PillyIcon, type PillyIconName } from '@/design/icons';
 import { colors, spacing } from '@/design/tokens';
-import { deleteLocalProfilePhoto, pickLocalProfilePhoto } from '@/platform/profile-photo';
+import {
+  deleteLocalProfilePhoto,
+  pickLocalProfilePhoto,
+  ProfilePhotoUnavailableError,
+} from '@/platform/profile-photo';
 import { useRepository } from '@/hooks';
 
 export function ProfileScreen() {
@@ -33,7 +37,7 @@ export function ProfileScreen() {
   const [lastNameDraft, setLastNameDraft] = useState('');
   const [websiteError, setWebsiteError] = useState(false);
   const [photoBusy, setPhotoBusy] = useState(false);
-  const [photoError, setPhotoError] = useState(false);
+  const [photoError, setPhotoError] = useState<string | null>(null);
   const profileName = useQuery({
     queryKey: ['settings', profileSettingKeys.displayName],
     queryFn: () => repository.getSetting(profileSettingKeys.displayName),
@@ -101,7 +105,7 @@ export function ProfileScreen() {
     }
   };
   const choosePhoto = async () => {
-    setPhotoError(false);
+    setPhotoError(null);
     setPhotoBusy(true);
     try {
       const destinationUri = await pickLocalProfilePhoto();
@@ -115,8 +119,12 @@ export function ProfileScreen() {
         deleteLocalProfilePhoto(destinationUri);
         throw error;
       }
-    } catch {
-      setPhotoError(true);
+    } catch (error) {
+      setPhotoError(
+        error instanceof ProfilePhotoUnavailableError
+          ? 'Rebuild Pilly to enable photo selection.'
+          : 'Couldn’t save that photo.',
+      );
     } finally {
       setPhotoBusy(false);
     }
@@ -125,13 +133,13 @@ export function ProfileScreen() {
     const photoUri = profilePhoto.data;
     if (!photoUri) return;
     setPhotoBusy(true);
-    setPhotoError(false);
+    setPhotoError(null);
     try {
       await repository.setSetting(profileSettingKeys.photoUri, '');
       queryClient.setQueryData(['settings', profileSettingKeys.photoUri], '');
       deleteLocalProfilePhoto(photoUri);
     } catch {
-      setPhotoError(true);
+      setPhotoError('Couldn’t remove that photo.');
     } finally {
       setPhotoBusy(false);
     }
@@ -197,9 +205,7 @@ export function ProfileScreen() {
           <ProfileFact icon="phone" label="On-device" />
           <ProfileFact icon="reminder" label="Names hidden" />
         </View>
-        {photoError ? (
-          <PillyBanner kind="error" message="Couldn’t save that photo." compact />
-        ) : null}
+        {photoError ? <PillyBanner kind="error" message={photoError} compact /> : null}
       </View>
 
       {medicines.isError ? (

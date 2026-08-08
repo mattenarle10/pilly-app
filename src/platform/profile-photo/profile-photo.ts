@@ -1,6 +1,12 @@
 import { Directory, File, Paths } from 'expo-file-system';
+import { requireOptionalNativeModule } from 'expo-modules-core';
+
+export class ProfilePhotoUnavailableError extends Error {}
 
 export async function pickLocalProfilePhoto(): Promise<string | null> {
+  if (!requireOptionalNativeModule('ExponentImagePicker')) {
+    throw new ProfilePhotoUnavailableError('The photo picker is not installed in this build.');
+  }
   const ImagePicker = await import('expo-image-picker');
   const result = await ImagePicker.launchImageLibraryAsync({
     mediaTypes: ['images'],
