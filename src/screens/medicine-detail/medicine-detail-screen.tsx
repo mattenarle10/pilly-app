@@ -16,6 +16,7 @@ import {
 } from '@/design/components';
 import { spacing } from '@/design/tokens';
 import { formatTime } from '@/domain/schedule';
+import { estimateSupply } from '@/domain/supply';
 import { scheduleLocalReminders } from '@/platform/notifications';
 import { useRepository } from '@/providers';
 
@@ -111,6 +112,16 @@ export function MedicineDetailScreen({ medicationId }: Props) {
 
   const { medication, schedules } = query.data;
   const supplyChanged = supplyDraft.changed && supply !== medication.supplyCount;
+  const scheduledDays = schedules.reduce(
+    (count, schedule) =>
+      count +
+      schedule.weekdayMask
+        .toString(2)
+        .split('')
+        .filter((bit) => bit === '1').length,
+    0,
+  );
+  const supplyEstimate = estimateSupply(medication.supplyCount, scheduledDays);
   return (
     <Screen>
       <View style={styles.header}>
@@ -188,6 +199,17 @@ export function MedicineDetailScreen({ medicationId }: Props) {
         ) : null}
         {supplyMutation.isError ? (
           <PillyBanner kind="error" title="Count not saved" message="Try again." />
+        ) : null}
+        {supplyEstimate ? (
+          <PillyBanner
+            kind="info"
+            title={`About ${supplyEstimate.daysLeft} ${supplyEstimate.daysLeft === 1 ? 'day' : 'days'} left`}
+            message={`Estimated through ${new Intl.DateTimeFormat(undefined, {
+              month: 'short',
+              day: 'numeric',
+            }).format(supplyEstimate.runsOutOn)}.`}
+            compact
+          />
         ) : null}
       </View>
 

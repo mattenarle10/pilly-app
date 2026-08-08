@@ -100,12 +100,19 @@ export function TodayScreen() {
             }).format(today)}
           </PillyText>
         </View>
-        <PillyIconButton
-          icon="add"
-          label="Add medicine"
-          tone="brand"
-          onPress={() => router.push('/medicine/new')}
-        />
+        <View style={styles.headerActions}>
+          <PillyIconButton
+            icon="settings-outline"
+            label="Settings"
+            onPress={() => router.push('/settings')}
+          />
+          <PillyIconButton
+            icon="add"
+            label="Add medicine"
+            tone="brand"
+            onPress={() => router.push('/medicine/new')}
+          />
+        </View>
       </View>
       <WeeklyOrganizer days={organizerDays} selectedIndex={0} presentation="today" height={154} />
       {reminderNotice.data === 'denied' || reminderNotice.data === 'failed' ? (
@@ -235,6 +242,7 @@ const styles = StyleSheet.create({
     gap: spacing.lg,
   },
   titleCopy: { flex: 1, gap: spacing.xs },
+  headerActions: { flexDirection: 'row', gap: spacing.sm },
   list: { gap: spacing.lg },
   card: { gap: spacing.lg },
   cardTop: { flexDirection: 'row', alignItems: 'flex-start', gap: spacing.md },

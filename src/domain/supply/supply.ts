@@ -6,6 +6,26 @@ export function estimatedDaysLeft(
   return Math.floor(supplyCount / (scheduledDosesPerWeek / 7));
 }
 
+export type SupplyEstimate = {
+  daysLeft: number;
+  runsOutOn: Date;
+  confidence: 'estimated';
+};
+
+export function estimateSupply(
+  supplyCount: number | null,
+  scheduledDosesPerWeek: number,
+  today = new Date(),
+): SupplyEstimate | null {
+  const daysLeft = estimatedDaysLeft(supplyCount, scheduledDosesPerWeek);
+  if (daysLeft === null) return null;
+  return {
+    daysLeft,
+    runsOutOn: new Date(today.getFullYear(), today.getMonth(), today.getDate() + daysLeft),
+    confidence: 'estimated',
+  };
+}
+
 export function supplyAdjustment(
   previousStatus: 'notRecorded' | 'taken' | 'skipped',
   nextStatus: 'notRecorded' | 'taken' | 'skipped',
