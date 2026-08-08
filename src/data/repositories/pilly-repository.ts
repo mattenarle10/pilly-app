@@ -1,4 +1,4 @@
-import { and, asc, eq, inArray, isNull, sql } from 'drizzle-orm';
+import { and, asc, desc, eq, inArray, isNull, sql } from 'drizzle-orm';
 import { drizzle } from 'drizzle-orm/expo-sqlite';
 import type { SQLiteDatabase } from 'expo-sqlite';
 import * as Crypto from 'expo-crypto';
@@ -57,6 +57,15 @@ export type MedicationDetail = {
 };
 
 export type ReminderSchedule = CreatedMedication['schedules'][number];
+
+export type DoseHistoryEntry = {
+  id: string;
+  occurrenceId: string;
+  scheduledOn: string;
+  previousStatus: DoseStatus;
+  nextStatus: DoseStatus;
+  occurredAt: Date;
+};
 
 const settingValueSchema = z.string();
 
@@ -212,6 +221,31 @@ export class PillyRepository {
         minute: schedule.minute,
         weekdayMask: schedule.weekdayMask,
         reminderEnabled: schedule.reminderEnabled,
+      }));
+  }
+
+  async listDoseHistory(medicationId: string): Promise<DoseHistoryEntry[]> {
+    const scheduleIds = new Set(
+      this.db
+        .select({ id: schedules.id })
+        .from(schedules)
+        .where(eq(schedules.medicationId, medicationId))
+        .all()
+        .map(({ id }) => id),
+    );
+    return this.db
+      .select()
+      .from(doseEvents)
+      .orderBy(desc(doseEvents.occurredAt))
+      .all()
+      .filter((event) => scheduleIds.has(event.occurrenceId.split(':')[0] ?? ''))
+      .map((event) => ({
+        id: event.id,
+        occurrenceId: event.occurrenceId,
+        scheduledOn: event.occurrenceId.split(':')[1] ?? '',
+        previousStatus: event.previousStatus,
+        nextStatus: event.nextStatus,
+        occurredAt: new Date(event.occurredAt),
       }));
   }
 

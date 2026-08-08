@@ -31,6 +31,7 @@ export function TodayScreen() {
   const repository = useRepository();
   const queryClient = useQueryClient();
   const [correction, setCorrection] = useState<ScheduledDose | null>(null);
+  const [recentAction, setRecentAction] = useState<ScheduledDose | null>(null);
   const today = useMemo(() => new Date(), []);
   const dates = useMemo(() => weekStartingToday(today), [today]);
   const query = useQuery({
@@ -58,7 +59,10 @@ export function TodayScreen() {
       status: 'taken' | 'skipped' | 'notRecorded';
     }) =>
       status === 'notRecorded' ? repository.undoDose(dose) : repository.recordDose(dose, status),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['scheduled-doses'] }),
+    onSuccess: (_, variables) => {
+      setRecentAction(variables.status === 'notRecorded' ? null : variables.dose);
+      return queryClient.invalidateQueries({ queryKey: ['scheduled-doses'] });
+    },
     onSettled: () => queryClient.invalidateQueries({ queryKey: ['organizer-week'] }),
   });
   const organizerDays: OrganizerDay[] = dates.map((date, index) => {
@@ -132,6 +136,16 @@ export function TodayScreen() {
       ) : null}
       {mutation.isError ? (
         <PillyBanner kind="error" title="Change not saved" message="Try that action again." />
+      ) : null}
+      {recentAction ? (
+        <PillyBanner
+          kind="success"
+          title="Recorded"
+          message="You can undo this change."
+          actionLabel="Undo"
+          onAction={() => mutation.mutate({ dose: recentAction, status: 'notRecorded' })}
+          compact
+        />
       ) : null}
       {query.data?.length === 0 ? (
         <EmptyState

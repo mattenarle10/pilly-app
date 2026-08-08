@@ -144,6 +144,16 @@ export function MedicineDetailScreen({ medicationId }: Props) {
         />
       ) : null}
 
+      <PillyButton
+        label="Dose history"
+        icon="time-outline"
+        variant="secondary"
+        onPress={() =>
+          router.push({ pathname: '/medicine/[id]/history', params: { id: medication.id } })
+        }
+        fullWidth
+      />
+
       <View style={styles.section}>
         <PillyText role="headline">Schedule</PillyText>
         {schedules.map((schedule) => (
