@@ -2,13 +2,18 @@ import { useMemo, useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import { useQuery } from '@tanstack/react-query';
 
-import { PillyText, Screen, StatusLabel } from '@/design/components';
+import {
+  EmptyState,
+  PillyBanner,
+  PillyCard,
+  PillyText,
+  Screen,
+  StatusLabel,
+} from '@/design/components';
 import { WeeklyOrganizer, type OrganizerDay } from '@/design/illustrations';
-import { colors, spacing } from '@/design/tokens';
+import { colors, radii, spacing } from '@/design/tokens';
 import { formatTime, toLocalDate, weekStartingToday } from '@/domain/schedule';
 import { useRepository } from '@/providers';
-
-const labels = { notRecorded: 'Not yet', taken: 'Taken', skipped: 'Skipped' } as const;
 
 export function WeekScreen() {
   const repository = useRepository();
@@ -39,13 +44,17 @@ export function WeekScreen() {
   const selectedDoses = query.data?.[selectedIndex] ?? [];
   return (
     <Screen>
-      <PillyText role="large-title">This week</PillyText>
-      <PillyText muted>Choose a day to see what is expected.</PillyText>
+      <View style={styles.heading}>
+        <PillyText role="large-title">Week</PillyText>
+        <PillyText role="caption" muted>
+          Tap a day.
+        </PillyText>
+      </View>
       <WeeklyOrganizer
         days={organizerDays}
         selectedIndex={selectedIndex}
         presentation="week"
-        height={168}
+        height={154}
         onDayPress={setSelectedIndex}
       />
       <View accessibilityRole="tablist" style={styles.days}>
@@ -53,6 +62,11 @@ export function WeekScreen() {
           <Pressable
             key={toLocalDate(date)}
             accessibilityRole="tab"
+            accessibilityLabel={new Intl.DateTimeFormat(undefined, {
+              weekday: 'long',
+              month: 'long',
+              day: 'numeric',
+            }).format(date)}
             accessibilityState={{ selected: index === selectedIndex }}
             onPress={() => setSelectedIndex(index)}
             style={[styles.day, index === selectedIndex && styles.daySelected]}
@@ -71,20 +85,29 @@ export function WeekScreen() {
           day: 'numeric',
         }).format(selectedDate)}
       </PillyText>
-      {selectedDoses.length === 0 ? (
-        <View style={styles.empty}>
-          <PillyText role="headline">No doses scheduled.</PillyText>
-        </View>
+      {query.isError ? (
+        <PillyBanner
+          kind="error"
+          title="Couldn’t load this week"
+          message="Try again in a moment."
+          actionLabel="Try again"
+          onAction={() => void query.refetch()}
+        />
+      ) : null}
+      {!query.isLoading && selectedDoses.length === 0 ? (
+        <EmptyState icon="calendar-clear-outline" title="No doses scheduled" />
       ) : (
         <View style={styles.list}>
           {selectedDoses.map((dose) => (
-            <View key={dose.occurrenceId} style={styles.row}>
+            <PillyCard key={dose.occurrenceId} padding="medium" style={styles.row}>
               <View style={styles.copy}>
                 <PillyText role="headline">{dose.medication.name}</PillyText>
-                <PillyText muted>{formatTime(dose.schedule.hour, dose.schedule.minute)}</PillyText>
+                <PillyText role="caption" muted>
+                  {formatTime(dose.schedule.hour, dose.schedule.minute)}
+                </PillyText>
               </View>
-              <StatusLabel label={labels[dose.status]} />
-            </View>
+              <StatusLabel status={dose.status} />
+            </PillyCard>
           ))}
         </View>
       )}
@@ -93,6 +116,7 @@ export function WeekScreen() {
 }
 
 const styles = StyleSheet.create({
+  heading: { gap: spacing.xs },
   days: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -102,29 +126,13 @@ const styles = StyleSheet.create({
   day: {
     minWidth: 44,
     minHeight: 58,
-    borderRadius: 14,
+    borderRadius: radii.md,
     alignItems: 'center',
     justifyContent: 'center',
     gap: spacing.xs,
   },
   daySelected: { backgroundColor: colors.brandSoft },
   list: { gap: spacing.md, marginTop: spacing.lg },
-  row: {
-    minHeight: 76,
-    padding: spacing.lg,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.lg,
-    borderRadius: 18,
-    backgroundColor: colors.surface,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  copy: { flex: 1 },
-  empty: {
-    marginTop: spacing.lg,
-    padding: spacing.xl,
-    borderRadius: 18,
-    backgroundColor: colors.surface,
-  },
+  row: { minHeight: 72, flexDirection: 'row', alignItems: 'center', gap: spacing.lg },
+  copy: { flex: 1, gap: spacing.xs },
 });
