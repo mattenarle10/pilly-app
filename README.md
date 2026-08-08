@@ -9,10 +9,13 @@ The core tracker works without an account or network connection. Medication deta
 - Local onboarding with no sign-in
 - Guided medicine setup with Zod validation and a recoverable draft
 - Daily and selected-weekday schedules
+- Medicine detail, future-effective schedule edits, and reversible archive/restore
 - Today view with Taken, Skipped, and correction actions
+- Immediate undo and a local dose-change history
 - Seven-day view driven by the same schedule state
-- Local reminder opt-in with private notification copy
-- Manual supply count with an explicitly approximate estimate
+- Reconciled local reminders with private notification copy
+- Audited manual supply corrections with an explicitly approximate estimate
+- Local privacy and data controls
 - RevenueCat-ready Pilly Plus screen with a one-time $4.99 position
 
 Pilly Plus is reserved for themes, alternate icons, printable plans, and CSV export. Today, week, dose history, reminders, and supply estimates remain free.
@@ -49,6 +52,8 @@ bun run verify
 ```
 
 Pilly uses native modules, including SQLite, notifications, and RevenueCat. Use an Expo development build rather than Expo Go for full behavior.
+
+The SQLite schema is migrated on device. Schedule edits begin the following day and retain the older schedule rows so past dose identities and records are not rewritten.
 
 ## RevenueCat setup
 
