@@ -13,19 +13,24 @@ export function WelcomeScreen() {
   const router = useRouter();
   return (
     <Screen scroll={false} contentStyle={styles.content}>
-      <PillyText role="title" accessibilityRole="header">
+      <PillyText role="headline" accessibilityRole="header">
         pilly
       </PillyText>
       <View style={styles.center}>
         <WeeklyOrganizer days={days} presentation="welcome" height={230} />
         <View style={styles.copy}>
           <PillyText role="large-title" accessibilityRole="header">
-            Your medicines and what you have left.
+            What’s next. What’s left.
           </PillyText>
-          <PillyText muted>No account needed. Your information stays on this iPhone.</PillyText>
+          <PillyText muted>Private on this iPhone.</PillyText>
         </View>
       </View>
-      <PillyButton label="Continue" onPress={() => router.push('/(onboarding)/start-small')} />
+      <PillyButton
+        label="Get started"
+        icon="arrow-forward"
+        fullWidth
+        onPress={() => router.push('/(onboarding)/start-small')}
+      />
     </Screen>
   );
 }

@@ -32,17 +32,19 @@ export function StartSmallScreen() {
           <PillyText role="large-title" accessibilityRole="header">
             Start with one medicine
           </PillyText>
-          <PillyText muted>Add its name and schedule. You can add more later.</PillyText>
+          <PillyText muted>Name, days, and time. That’s it.</PillyText>
         </View>
       </View>
       <View style={styles.actions}>
         <PillyButton
-          label="Add a medicine"
+          label="Add medicine"
+          icon="add"
+          fullWidth
           disabled={complete.isPending}
           onPress={() => finish(true)}
         />
         <PillyButton
-          label="Not now"
+          label="Skip"
           variant="quiet"
           disabled={complete.isPending}
           onPress={() => finish(false)}
