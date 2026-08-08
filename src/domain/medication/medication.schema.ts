@@ -19,5 +19,12 @@ export const createMedicationSchema = z.object({
   schedules: z.array(scheduleSchema.omit({ id: true, medicationId: true })).min(1),
 });
 
+export const updateMedicationSchema = createMedicationSchema.pick({
+  name: true,
+  instructions: true,
+  schedules: true,
+});
+
 export type Medication = z.infer<typeof medicationSchema>;
 export type CreateMedicationInput = z.infer<typeof createMedicationSchema>;
+export type UpdateMedicationInput = z.infer<typeof updateMedicationSchema>;

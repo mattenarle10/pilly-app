@@ -15,8 +15,10 @@ import {
 import {
   createMedicationSchema,
   medicationSchema,
+  updateMedicationSchema,
   type CreateMedicationInput,
   type Medication,
+  type UpdateMedicationInput,
 } from '@/domain/medication';
 import {
   dateForSchedule,
@@ -53,6 +55,8 @@ export type MedicationDetail = {
   medication: Medication;
   schedules: Schedule[];
 };
+
+export type ReminderSchedule = CreatedMedication['schedules'][number];
 
 const settingValueSchema = z.string();
 
@@ -129,11 +133,86 @@ export class PillyRepository {
       .from(schedules)
       .where(eq(schedules.medicationId, id))
       .orderBy(asc(schedules.sortOrder))
-      .all();
+      .all()
+      .filter((schedule) => schedule.endsOn === null);
     return {
       medication: medicationSchema.parse(medication),
       schedules: medicationSchedules.map((schedule) => scheduleSchema.parse(schedule)),
     };
+  }
+
+  async updateMedication(
+    medicationId: string,
+    input: UpdateMedicationInput,
+  ): Promise<CreatedMedication> {
+    const validated = updateMedicationSchema.parse(input);
+    const medication = this.db
+      .select()
+      .from(medications)
+      .where(eq(medications.id, medicationId))
+      .get();
+    if (!medication) throw new Error('Medicine not found.');
+    const now = new Date();
+    const effectiveDate = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
+    const startsOn = toLocalDate(effectiveDate);
+    const endsOn = toLocalDate(now);
+    const createdAt = now.toISOString();
+    const createdSchedules = validated.schedules.map((schedule) => ({
+      ...schedule,
+      id: Crypto.randomUUID(),
+    }));
+
+    this.db.transaction((transaction) => {
+      transaction
+        .update(medications)
+        .set({
+          name: validated.name,
+          instructions: validated.instructions,
+          updatedAt: createdAt,
+        })
+        .where(eq(medications.id, medicationId))
+        .run();
+      transaction
+        .update(schedules)
+        .set({ endsOn })
+        .where(and(eq(schedules.medicationId, medicationId), isNull(schedules.endsOn)))
+        .run();
+      createdSchedules.forEach((schedule, index) => {
+        transaction
+          .insert(schedules)
+          .values({
+            id: schedule.id,
+            medicationId,
+            hour: schedule.hour,
+            minute: schedule.minute,
+            weekdayMask: schedule.weekdayMask,
+            sortOrder: index,
+            reminderEnabled: schedule.reminderEnabled,
+            startsOn,
+            endsOn: null,
+            createdAt,
+          })
+          .run();
+      });
+    });
+    return { medicationId, schedules: createdSchedules };
+  }
+
+  async listReminderSchedules(): Promise<ReminderSchedule[]> {
+    return this.db
+      .select({ schedule: schedules })
+      .from(schedules)
+      .innerJoin(medications, eq(schedules.medicationId, medications.id))
+      .where(and(isNull(medications.archivedAt), isNull(schedules.endsOn)))
+      .orderBy(asc(schedules.sortOrder))
+      .all()
+      .map(({ schedule }) => ({
+        id: schedule.id,
+        hour: schedule.hour,
+        minute: schedule.minute,
+        weekdayMask: schedule.weekdayMask,
+        reminderEnabled: schedule.reminderEnabled,
+      }));
   }
 
   async listScheduledDoses(date: Date): Promise<ScheduledDose[]> {

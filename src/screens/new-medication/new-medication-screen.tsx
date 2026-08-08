@@ -38,7 +38,7 @@ export function NewMedicationScreen() {
     networkMode: 'always',
     mutationFn: async (value: MedicationDraft) => {
       assertMedicationDraft(value);
-      const result = await repository.createMedication({
+      await repository.createMedication({
         name: value.name.trim(),
         instructions: value.instructions.trim(),
         supplyCount: supplyValue(value.supply),
@@ -54,7 +54,7 @@ export function NewMedicationScreen() {
       });
       let reminderStatus: 'notRequested' | 'denied' | 'scheduled' | 'failed' = 'notRequested';
       try {
-        reminderStatus = await scheduleLocalReminders(result.schedules);
+        reminderStatus = await scheduleLocalReminders(await repository.listReminderSchedules());
       } catch {
         reminderStatus = 'failed';
       }

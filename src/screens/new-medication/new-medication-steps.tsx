@@ -38,12 +38,14 @@ function StepHeading({ title, message }: { title: string; message: string }) {
 }
 
 export function NameStep({
+  autoFocus = true,
   name,
   instructions,
   error,
   onNameChange,
   onInstructionsChange,
 }: {
+  autoFocus?: boolean;
   name: string;
   instructions: string;
   error?: string;
@@ -56,7 +58,7 @@ export function NameStep({
       <PillyField
         label="Name"
         icon="medkit-outline"
-        autoFocus
+        autoFocus={autoFocus}
         value={name}
         onChangeText={onNameChange}
         placeholder="Printed name"

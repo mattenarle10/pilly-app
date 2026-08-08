@@ -16,6 +16,7 @@ import {
 } from '@/design/components';
 import { spacing } from '@/design/tokens';
 import { formatTime } from '@/domain/schedule';
+import { scheduleLocalReminders } from '@/platform/notifications';
 import { useRepository } from '@/providers';
 
 type Props = { medicationId: string };
@@ -60,7 +61,20 @@ export function MedicineDetailScreen({ medicationId }: Props) {
     },
   });
   const archiveMutation = useMutation({
-    mutationFn: (archived: boolean) => repository.setMedicationArchived(medicationId, archived),
+    mutationFn: async (archived: boolean) => {
+      await repository.setMedicationArchived(medicationId, archived);
+      try {
+        const reminderStatus = await scheduleLocalReminders(
+          await repository.listReminderSchedules(),
+        );
+        await repository.setSetting(
+          'reminderNotice',
+          reminderStatus === 'denied' ? 'denied' : 'none',
+        );
+      } catch {
+        await repository.setSetting('reminderNotice', 'failed');
+      }
+    },
     onSuccess: async () => {
       setConfirmArchive(false);
       await refresh();
@@ -116,6 +130,18 @@ export function MedicineDetailScreen({ medicationId }: Props) {
           <PillyText role="label">Instruction</PillyText>
           <PillyText>{medication.instructions}</PillyText>
         </PillyCard>
+      ) : null}
+
+      {!medication.archivedAt ? (
+        <PillyButton
+          label="Edit medicine"
+          icon="create-outline"
+          variant="secondary"
+          onPress={() =>
+            router.push({ pathname: '/medicine/[id]/edit', params: { id: medication.id } })
+          }
+          fullWidth
+        />
       ) : null}
 
       <View style={styles.section}>
