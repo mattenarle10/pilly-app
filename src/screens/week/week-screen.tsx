@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { Pressable, StyleSheet, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 import { useLocalSearchParams } from 'expo-router';
 import { useQuery } from '@tanstack/react-query';
 
@@ -10,8 +10,9 @@ import {
   PillyText,
   Screen,
   StatusLabel,
+  WeekStatusStrip,
 } from '@/design/components';
-import { colors, radii, spacing } from '@/design/tokens';
+import { spacing } from '@/design/tokens';
 import { formatTime, toLocalDate, weekStartingToday } from '@/domain/schedule';
 import { useRepository } from '@/providers';
 
@@ -30,35 +31,36 @@ export function WeekScreen() {
   });
   const selectedDate = dates[selectedIndex]!;
   const selectedDoses = query.data?.[selectedIndex] ?? [];
+  const organizerDays = dates.map((date, index) => {
+    const doses = query.data?.[index] ?? [];
+    const state =
+      doses.length === 0
+        ? 'empty'
+        : doses.every((dose) => dose.status === 'taken')
+          ? 'taken'
+          : doses.some((dose) => dose.status === 'skipped')
+            ? 'skipped'
+            : 'notRecorded';
+    return {
+      key: toLocalDate(date),
+      label: new Intl.DateTimeFormat(undefined, { weekday: 'short' }).format(date),
+      dateNumber: date.getDate(),
+      state,
+    } as const;
+  });
   return (
-    <Screen>
+    <Screen contentStyle={styles.screen}>
       <View style={styles.heading}>
         <PillyText role="large-title">Week</PillyText>
         <PillyText role="caption" muted>
-          Tap a day.
+          Choose a day.
         </PillyText>
       </View>
-      <View accessibilityRole="tablist" style={styles.days}>
-        {dates.map((date, index) => (
-          <Pressable
-            key={toLocalDate(date)}
-            accessibilityRole="tab"
-            accessibilityLabel={new Intl.DateTimeFormat(undefined, {
-              weekday: 'long',
-              month: 'long',
-              day: 'numeric',
-            }).format(date)}
-            accessibilityState={{ selected: index === selectedIndex }}
-            onPress={() => setSelectedIndex(index)}
-            style={[styles.day, index === selectedIndex && styles.daySelected]}
-          >
-            <PillyText role="caption" muted={index !== selectedIndex}>
-              {new Intl.DateTimeFormat(undefined, { weekday: 'narrow' }).format(date)}
-            </PillyText>
-            <PillyText role="headline">{date.getDate()}</PillyText>
-          </Pressable>
-        ))}
-      </View>
+      <WeekStatusStrip
+        days={organizerDays}
+        selectedIndex={selectedIndex}
+        onDayPress={setSelectedIndex}
+      />
       <PillyText role="title">
         {new Intl.DateTimeFormat(undefined, {
           weekday: 'long',
@@ -97,23 +99,9 @@ export function WeekScreen() {
 }
 
 const styles = StyleSheet.create({
+  screen: { gap: spacing.lg },
   heading: { gap: spacing.xs },
-  days: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    gap: spacing.xs,
-    marginBottom: spacing.xxl,
-  },
-  day: {
-    minWidth: 44,
-    minHeight: 58,
-    borderRadius: radii.md,
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: spacing.xs,
-  },
-  daySelected: { backgroundColor: colors.brandSoft },
-  list: { gap: spacing.md, marginTop: spacing.lg },
+  list: { gap: spacing.md },
   row: { minHeight: 72, flexDirection: 'row', alignItems: 'center', gap: spacing.lg },
   copy: { flex: 1, gap: spacing.xs },
 });
