@@ -1,17 +1,26 @@
-import { useMemo } from 'react';
-import { Pressable, StyleSheet, View } from 'react-native';
+import { useMemo, useState } from 'react';
+import { StyleSheet, View } from 'react-native';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { router } from 'expo-router';
 
-import { PillyButton, PillyText, Screen, StatusLabel } from '@/design/components';
+import type { ScheduledDose } from '@/data/repositories';
+import {
+  EmptyState,
+  PillyBanner,
+  PillyButton,
+  PillyCard,
+  PillyIconButton,
+  PillyModal,
+  PillyText,
+  Screen,
+  StatusLabel,
+} from '@/design/components';
 import { WeeklyOrganizer, type OrganizerDay } from '@/design/illustrations';
-import { colors, spacing } from '@/design/tokens';
+import { spacing } from '@/design/tokens';
 import { formatTime, toLocalDate, weekStartingToday } from '@/domain/schedule';
 import { estimatedDaysLeft } from '@/domain/supply';
 import { useRepository } from '@/providers';
-import type { ScheduledDose } from '@/data/repositories';
 
-const statusCopy = { notRecorded: 'Not yet', taken: 'Taken', skipped: 'Skipped' } as const;
 const countBits = (value: number) =>
   value
     .toString(2)
@@ -21,6 +30,7 @@ const countBits = (value: number) =>
 export function TodayScreen() {
   const repository = useRepository();
   const queryClient = useQueryClient();
+  const [correction, setCorrection] = useState<ScheduledDose | null>(null);
   const today = useMemo(() => new Date(), []);
   const dates = useMemo(() => weekStartingToday(today), [today]);
   const query = useQuery({
@@ -31,6 +41,11 @@ export function TodayScreen() {
   const weekQuery = useQuery({
     queryKey: ['organizer-week', toLocalDate(today)],
     queryFn: () => Promise.all(dates.map((date) => repository.listScheduledDoses(date))),
+    networkMode: 'always',
+  });
+  const reminderNotice = useQuery({
+    queryKey: ['settings', 'reminderNotice'],
+    queryFn: () => repository.getSetting('reminderNotice'),
     networkMode: 'always',
   });
   const mutation = useMutation({
@@ -62,13 +77,18 @@ export function TodayScreen() {
       state,
     };
   });
+  const correctDose = () => {
+    if (!correction) return;
+    mutation.mutate({ dose: correction, status: 'notRecorded' });
+    setCorrection(null);
+  };
 
   return (
     <Screen>
       <View style={styles.titleRow}>
-        <View>
+        <View style={styles.titleCopy}>
           <PillyText role="large-title">Today</PillyText>
-          <PillyText muted>
+          <PillyText role="caption" muted>
             {new Intl.DateTimeFormat(undefined, {
               weekday: 'long',
               month: 'long',
@@ -76,33 +96,51 @@ export function TodayScreen() {
             }).format(today)}
           </PillyText>
         </View>
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel="Add medicine"
+        <PillyIconButton
+          icon="add"
+          label="Add medicine"
+          tone="brand"
           onPress={() => router.push('/medicine/new')}
-          style={styles.add}
-        >
-          <PillyText role="title" style={styles.addText}>
-            +
-          </PillyText>
-        </Pressable>
+        />
       </View>
-      <WeeklyOrganizer days={organizerDays} selectedIndex={0} presentation="today" height={168} />
-      {query.isLoading ? (
-        <PillyText accessibilityLiveRegion="polite">Loading today…</PillyText>
+      <WeeklyOrganizer days={organizerDays} selectedIndex={0} presentation="today" height={154} />
+      {reminderNotice.data === 'denied' || reminderNotice.data === 'failed' ? (
+        <PillyBanner
+          kind="warning"
+          title="Reminder is off"
+          message={
+            reminderNotice.data === 'denied'
+              ? 'Allow notifications in iPhone Settings.'
+              : 'The medicine saved, but its reminder did not.'
+          }
+          actionLabel="Dismiss"
+          onAction={async () => {
+            await repository.setSetting('reminderNotice', 'none');
+            await reminderNotice.refetch();
+          }}
+        />
       ) : null}
+      {query.isLoading ? <PillyBanner message="Loading today…" /> : null}
       {query.isError ? (
-        <View style={styles.message}>
-          <PillyText role="headline">Today could not be loaded.</PillyText>
-          <PillyButton label="Try again" variant="secondary" onPress={() => void query.refetch()} />
-        </View>
+        <PillyBanner
+          kind="error"
+          title="Couldn’t load today"
+          message="Your data is still on this iPhone."
+          actionLabel="Try again"
+          onAction={() => void query.refetch()}
+        />
+      ) : null}
+      {mutation.isError ? (
+        <PillyBanner kind="error" title="Change not saved" message="Try that action again." />
       ) : null}
       {query.data?.length === 0 ? (
-        <View style={styles.message}>
-          <PillyText role="headline">Nothing is scheduled today.</PillyText>
-          <PillyText muted>Add a medicine to see its next dose here.</PillyText>
-          <PillyButton label="Add medicine" onPress={() => router.push('/medicine/new')} />
-        </View>
+        <EmptyState
+          icon="calendar-outline"
+          title="Nothing due today"
+          message="Add a medicine when you’re ready."
+          actionLabel="Add medicine"
+          onAction={() => router.push('/medicine/new')}
+        />
       ) : null}
       <View style={styles.list}>
         {query.data?.map((dose) => {
@@ -111,47 +149,66 @@ export function TodayScreen() {
             countBits(dose.schedule.weekdayMask),
           );
           return (
-            <View key={dose.occurrenceId} style={styles.card}>
+            <PillyCard key={dose.occurrenceId} style={styles.card}>
               <View style={styles.cardTop}>
                 <View style={styles.cardCopy}>
                   <PillyText role="headline">{dose.medication.name}</PillyText>
-                  <PillyText>
-                    {formatTime(dose.schedule.hour, dose.schedule.minute)}
-                    {dose.medication.instructions ? ` · ${dose.medication.instructions}` : ''}
-                  </PillyText>
+                  <PillyText>{formatTime(dose.schedule.hour, dose.schedule.minute)}</PillyText>
+                  {dose.medication.instructions ? (
+                    <PillyText role="caption" muted>
+                      {dose.medication.instructions}
+                    </PillyText>
+                  ) : null}
                 </View>
-                <StatusLabel label={statusCopy[dose.status]} />
+                <StatusLabel status={dose.status} />
               </View>
               {daysLeft !== null ? (
                 <PillyText role="caption" muted>
-                  Supply may last about {daysLeft} {daysLeft === 1 ? 'day' : 'days'}.
+                  About {daysLeft} {daysLeft === 1 ? 'day' : 'days'} left
                 </PillyText>
               ) : null}
               {dose.status === 'notRecorded' ? (
                 <View style={styles.actions}>
                   <PillyButton
                     label="Taken"
+                    icon="checkmark"
+                    size="medium"
+                    loading={mutation.isPending}
                     onPress={() => mutation.mutate({ dose, status: 'taken' })}
                     style={styles.action}
                   />
                   <PillyButton
-                    label="Skipped"
+                    label="Skip"
+                    icon="remove"
+                    size="medium"
                     variant="secondary"
+                    disabled={mutation.isPending}
                     onPress={() => mutation.mutate({ dose, status: 'skipped' })}
                     style={styles.action}
                   />
                 </View>
               ) : (
                 <PillyButton
-                  label="Correct this record"
+                  label="Change status"
+                  icon="create-outline"
+                  size="medium"
                   variant="secondary"
-                  onPress={() => mutation.mutate({ dose, status: 'notRecorded' })}
+                  onPress={() => setCorrection(dose)}
+                  fullWidth
                 />
               )}
-            </View>
+            </PillyCard>
           );
         })}
       </View>
+      <PillyModal
+        visible={correction !== null}
+        title="Change this record?"
+        message="It will return to Not yet. You can record it again."
+        confirmLabel="Change"
+        onConfirm={correctDose}
+        onClose={() => setCorrection(null)}
+      />
     </Screen>
   );
 }
@@ -163,31 +220,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: spacing.lg,
   },
-  add: {
-    width: 52,
-    height: 52,
-    borderRadius: 18,
-    backgroundColor: colors.brand,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  addText: { color: colors.surface },
-  message: {
-    gap: spacing.lg,
-    padding: spacing.xl,
-    borderRadius: 20,
-    backgroundColor: colors.surface,
-  },
+  titleCopy: { flex: 1, gap: spacing.xs },
   list: { gap: spacing.lg },
-  card: {
-    gap: spacing.lg,
-    padding: spacing.xl,
-    borderRadius: 22,
-    backgroundColor: colors.surface,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  cardTop: { flexDirection: 'row', alignItems: 'flex-start', gap: spacing.lg },
+  card: { gap: spacing.lg },
+  cardTop: { flexDirection: 'row', alignItems: 'flex-start', gap: spacing.md },
   cardCopy: { flex: 1, gap: spacing.xs },
   actions: { flexDirection: 'row', gap: spacing.md },
   action: { flex: 1 },
