@@ -1,4 +1,3 @@
-import Ionicons from '@expo/vector-icons/Ionicons';
 import { Pressable, StyleSheet, View } from 'react-native';
 import { router } from 'expo-router';
 import { useQuery } from '@tanstack/react-query';
@@ -10,6 +9,7 @@ import {
   PillyText,
   Screen,
 } from '@/design/components';
+import { PillyIcon, type PillyIconName } from '@/design/icons';
 import { colors, spacing } from '@/design/tokens';
 import { useRepository } from '@/providers';
 
@@ -24,7 +24,7 @@ export function SettingsScreen() {
   return (
     <Screen>
       <View style={styles.header}>
-        <PillyIconButton icon="chevron-back" label="Back" onPress={() => router.back()} />
+        <PillyIconButton icon="back" label="Back" onPress={() => router.back()} />
         <PillyText role="title" accessibilityRole="header">
           Settings
         </PillyText>
@@ -35,12 +35,12 @@ export function SettingsScreen() {
           ON THIS IPHONE
         </PillyText>
         <SettingRow
-          icon="phone-portrait-outline"
+          icon="phone"
           title="Saved on this device"
           message="No account. Works offline."
         />
         <SettingRow
-          icon="notifications-outline"
+          icon="reminder"
           title="Private reminders"
           message="Medicine names stay hidden."
           tone="peach"
@@ -55,7 +55,7 @@ export function SettingsScreen() {
           MANAGE
         </PillyText>
         <SettingRow
-          icon="archive-outline"
+          icon="archive"
           title="Archived medicines"
           message={
             archivedCount === 0
@@ -65,7 +65,7 @@ export function SettingsScreen() {
           onPress={() => router.push('/(tabs)/medicines')}
         />
         <SettingRow
-          icon="color-palette-outline"
+          icon="palette"
           title="Pilly Plus"
           message="Themes, print, and export."
           tone="lavender"
@@ -86,11 +86,7 @@ function SettingRow({
   tone,
   onPress,
 }: {
-  icon:
-    | 'phone-portrait-outline'
-    | 'notifications-outline'
-    | 'archive-outline'
-    | 'color-palette-outline';
+  icon: PillyIconName;
   title: string;
   message: string;
   tone?: 'brand' | 'peach' | 'lavender';
@@ -105,7 +101,7 @@ function SettingRow({
           {message}
         </PillyText>
       </View>
-      {onPress ? <Ionicons name="chevron-forward" size={20} color={colors.textSecondary} /> : null}
+      {onPress ? <PillyIcon name="next" size={20} color={colors.textSecondary} /> : null}
     </>
   );
   return onPress ? (

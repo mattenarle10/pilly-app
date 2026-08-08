@@ -26,7 +26,7 @@ export function DoseHistoryScreen({ medicationId }: Props) {
   return (
     <Screen>
       <View style={styles.header}>
-        <PillyIconButton icon="chevron-back" label="Back" onPress={() => router.back()} />
+        <PillyIconButton icon="back" label="Back" onPress={() => router.back()} />
         <View style={styles.headerCopy}>
           <PillyText role="title" accessibilityRole="header">
             Dose history
@@ -48,7 +48,7 @@ export function DoseHistoryScreen({ medicationId }: Props) {
       ) : null}
       {!query.isLoading && query.data?.length === 0 ? (
         <EmptyState
-          icon="time-outline"
+          icon="time"
           title="No recorded changes"
           message="Taken and Skipped changes will appear here."
         />

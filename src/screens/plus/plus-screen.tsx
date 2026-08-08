@@ -1,4 +1,3 @@
-import Ionicons from '@expo/vector-icons/Ionicons';
 import { useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { router } from 'expo-router';
@@ -14,6 +13,7 @@ import {
   PillyText,
   Screen,
 } from '@/design/components';
+import { PillyIcon, type PillyIconName } from '@/design/icons';
 import { colors, spacing } from '@/design/tokens';
 import { purchasePlus, refreshPlusEntitlement, restorePlus } from '@/platform/purchases';
 import { useRepository } from '@/providers';
@@ -65,7 +65,7 @@ export function PlusScreen() {
 
   return (
     <Screen>
-      <PillyIconButton icon="chevron-back" label="Back" onPress={() => router.back()} />
+      <PillyIconButton icon="back" label="Back" onPress={() => router.back()} />
       <View style={styles.title}>
         <PillyText role="large-title">Pilly Plus</PillyText>
         <PillyText muted>
@@ -73,13 +73,13 @@ export function PlusScreen() {
         </PillyText>
       </View>
       <View style={styles.features}>
-        <Feature icon="print-outline" title="Printable plan" />
-        <Feature icon="document-text-outline" title="CSV export" />
-        <Feature icon="color-palette-outline" title="Themes and icons" />
+        <Feature icon="print" title="Printable plan" />
+        <Feature icon="document" title="CSV export" />
+        <Feature icon="palette" title="Themes and icons" />
       </View>
       <PillyCard tone="peach" style={styles.promise}>
         <View style={styles.promiseTitle}>
-          <Ionicons name="heart-outline" size={21} color={colors.brand} />
+          <PillyIcon name="favorite" size={21} color={colors.brand} />
           <PillyText role="headline">Core stays free</PillyText>
         </View>
         <PillyText role="caption" muted>
@@ -90,7 +90,7 @@ export function PlusScreen() {
       {!entitlement.data ? (
         <PillyButton
           label="Buy once · $4.99"
-          icon="lock-open-outline"
+          icon="unlock"
           loading={busy}
           onPress={() => setShowBuy(true)}
           fullWidth
@@ -117,20 +117,14 @@ export function PlusScreen() {
   );
 }
 
-function Feature({
-  icon,
-  title,
-}: {
-  icon: 'print-outline' | 'document-text-outline' | 'color-palette-outline';
-  title: string;
-}) {
+function Feature({ icon, title }: { icon: PillyIconName; title: string }) {
   return (
     <PillyCard padding="medium" style={styles.feature}>
       <PillyIconTile icon={icon} tone="lavender" />
       <PillyText role="headline" style={styles.featureCopy}>
         {title}
       </PillyText>
-      <Ionicons name="checkmark" size={20} color={colors.success} />
+      <PillyIcon name="done" size={20} color={colors.success} />
     </PillyCard>
   );
 }

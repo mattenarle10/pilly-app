@@ -1,14 +1,13 @@
-import Ionicons from '@expo/vector-icons/Ionicons';
-import type { ComponentProps } from 'react';
 import { StyleSheet, View } from 'react-native';
 
 import { PillyButton } from './pilly-button';
 import { PillyCard } from './pilly-card';
 import { PillyText } from './pilly-text';
+import { PillyIcon, type PillyIconName } from '@/design/icons';
 import { colors, radii, spacing } from '@/design/tokens';
 
 type Props = {
-  icon: ComponentProps<typeof Ionicons>['name'];
+  icon: PillyIconName;
   title: string;
   message?: string;
   actionLabel?: string;
@@ -18,7 +17,7 @@ export function EmptyState({ icon, title, message, actionLabel, onAction }: Prop
   return (
     <PillyCard style={styles.card}>
       <View style={styles.icon}>
-        <Ionicons name={icon} size={26} color={colors.brand} />
+        <PillyIcon name={icon} size={26} color={colors.brand} />
       </View>
       <PillyText role="headline">{title}</PillyText>
       {message ? <PillyText muted>{message}</PillyText> : null}

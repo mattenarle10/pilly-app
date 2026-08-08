@@ -1,25 +1,28 @@
-import Ionicons from '@expo/vector-icons/Ionicons';
 import { StyleSheet, View } from 'react-native';
 
 import { PillyText } from './pilly-text';
+import { PillyIcon, type PillyIconName } from '@/design/icons';
 import { colors, radii, spacing } from '@/design/tokens';
 import type { DoseStatus } from '@/domain/dose';
 
 const states = {
   notRecorded: {
     label: 'Not yet',
-    icon: 'time-outline',
+    icon: 'pending',
     color: colors.textSecondary,
     background: colors.surfaceSubtle,
   },
-  taken: { label: 'Taken', icon: 'checkmark-circle', color: colors.success, background: '#e4f2e9' },
+  taken: { label: 'Taken', icon: 'taken', color: colors.success, background: '#e4f2e9' },
   skipped: {
     label: 'Skipped',
-    icon: 'remove-circle-outline',
+    icon: 'skipped',
     color: colors.warning,
     background: colors.warningSoft,
   },
-} as const;
+} as const satisfies Record<
+  DoseStatus,
+  { label: string; icon: PillyIconName; color: string; background: string }
+>;
 
 type Props = { status: DoseStatus; label?: never } | { status?: never; label: string };
 
@@ -33,7 +36,7 @@ export function StatusLabel(props: Props) {
       accessibilityLabel={`Status: ${state.label}`}
       style={[styles.container, { backgroundColor: state.background }]}
     >
-      <Ionicons name={state.icon} size={16} color={state.color} />
+      <PillyIcon name={state.icon} size={16} color={state.color} />
       <PillyText role="caption" style={{ color: state.color }}>
         {state.label}
       </PillyText>

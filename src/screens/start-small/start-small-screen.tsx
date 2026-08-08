@@ -2,6 +2,7 @@ import { StyleSheet, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { PillyButton, PillyIconTile, PillyText, Screen } from '@/design/components';
+import type { PillyIconName } from '@/design/icons';
 import { spacing } from '@/design/tokens';
 import { useRepository } from '@/providers';
 
@@ -22,9 +23,9 @@ export function StartSmallScreen() {
     <Screen scroll={false} contentStyle={styles.content}>
       <View style={styles.center}>
         <View style={styles.steps}>
-          <SetupItem icon="medkit-outline" label="Name" />
-          <SetupItem icon="calendar-outline" label="Days" />
-          <SetupItem icon="time-outline" label="Time" />
+          <SetupItem icon="medicine" label="Name" />
+          <SetupItem icon="calendar" label="Days" />
+          <SetupItem icon="time" label="Time" />
         </View>
         <View style={styles.copy}>
           <PillyText role="large-title" accessibilityRole="header">
@@ -51,13 +52,7 @@ export function StartSmallScreen() {
     </Screen>
   );
 }
-function SetupItem({
-  icon,
-  label,
-}: {
-  icon: 'medkit-outline' | 'calendar-outline' | 'time-outline';
-  label: string;
-}) {
+function SetupItem({ icon, label }: { icon: PillyIconName; label: string }) {
   return (
     <View style={styles.step}>
       <PillyIconTile icon={icon} />

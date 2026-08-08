@@ -1,5 +1,3 @@
-import Ionicons from '@expo/vector-icons/Ionicons';
-import type { ComponentProps } from 'react';
 import {
   StyleSheet,
   TextInput,
@@ -9,6 +7,7 @@ import {
 } from 'react-native';
 
 import { PillyText } from './pilly-text';
+import { PillyIcon, type PillyIconName } from '@/design/icons';
 import {
   colors,
   controlHeights,
@@ -22,7 +21,7 @@ type Props = TextInputProps & {
   label: string;
   hint?: string;
   error?: string;
-  icon?: ComponentProps<typeof Ionicons>['name'];
+  icon?: PillyIconName;
   optional?: boolean;
 };
 
@@ -53,7 +52,7 @@ export function PillyField({
       <View style={[styles.inputShell, multiline && styles.multiline, error && styles.inputError]}>
         {icon ? (
           <View style={styles.iconSlot}>
-            <Ionicons name={icon} size={20} color={colors.textSecondary} />
+            <PillyIcon name={icon} size={20} color={colors.textSecondary} />
           </View>
         ) : null}
         <TextInput

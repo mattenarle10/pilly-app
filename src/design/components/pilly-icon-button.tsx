@@ -1,11 +1,10 @@
-import Ionicons from '@expo/vector-icons/Ionicons';
-import type { ComponentProps } from 'react';
 import { Pressable, StyleSheet, type PressableProps } from 'react-native';
 
+import { PillyIcon, type PillyIconName } from '@/design/icons';
 import { colors, controlHeights, radii, shadows } from '@/design/tokens';
 
 type Props = Omit<PressableProps, 'children'> & {
-  icon: ComponentProps<typeof Ionicons>['name'];
+  icon: PillyIconName;
   label: string;
   tone?: 'plain' | 'brand';
 };
@@ -28,11 +27,14 @@ export function PillyIconButton({ icon, label, tone = 'plain', disabled, style, 
       ]}
       {...props}
     >
-      <Ionicons
-        name={icon}
-        size={23}
-        color={tone === 'brand' ? colors.surface : colors.textPrimary}
-      />
+      {(state) => (
+        <PillyIcon
+          name={icon}
+          size={23}
+          active={state.pressed}
+          color={tone === 'brand' ? colors.surface : colors.textPrimary}
+        />
+      )}
     </Pressable>
   );
 }

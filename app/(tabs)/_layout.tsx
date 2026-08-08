@@ -1,5 +1,6 @@
 import { NativeTabs } from 'expo-router/unstable-native-tabs';
 
+import { nativeTabIcons } from '@/design/icons';
 import { colors } from '@/design/tokens';
 
 export default function TabsLayout() {
@@ -17,23 +18,17 @@ export default function TabsLayout() {
       disableIndicator
     >
       <NativeTabs.Trigger name="today">
-        <NativeTabs.Trigger.Icon
-          sf={{ default: 'sun.max', selected: 'sun.max.fill' }}
-          md={{ default: 'today', selected: 'today' }}
-        />
+        <NativeTabs.Trigger.Icon sf={nativeTabIcons.today.sf} md={nativeTabIcons.today.md} />
         <NativeTabs.Trigger.Label>Today</NativeTabs.Trigger.Label>
       </NativeTabs.Trigger>
       <NativeTabs.Trigger name="week">
-        <NativeTabs.Trigger.Icon
-          sf={{ default: 'calendar', selected: 'calendar.circle.fill' }}
-          md={{ default: 'calendar_month', selected: 'calendar_month' }}
-        />
+        <NativeTabs.Trigger.Icon sf={nativeTabIcons.week.sf} md={nativeTabIcons.week.md} />
         <NativeTabs.Trigger.Label>Week</NativeTabs.Trigger.Label>
       </NativeTabs.Trigger>
       <NativeTabs.Trigger name="medicines">
         <NativeTabs.Trigger.Icon
-          sf={{ default: 'cross.case', selected: 'cross.case.fill' }}
-          md={{ default: 'medication', selected: 'medication' }}
+          sf={nativeTabIcons.medicines.sf}
+          md={nativeTabIcons.medicines.md}
         />
         <NativeTabs.Trigger.Label>Medicines</NativeTabs.Trigger.Label>
       </NativeTabs.Trigger>

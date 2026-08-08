@@ -103,7 +103,7 @@ export function TodayScreen() {
         </View>
         <View style={styles.headerActions}>
           <PillyIconButton
-            icon="settings-outline"
+            icon="settings"
             label="Settings"
             onPress={() => router.push('/settings')}
           />
@@ -157,7 +157,7 @@ export function TodayScreen() {
       ) : null}
       {query.data?.length === 0 ? (
         <EmptyState
-          icon="calendar-outline"
+          icon="calendar"
           title="Nothing due today"
           message="Add a medicine when you’re ready."
           actionLabel="Add medicine"
@@ -193,7 +193,7 @@ export function TodayScreen() {
                 <View style={styles.actions}>
                   <PillyButton
                     label="Taken"
-                    icon="checkmark"
+                    icon="done"
                     size="medium"
                     loading={mutation.isPending}
                     onPress={() => mutation.mutate({ dose, status: 'taken' })}
@@ -212,7 +212,7 @@ export function TodayScreen() {
               ) : (
                 <PillyButton
                   label="Change status"
-                  icon="create-outline"
+                  icon="edit"
                   size="medium"
                   variant="secondary"
                   onPress={() => setCorrection(dose)}

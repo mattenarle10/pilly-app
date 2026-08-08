@@ -1,8 +1,8 @@
-import Ionicons from '@expo/vector-icons/Ionicons';
 import { StyleSheet, View } from 'react-native';
 
 import { PillyButton } from './pilly-button';
 import { PillyText } from './pilly-text';
+import { PillyIcon, type PillyIconName } from '@/design/icons';
 import { colors, radii, spacing } from '@/design/tokens';
 
 type Kind = 'info' | 'warning' | 'error' | 'success';
@@ -15,11 +15,11 @@ type Props = {
   compact?: boolean;
 };
 const icons = {
-  info: 'information-circle-outline',
-  warning: 'alert-circle-outline',
-  error: 'close-circle-outline',
-  success: 'checkmark-circle-outline',
-} as const;
+  info: 'info',
+  warning: 'warning',
+  error: 'error',
+  success: 'success',
+} as const satisfies Record<Kind, PillyIconName>;
 
 export function PillyBanner({
   kind = 'info',
@@ -34,7 +34,7 @@ export function PillyBanner({
       accessibilityRole="alert"
       style={[styles.base, compact && styles.compact, backgrounds[kind]]}
     >
-      <Ionicons name={icons[kind]} size={22} color={foregrounds[kind]} />
+      <PillyIcon name={icons[kind]} size={22} color={foregrounds[kind]} />
       <View style={styles.copy}>
         {title ? <PillyText role="headline">{title}</PillyText> : null}
         <PillyText role="caption">{message}</PillyText>

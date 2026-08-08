@@ -27,7 +27,7 @@ export function WelcomeScreen() {
       </View>
       <PillyButton
         label="Get started"
-        icon="arrow-forward"
+        icon="next"
         fullWidth
         onPress={() => router.push('/(onboarding)/start-small')}
       />

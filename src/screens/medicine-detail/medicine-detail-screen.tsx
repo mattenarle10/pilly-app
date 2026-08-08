@@ -105,7 +105,7 @@ export function MedicineDetailScreen({ medicationId }: Props) {
   if (!query.data) {
     return (
       <Screen>
-        <EmptyState icon="medkit-outline" title="Medicine not found" />
+        <EmptyState icon="medicine" title="Medicine not found" />
       </Screen>
     );
   }
@@ -125,7 +125,7 @@ export function MedicineDetailScreen({ medicationId }: Props) {
   return (
     <Screen>
       <View style={styles.header}>
-        <PillyIconButton icon="chevron-back" label="Back" onPress={() => router.back()} />
+        <PillyIconButton icon="back" label="Back" onPress={() => router.back()} />
         <View style={styles.headerCopy}>
           <PillyText role="title" accessibilityRole="header">
             {medication.name}
@@ -146,7 +146,7 @@ export function MedicineDetailScreen({ medicationId }: Props) {
       {!medication.archivedAt ? (
         <PillyButton
           label="Edit medicine"
-          icon="create-outline"
+          icon="edit"
           variant="secondary"
           onPress={() =>
             router.push({ pathname: '/medicine/[id]/edit', params: { id: medication.id } })
@@ -157,7 +157,7 @@ export function MedicineDetailScreen({ medicationId }: Props) {
 
       <PillyButton
         label="Dose history"
-        icon="time-outline"
+        icon="time"
         variant="secondary"
         onPress={() =>
           router.push({ pathname: '/medicine/[id]/history', params: { id: medication.id } })
@@ -191,7 +191,7 @@ export function MedicineDetailScreen({ medicationId }: Props) {
         {supplyChanged ? (
           <PillyButton
             label="Save count"
-            icon="save-outline"
+            icon="save"
             loading={supplyMutation.isPending}
             onPress={() => supplyMutation.mutate()}
             fullWidth
@@ -228,7 +228,7 @@ export function MedicineDetailScreen({ medicationId }: Props) {
       ) : (
         <PillyButton
           label="Archive medicine"
-          icon="archive-outline"
+          icon="archive"
           variant="quiet"
           onPress={() => setConfirmArchive(true)}
           fullWidth

@@ -1,16 +1,13 @@
-import Ionicons from '@expo/vector-icons/Ionicons';
-import type { ComponentProps } from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, View, type PressableProps } from 'react-native';
 import { PillyText } from './pilly-text';
+import { PillyIcon, type PillyIconName } from '@/design/icons';
 import { colors, controlHeights, radii, shadows, spacing } from '@/design/tokens';
-
-type IconName = ComponentProps<typeof Ionicons>['name'];
 
 type PillyButtonProps = Omit<PressableProps, 'children'> & {
   label: string;
   variant?: 'primary' | 'secondary' | 'quiet' | 'danger';
   size?: 'compact' | 'medium' | 'large';
-  icon?: IconName;
+  icon?: PillyIconName;
   fullWidth?: boolean;
   loading?: boolean;
 };
@@ -41,35 +38,38 @@ export function PillyButton({
       ]}
       {...props}
     >
-      <View style={styles.content}>
-        {loading ? (
-          <ActivityIndicator color={variant === 'primary' ? colors.surface : colors.brand} />
-        ) : icon ? (
-          <Ionicons
-            name={icon}
-            size={18}
-            color={
+      {(state) => (
+        <View style={styles.content}>
+          {loading ? (
+            <ActivityIndicator color={variant === 'primary' ? colors.surface : colors.brand} />
+          ) : icon ? (
+            <PillyIcon
+              name={icon}
+              size={18}
+              active={state.pressed}
+              color={
+                variant === 'primary'
+                  ? colors.surface
+                  : variant === 'danger'
+                    ? colors.danger
+                    : colors.textPrimary
+              }
+            />
+          ) : null}
+          <PillyText
+            role="label"
+            style={
               variant === 'primary'
-                ? colors.surface
+                ? styles.primaryLabel
                 : variant === 'danger'
-                  ? colors.danger
-                  : colors.textPrimary
+                  ? styles.dangerLabel
+                  : undefined
             }
-          />
-        ) : null}
-        <PillyText
-          role="label"
-          style={
-            variant === 'primary'
-              ? styles.primaryLabel
-              : variant === 'danger'
-                ? styles.dangerLabel
-                : undefined
-          }
-        >
-          {label}
-        </PillyText>
-      </View>
+          >
+            {label}
+          </PillyText>
+        </View>
+      )}
     </Pressable>
   );
 }

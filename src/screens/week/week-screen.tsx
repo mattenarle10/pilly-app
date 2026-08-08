@@ -71,7 +71,7 @@ export function WeekScreen() {
         />
       ) : null}
       {!query.isLoading && selectedDoses.length === 0 ? (
-        <EmptyState icon="calendar-clear-outline" title="No doses scheduled" />
+        <EmptyState icon="calendarWeek" title="No doses scheduled" />
       ) : (
         <View style={styles.list}>
           {selectedDoses.map((dose) => (

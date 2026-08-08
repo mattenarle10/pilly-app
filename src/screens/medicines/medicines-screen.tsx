@@ -1,4 +1,3 @@
-import Ionicons from '@expo/vector-icons/Ionicons';
 import { Pressable, StyleSheet, View } from 'react-native';
 import { useQuery } from '@tanstack/react-query';
 import { router } from 'expo-router';
@@ -13,6 +12,7 @@ import {
   PillyText,
   Screen,
 } from '@/design/components';
+import { PillyIcon } from '@/design/icons';
 import { colors, spacing } from '@/design/tokens';
 import { useRepository } from '@/providers';
 
@@ -50,7 +50,7 @@ export function MedicinesScreen() {
       ) : null}
       {query.data?.length === 0 ? (
         <EmptyState
-          icon="medkit-outline"
+          icon="medicine"
           title="No medicines yet"
           message="Start with the label in front of you."
           actionLabel="Add medicine"
@@ -66,7 +66,7 @@ export function MedicinesScreen() {
             onPress={() => router.push({ pathname: '/medicine/[id]', params: { id: medicine.id } })}
           >
             <PillyCard padding="medium" style={styles.card}>
-              <PillyIconTile icon="medical-outline" tone="peach" />
+              <PillyIconTile icon="medicineDose" tone="peach" />
               <View style={styles.copy}>
                 <PillyText role="headline">{medicine.name}</PillyText>
                 {medicine.instructions ? (
@@ -82,14 +82,14 @@ export function MedicinesScreen() {
                       : `${medicine.supplyCount} doses left`}
                 </PillyText>
               </View>
-              <Ionicons name="chevron-forward" size={20} color={colors.textSecondary} />
+              <PillyIcon name="next" size={20} color={colors.textSecondary} />
             </PillyCard>
           </Pressable>
         ))}
       </View>
       <PillyCard tone="lavender" style={styles.plus}>
         <View style={styles.plusTitle}>
-          <Ionicons name="color-palette-outline" size={22} color={colors.brand} />
+          <PillyIcon name="palette" size={22} color={colors.brand} />
           <PillyText role="headline">Pilly Plus</PillyText>
         </View>
         <PillyText role="caption" muted>
@@ -97,7 +97,7 @@ export function MedicinesScreen() {
         </PillyText>
         <PillyButton
           label="View Plus"
-          icon="arrow-forward"
+          icon="next"
           size="medium"
           variant="secondary"
           onPress={() => router.push('/plus')}

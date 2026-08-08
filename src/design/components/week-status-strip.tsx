@@ -1,19 +1,19 @@
-import Ionicons from '@expo/vector-icons/Ionicons';
 import { StyleSheet, View } from 'react-native';
 
 import { PillyText } from './pilly-text';
+import { PillyIcon, type PillyIconName } from '@/design/icons';
 import { colors, radii, spacing } from '@/design/tokens';
 import type { OrganizerDayState } from '@/design/illustrations';
 
 type Day = { key: string; label: string; state: OrganizerDayState };
 
 const stateIcon = {
-  empty: 'ellipse-outline',
-  scheduled: 'ellipse-outline',
-  notRecorded: 'time-outline',
-  taken: 'checkmark',
+  empty: 'statusEmpty',
+  scheduled: 'statusEmpty',
+  notRecorded: 'pending',
+  taken: 'done',
   skipped: 'remove',
-} as const;
+} as const satisfies Record<OrganizerDayState, PillyIconName>;
 
 export function WeekStatusStrip({
   days,
@@ -43,7 +43,7 @@ export function WeekStatusStrip({
             <PillyText role="caption" muted={!selected}>
               {day.label.slice(0, 1)}
             </PillyText>
-            <Ionicons name={stateIcon[day.state]} size={16} color={color} />
+            <PillyIcon name={stateIcon[day.state]} size={16} color={color} />
           </View>
         );
       })}

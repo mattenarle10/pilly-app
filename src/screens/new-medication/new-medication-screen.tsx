@@ -116,7 +116,7 @@ export function NewMedicationScreen() {
           {(value) => (
             <PillyButton
               label="Add medicine"
-              icon="checkmark"
+              icon="done"
               loading={createMutation.isPending}
               onPress={() => submit(value)}
               fullWidth
@@ -126,7 +126,7 @@ export function NewMedicationScreen() {
       }
     >
       <View style={styles.header}>
-        <PillyIconButton icon="chevron-back" label="Back" onPress={() => setShowExit(true)} />
+        <PillyIconButton icon="back" label="Back" onPress={() => setShowExit(true)} />
         <PillyText role="title" accessibilityRole="header">
           Add medicine
         </PillyText>

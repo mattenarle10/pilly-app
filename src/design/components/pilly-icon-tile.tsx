@@ -1,18 +1,17 @@
-import Ionicons from '@expo/vector-icons/Ionicons';
-import type { ComponentProps } from 'react';
 import { StyleSheet, View } from 'react-native';
 
+import { PillyIcon, type PillyIconName } from '@/design/icons';
 import { colors, radii } from '@/design/tokens';
 
 type Props = {
-  icon: ComponentProps<typeof Ionicons>['name'];
+  icon: PillyIconName;
   tone?: 'brand' | 'peach' | 'lavender';
   size?: 'medium' | 'large';
 };
 export function PillyIconTile({ icon, tone = 'brand', size = 'medium' }: Props) {
   return (
     <View style={[styles.base, sizes[size], tones[tone]]}>
-      <Ionicons name={icon} size={size === 'large' ? 26 : 21} color={colors.brand} />
+      <PillyIcon name={icon} size={size === 'large' ? 26 : 21} color={colors.brand} />
     </View>
   );
 }

@@ -1,4 +1,3 @@
-import Ionicons from '@expo/vector-icons/Ionicons';
 import { Pressable, StyleSheet, View } from 'react-native';
 import DateTimePicker from '@react-native-community/datetimepicker';
 
@@ -12,6 +11,7 @@ import {
   PillyText,
   PillyToggle,
 } from '@/design/components';
+import { PillyIcon } from '@/design/icons';
 import { TimeOrbit } from '@/design/illustrations';
 import { colors, radii, spacing } from '@/design/tokens';
 import { parseTime } from './new-medication-form';
@@ -56,7 +56,7 @@ export function NameStep({
     <View style={styles.section}>
       <PillyField
         label="Name"
-        icon="medkit-outline"
+        icon="medicine"
         autoFocus={autoFocus}
         value={name}
         onChangeText={onNameChange}
@@ -66,7 +66,7 @@ export function NameStep({
       <PillyField
         label="Instruction"
         optional
-        icon="document-text-outline"
+        icon="document"
         value={instructions}
         onChangeText={onInstructionsChange}
         placeholder="One tablet"
@@ -105,8 +105,8 @@ export function DaysStep({
               <PillyText role="label" style={active ? styles.dayTextActive : undefined}>
                 {day.label}
               </PillyText>
-              <Ionicons
-                name={active ? 'checkmark' : 'ellipse-outline'}
+              <PillyIcon
+                name={active ? 'done' : 'statusEmpty'}
                 size={13}
                 color={active ? colors.surface : colors.textSecondary}
               />
@@ -193,7 +193,7 @@ export function DetailsStep({
       />
       {error ? <PillyBanner kind="error" message={error} compact /> : null}
       <PillyCard padding="medium" style={styles.switchRow}>
-        <PillyIconTile icon="notifications-outline" />
+        <PillyIconTile icon="reminder" />
         <View style={styles.switchCopy}>
           <PillyText role="headline">Reminder</PillyText>
           <PillyText role="caption" muted>

@@ -92,7 +92,7 @@ function EditMedicineForm({ detail }: { detail: MedicationDetail }) {
       footer={
         <PillyButton
           label="Save changes"
-          icon="checkmark"
+          icon="done"
           loading={saveMutation.isPending}
           onPress={() => void form.handleSubmit()}
           fullWidth
@@ -100,7 +100,7 @@ function EditMedicineForm({ detail }: { detail: MedicationDetail }) {
       }
     >
       <View style={styles.header}>
-        <PillyIconButton icon="chevron-back" label="Back" onPress={() => router.back()} />
+        <PillyIconButton icon="back" label="Back" onPress={() => router.back()} />
         <PillyText role="title" accessibilityRole="header">
           Edit medicine
         </PillyText>
@@ -170,7 +170,7 @@ export function EditMedicineScreen({ medicationId }: Props) {
   if (!query.data) {
     return (
       <Screen>
-        <EmptyState icon="medkit-outline" title="Medicine not found" />
+        <EmptyState icon="medicine" title="Medicine not found" />
       </Screen>
     );
   }
