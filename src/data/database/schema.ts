@@ -6,6 +6,8 @@ export const medications = sqliteTable('medications', {
   instructions: text('instructions').notNull(),
   supplyCount: real('supply_count'),
   createdAt: text('created_at').notNull(),
+  updatedAt: text('updated_at').notNull(),
+  archivedAt: text('archived_at'),
   timeZoneIdentifier: text('time_zone_identifier').notNull(),
 });
 
@@ -19,6 +21,9 @@ export const schedules = sqliteTable('schedules', {
   weekdayMask: integer('weekday_mask').notNull(),
   sortOrder: integer('sort_order').notNull(),
   reminderEnabled: integer('reminder_enabled', { mode: 'boolean' }).notNull(),
+  startsOn: text('starts_on').notNull(),
+  endsOn: text('ends_on'),
+  createdAt: text('created_at').notNull(),
 });
 
 export const doseRecords = sqliteTable('dose_records', {
@@ -45,9 +50,10 @@ export const supplyEvents = sqliteTable('supply_events', {
   medicationId: text('medication_id')
     .notNull()
     .references(() => medications.id, { onDelete: 'cascade' }),
-  doseOccurrenceId: text('dose_occurrence_id').notNull(),
-  delta: real('delta').notNull(),
-  reason: text('reason', { enum: ['doseRecorded', 'doseCorrected'] }).notNull(),
+  doseOccurrenceId: text('dose_occurrence_id'),
+  delta: real('delta'),
+  resultingCount: real('resulting_count'),
+  reason: text('reason', { enum: ['doseRecorded', 'doseCorrected', 'manualCount'] }).notNull(),
   occurredAt: text('occurred_at').notNull(),
 });
 

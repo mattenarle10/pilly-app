@@ -1,6 +1,6 @@
 import type { SQLiteDatabase } from 'expo-sqlite';
 
-const databaseVersion = 2;
+const databaseVersion = 3;
 
 export async function migrateDatabase(database: SQLiteDatabase): Promise<void> {
   await database.execAsync('PRAGMA journal_mode = WAL; PRAGMA foreign_keys = ON;');
@@ -62,6 +62,52 @@ export async function migrateDatabase(database: SQLiteDatabase): Promise<void> {
         occurred_at TEXT NOT NULL
       );
       CREATE INDEX IF NOT EXISTS supply_events_medication_id_idx ON supply_events(medication_id);
+    `);
+  }
+
+  if (currentVersion < 3) {
+    await database.execAsync(`
+      ALTER TABLE medications ADD COLUMN updated_at TEXT;
+      ALTER TABLE medications ADD COLUMN archived_at TEXT;
+      UPDATE medications SET updated_at = created_at WHERE updated_at IS NULL;
+
+      ALTER TABLE schedules ADD COLUMN starts_on TEXT;
+      ALTER TABLE schedules ADD COLUMN ends_on TEXT;
+      ALTER TABLE schedules ADD COLUMN created_at TEXT;
+      UPDATE schedules
+      SET starts_on = substr(
+            (SELECT created_at FROM medications WHERE medications.id = schedules.medication_id),
+            1,
+            10
+          ),
+          created_at = (
+            SELECT created_at FROM medications WHERE medications.id = schedules.medication_id
+          )
+      WHERE starts_on IS NULL OR created_at IS NULL;
+
+      CREATE TABLE supply_events_v3 (
+        id TEXT PRIMARY KEY NOT NULL,
+        medication_id TEXT NOT NULL REFERENCES medications(id) ON DELETE CASCADE,
+        dose_occurrence_id TEXT,
+        delta REAL,
+        resulting_count REAL,
+        reason TEXT NOT NULL CHECK(reason IN ('doseRecorded', 'doseCorrected', 'manualCount')),
+        occurred_at TEXT NOT NULL
+      );
+      INSERT INTO supply_events_v3 (
+        id,
+        medication_id,
+        dose_occurrence_id,
+        delta,
+        resulting_count,
+        reason,
+        occurred_at
+      )
+      SELECT id, medication_id, dose_occurrence_id, delta, NULL, reason, occurred_at
+      FROM supply_events;
+      DROP TABLE supply_events;
+      ALTER TABLE supply_events_v3 RENAME TO supply_events;
+      CREATE INDEX supply_events_medication_id_idx ON supply_events(medication_id);
     `);
   }
   await database.execAsync(`PRAGMA user_version = ${databaseVersion}`);

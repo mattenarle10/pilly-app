@@ -7,6 +7,8 @@ export const medicationSchema = z.object({
   instructions: z.string().trim().max(500),
   supplyCount: z.number().nonnegative().nullable(),
   createdAt: z.iso.datetime(),
+  updatedAt: z.iso.datetime(),
+  archivedAt: z.iso.datetime().nullable(),
   timeZoneIdentifier: z.string().min(1),
 });
 

@@ -1,5 +1,5 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
-import { StyleSheet, View } from 'react-native';
+import { Pressable, StyleSheet, View } from 'react-native';
 import { useQuery } from '@tanstack/react-query';
 import { router } from 'expo-router';
 
@@ -20,7 +20,7 @@ export function MedicinesScreen() {
   const repository = useRepository();
   const query = useQuery({
     queryKey: ['medications'],
-    queryFn: () => repository.listMedications(),
+    queryFn: () => repository.listMedications({ includeArchived: true }),
     networkMode: 'always',
   });
   return (
@@ -59,23 +59,32 @@ export function MedicinesScreen() {
       ) : null}
       <View style={styles.list}>
         {query.data?.map((medicine) => (
-          <PillyCard key={medicine.id} padding="medium" style={styles.card}>
-            <PillyIconTile icon="medical-outline" tone="peach" />
-            <View style={styles.copy}>
-              <PillyText role="headline">{medicine.name}</PillyText>
-              {medicine.instructions ? (
+          <Pressable
+            key={medicine.id}
+            accessibilityRole="button"
+            accessibilityLabel={`Open ${medicine.name}`}
+            onPress={() => router.push({ pathname: '/medicine/[id]', params: { id: medicine.id } })}
+          >
+            <PillyCard padding="medium" style={styles.card}>
+              <PillyIconTile icon="medical-outline" tone="peach" />
+              <View style={styles.copy}>
+                <PillyText role="headline">{medicine.name}</PillyText>
+                {medicine.instructions ? (
+                  <PillyText role="caption" muted>
+                    {medicine.instructions}
+                  </PillyText>
+                ) : null}
                 <PillyText role="caption" muted>
-                  {medicine.instructions}
+                  {medicine.archivedAt
+                    ? 'Archived'
+                    : medicine.supplyCount === null
+                      ? 'Supply not tracked'
+                      : `${medicine.supplyCount} doses left`}
                 </PillyText>
-              ) : null}
-              {medicine.supplyCount !== null ? (
-                <PillyText role="caption" muted>
-                  {medicine.supplyCount} doses left
-                </PillyText>
-              ) : null}
-            </View>
-            <Ionicons name="chevron-forward" size={20} color={colors.textSecondary} />
-          </PillyCard>
+              </View>
+              <Ionicons name="chevron-forward" size={20} color={colors.textSecondary} />
+            </PillyCard>
+          </Pressable>
         ))}
       </View>
       <PillyCard tone="lavender" style={styles.plus}>

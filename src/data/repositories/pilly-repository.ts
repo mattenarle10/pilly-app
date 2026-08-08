@@ -1,4 +1,4 @@
-import { and, asc, eq, inArray, sql } from 'drizzle-orm';
+import { and, asc, eq, inArray, isNull, sql } from 'drizzle-orm';
 import { drizzle } from 'drizzle-orm/expo-sqlite';
 import type { SQLiteDatabase } from 'expo-sqlite';
 import * as Crypto from 'expo-crypto';
@@ -23,6 +23,7 @@ import {
   isScheduledOn,
   occurrenceId,
   scheduleSchema,
+  toLocalDate,
   type Schedule,
 } from '@/domain/schedule';
 import type { DoseStatus } from '@/domain/dose';
@@ -48,6 +49,11 @@ export type CreatedMedication = {
   }[];
 };
 
+export type MedicationDetail = {
+  medication: Medication;
+  schedules: Schedule[];
+};
+
 const settingValueSchema = z.string();
 
 export class PillyRepository {
@@ -61,6 +67,7 @@ export class PillyRepository {
     const validated = createMedicationSchema.parse(input);
     const medicationId = Crypto.randomUUID();
     const now = new Date().toISOString();
+    const startsOn = toLocalDate(new Date());
     const timeZoneIdentifier = Intl.DateTimeFormat().resolvedOptions().timeZone || 'local';
 
     const createdSchedules = validated.schedules.map((schedule) => ({
@@ -76,6 +83,8 @@ export class PillyRepository {
           instructions: validated.instructions,
           supplyCount: validated.supplyCount,
           createdAt: now,
+          updatedAt: now,
+          archivedAt: null,
           timeZoneIdentifier,
         })
         .run();
@@ -90,6 +99,9 @@ export class PillyRepository {
             weekdayMask: schedule.weekdayMask,
             sortOrder: index,
             reminderEnabled: schedule.reminderEnabled,
+            startsOn,
+            endsOn: null,
+            createdAt: now,
           })
           .run();
       });
@@ -97,13 +109,31 @@ export class PillyRepository {
     return { medicationId, schedules: createdSchedules };
   }
 
-  async listMedications(): Promise<Medication[]> {
-    return this.db
+  async listMedications(options: { includeArchived?: boolean } = {}): Promise<Medication[]> {
+    const rows = options.includeArchived
+      ? this.db.select().from(medications).orderBy(asc(medications.createdAt)).all()
+      : this.db
+          .select()
+          .from(medications)
+          .where(isNull(medications.archivedAt))
+          .orderBy(asc(medications.createdAt))
+          .all();
+    return rows.map((row) => medicationSchema.parse(row));
+  }
+
+  async getMedication(id: string): Promise<MedicationDetail | null> {
+    const medication = this.db.select().from(medications).where(eq(medications.id, id)).get();
+    if (!medication) return null;
+    const medicationSchedules = this.db
       .select()
-      .from(medications)
-      .orderBy(asc(medications.createdAt))
-      .all()
-      .map((row) => medicationSchema.parse(row));
+      .from(schedules)
+      .where(eq(schedules.medicationId, id))
+      .orderBy(asc(schedules.sortOrder))
+      .all();
+    return {
+      medication: medicationSchema.parse(medication),
+      schedules: medicationSchedules.map((schedule) => scheduleSchema.parse(schedule)),
+    };
   }
 
   async listScheduledDoses(date: Date): Promise<ScheduledDose[]> {
@@ -111,10 +141,15 @@ export class PillyRepository {
       .select({ medication: medications, schedule: schedules })
       .from(schedules)
       .innerJoin(medications, eq(schedules.medicationId, medications.id))
+      .where(isNull(medications.archivedAt))
       .orderBy(asc(schedules.hour), asc(schedules.minute), asc(schedules.sortOrder))
       .all();
-    const active = joined.filter(({ schedule }) =>
-      isScheduledOn(scheduleSchema.parse(schedule), date),
+    const localDate = toLocalDate(date);
+    const active = joined.filter(
+      ({ schedule }) =>
+        schedule.startsOn <= localDate &&
+        (schedule.endsOn === null || schedule.endsOn >= localDate) &&
+        isScheduledOn(scheduleSchema.parse(schedule), date),
     );
     const ids = active.map(({ schedule }) => occurrenceId(schedule.id, date));
     const records =
@@ -248,6 +283,49 @@ export class PillyRepository {
           .run();
       }
     });
+  }
+
+  async setSupplyCount(medicationId: string, count: number | null): Promise<void> {
+    if (count !== null && (!Number.isFinite(count) || count < 0)) {
+      throw new Error('Supply count must be zero or greater.');
+    }
+    const medication = this.db
+      .select()
+      .from(medications)
+      .where(eq(medications.id, medicationId))
+      .get();
+    if (!medication) throw new Error('Medicine not found.');
+    const now = new Date().toISOString();
+    const delta =
+      medication.supplyCount === null || count === null ? null : count - medication.supplyCount;
+    this.db.transaction((transaction) => {
+      transaction
+        .update(medications)
+        .set({ supplyCount: count, updatedAt: now })
+        .where(eq(medications.id, medicationId))
+        .run();
+      transaction
+        .insert(supplyEvents)
+        .values({
+          id: Crypto.randomUUID(),
+          medicationId,
+          doseOccurrenceId: null,
+          delta,
+          resultingCount: count,
+          reason: 'manualCount',
+          occurredAt: now,
+        })
+        .run();
+    });
+  }
+
+  async setMedicationArchived(medicationId: string, archived: boolean): Promise<void> {
+    const now = new Date().toISOString();
+    this.db
+      .update(medications)
+      .set({ archivedAt: archived ? now : null, updatedAt: now })
+      .where(eq(medications.id, medicationId))
+      .run();
   }
 
   async getSetting(key: string): Promise<string | null> {
