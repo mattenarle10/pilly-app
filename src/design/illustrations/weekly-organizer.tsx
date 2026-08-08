@@ -99,7 +99,7 @@ export function WeeklyOrganizer({
     <View
       accessibilityElementsHidden
       importantForAccessibility="no-hide-descendants"
-      style={{ width: '100%', height }}
+      style={{ width: '100%', maxWidth: 560, height, alignSelf: 'center' }}
     >
       <Svg width="100%" height="100%" viewBox="0 110 512 280">
         <G stroke={colors.textPrimary} strokeLinecap="round" strokeLinejoin="round">
