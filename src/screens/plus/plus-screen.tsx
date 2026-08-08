@@ -1,9 +1,19 @@
+import Ionicons from '@expo/vector-icons/Ionicons';
 import { useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { router } from 'expo-router';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 
-import { PillyButton, PillyText, Screen } from '@/design/components';
+import {
+  PillyBanner,
+  PillyButton,
+  PillyCard,
+  PillyIconButton,
+  PillyIconTile,
+  PillyModal,
+  PillyText,
+  Screen,
+} from '@/design/components';
 import { WeeklyOrganizer } from '@/design/illustrations';
 import { colors, spacing } from '@/design/tokens';
 import { purchasePlus, refreshPlusEntitlement, restorePlus } from '@/platform/purchases';
@@ -14,11 +24,14 @@ const previewDays = Array.from({ length: 7 }, (_, index) => ({
   label: '',
   state: index < 4 ? ('taken' as const) : ('scheduled' as const),
 }));
+type Notice = { kind: 'error' | 'success'; message: string };
 
 export function PlusScreen() {
   const repository = useRepository();
   const queryClient = useQueryClient();
-  const [message, setMessage] = useState<string | null>(null);
+  const [notice, setNotice] = useState<Notice | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [showBuy, setShowBuy] = useState(false);
   const entitlement = useQuery({
     queryKey: ['entitlement', 'plus'],
     networkMode: 'always',
@@ -34,93 +47,106 @@ export function PlusScreen() {
     },
   });
   const run = async (action: () => Promise<boolean>, success: string) => {
-    setMessage(null);
+    setBusy(true);
+    setNotice(null);
     try {
       const active = await action();
-      if (!active) {
-        throw new Error(
-          'The purchase completed, but Pilly Plus is not active yet. Try Restore purchase.',
-        );
-      }
+      if (!active) throw new Error('Plus is not active yet. Try Restore.');
       await repository.setSetting('plusEntitled', 'true');
       await queryClient.invalidateQueries({ queryKey: ['entitlement', 'plus'] });
-      setMessage(success);
+      setNotice({ kind: 'success', message: success });
     } catch (cause) {
-      setMessage(
-        cause instanceof Error ? cause.message : 'The App Store could not complete that request.',
-      );
+      setNotice({
+        kind: 'error',
+        message: cause instanceof Error ? cause.message : 'The App Store could not finish.',
+      });
+    } finally {
+      setBusy(false);
     }
   };
+  const buy = () => {
+    setShowBuy(false);
+    void run(purchasePlus, 'Pilly Plus is active.');
+  };
+
   return (
     <Screen>
-      <PillyButton label="Back" variant="quiet" onPress={() => router.back()} />
-      <WeeklyOrganizer days={previewDays} presentation="supply" height={150} />
+      <PillyIconButton icon="chevron-back" label="Back" onPress={() => router.back()} />
+      <WeeklyOrganizer days={previewDays} presentation="supply" height={138} />
       <View style={styles.title}>
         <PillyText role="large-title">Pilly Plus</PillyText>
         <PillyText muted>
-          {entitlement.data
-            ? 'Active on this iPhone.'
-            : 'A one-time purchase for the parts that make Pilly easier to share and personalize.'}
+          {entitlement.data ? 'Active on this iPhone.' : 'One purchase. No subscription.'}
         </PillyText>
       </View>
       <View style={styles.features}>
-        <Feature
-          title="Printable medicine plan"
-          body="Make a clear paper copy for the fridge, a bag, or a family conversation."
-        />
-        <Feature title="CSV export" body="Keep a portable copy of medicine and dose history." />
-        <Feature title="More themes and icons" body="Choose a look that is easier to recognize." />
+        <Feature icon="print-outline" title="Printable plan" />
+        <Feature icon="document-text-outline" title="CSV export" />
+        <Feature icon="color-palette-outline" title="Themes and icons" />
       </View>
-      <View style={styles.promise}>
-        <PillyText role="headline">The core stays free</PillyText>
-        <PillyText muted>
-          Today, week, dose history, reminders, and supply estimates do not require Plus.
+      <PillyCard tone="peach" style={styles.promise}>
+        <View style={styles.promiseTitle}>
+          <Ionicons name="heart-outline" size={21} color={colors.brand} />
+          <PillyText role="headline">Core stays free</PillyText>
+        </View>
+        <PillyText role="caption" muted>
+          Tracking, reminders, and supply.
         </PillyText>
-      </View>
-      {message ? (
-        <PillyText accessibilityLiveRegion="polite" style={styles.message}>
-          {message}
-        </PillyText>
-      ) : null}
+      </PillyCard>
+      {notice ? <PillyBanner kind={notice.kind} message={notice.message} /> : null}
       {!entitlement.data ? (
         <PillyButton
           label="Buy once · $4.99"
-          onPress={() => void run(purchasePlus, 'Pilly Plus is active.')}
+          icon="lock-open-outline"
+          loading={busy}
+          onPress={() => setShowBuy(true)}
+          fullWidth
         />
       ) : null}
       <PillyButton
-        label="Restore purchase"
+        label="Restore"
+        icon="refresh"
+        size="medium"
         variant="quiet"
-        onPress={() => void run(restorePlus, 'Your purchases were restored.')}
+        disabled={busy}
+        onPress={() => void run(restorePlus, 'Purchase restored.')}
+        fullWidth
+      />
+      <PillyModal
+        visible={showBuy}
+        title="Unlock Pilly Plus?"
+        message="One payment of $4.99. The App Store will confirm it."
+        confirmLabel="Continue"
+        onConfirm={buy}
+        onClose={() => setShowBuy(false)}
       />
     </Screen>
   );
 }
 
-function Feature({ title, body }: { title: string; body: string }) {
+function Feature({
+  icon,
+  title,
+}: {
+  icon: 'print-outline' | 'document-text-outline' | 'color-palette-outline';
+  title: string;
+}) {
   return (
-    <View style={styles.feature}>
-      <View style={styles.featureDot} />
-      <View style={styles.featureCopy}>
-        <PillyText role="headline">{title}</PillyText>
-        <PillyText muted>{body}</PillyText>
-      </View>
-    </View>
+    <PillyCard padding="medium" style={styles.feature}>
+      <PillyIconTile icon={icon} tone="lavender" />
+      <PillyText role="headline" style={styles.featureCopy}>
+        {title}
+      </PillyText>
+      <Ionicons name="checkmark" size={20} color={colors.success} />
+    </PillyCard>
   );
 }
 
 const styles = StyleSheet.create({
-  title: { gap: spacing.sm, marginBottom: spacing.xxl },
-  features: { gap: spacing.xl },
-  feature: { flexDirection: 'row', gap: spacing.lg },
-  featureDot: { width: 28, height: 28, borderRadius: 10, backgroundColor: colors.brandSoft },
-  featureCopy: { flex: 1, gap: spacing.xs },
-  promise: {
-    gap: spacing.sm,
-    marginVertical: spacing.xxl,
-    padding: spacing.lg,
-    borderRadius: 18,
-    backgroundColor: colors.peachSoft,
-  },
-  message: { marginBottom: spacing.lg, color: colors.warning },
+  title: { gap: spacing.sm, marginBottom: spacing.xl },
+  features: { gap: spacing.md },
+  feature: { minHeight: 68, flexDirection: 'row', alignItems: 'center', gap: spacing.md },
+  featureCopy: { flex: 1 },
+  promise: { gap: spacing.sm, marginVertical: spacing.xxl },
+  promiseTitle: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
 });
