@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
+import { useLocalSearchParams } from 'expo-router';
 import { useQuery } from '@tanstack/react-query';
 
 import {
@@ -16,8 +17,12 @@ import { useRepository } from '@/providers';
 
 export function WeekScreen() {
   const repository = useRepository();
+  const { day } = useLocalSearchParams<{ day?: string }>();
   const dates = useMemo(() => weekStartingToday(), []);
-  const [selectedIndex, setSelectedIndex] = useState(0);
+  const requestedDay = Number(day);
+  const initialDay =
+    Number.isInteger(requestedDay) && requestedDay >= 0 && requestedDay <= 6 ? requestedDay : 0;
+  const [selectedIndex, setSelectedIndex] = useState(initialDay);
   const query = useQuery({
     queryKey: ['week', toLocalDate(dates[0]!)],
     queryFn: () => Promise.all(dates.map((date) => repository.listScheduledDoses(date))),

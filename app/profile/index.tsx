@@ -1,5 +1,5 @@
 import { ProfileScreen } from '@/screens/settings';
 
-export default function SettingsRoute() {
+export default function ProfileRoute() {
   return <ProfileScreen />;
 }

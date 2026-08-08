@@ -1,9 +1,12 @@
+import { useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import { router } from 'expo-router';
-import { useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
 import {
   PillyBanner,
+  PillyButton,
+  PillyField,
   PillyIconButton,
   PillyIconTile,
   PillyText,
@@ -13,8 +16,24 @@ import { PillyIcon, type PillyIconName } from '@/design/icons';
 import { colors, spacing } from '@/design/tokens';
 import { useRepository } from '@/providers';
 
-export function SettingsScreen() {
+export function ProfileScreen() {
   const repository = useRepository();
+  const queryClient = useQueryClient();
+  const [nameDraft, setNameDraft] = useState<string | null>(null);
+  const profileName = useQuery({
+    queryKey: ['settings', 'profileName'],
+    queryFn: () => repository.getSetting('profileName'),
+    networkMode: 'always',
+  });
+  const name = nameDraft ?? profileName.data ?? '';
+  const saveName = useMutation({
+    mutationFn: (value: string) => repository.setSetting('profileName', value.trim()),
+    networkMode: 'always',
+    onSuccess: (_, value) => {
+      queryClient.setQueryData(['settings', 'profileName'], value.trim());
+      setNameDraft(null);
+    },
+  });
   const medicines = useQuery({
     queryKey: ['medications', 'all'],
     queryFn: () => repository.listMedications({ includeArchived: true }),
@@ -22,21 +41,54 @@ export function SettingsScreen() {
   });
   const archivedCount = medicines.data?.filter((medicine) => medicine.archivedAt).length ?? 0;
   return (
-    <Screen>
+    <Screen contentStyle={styles.screen}>
       <View style={styles.header}>
         <PillyIconButton icon="back" label="Back" onPress={() => router.back()} />
         <PillyText role="title" accessibilityRole="header">
-          Settings
+          Profile
         </PillyText>
       </View>
 
+      <View style={styles.profileCard}>
+        <View style={styles.profileMark}>
+          <PillyIcon name="profile" size={34} color={colors.brand} />
+        </View>
+        <View style={styles.copy}>
+          <PillyText role="headline">Your Pilly</PillyText>
+          <PillyText role="caption" muted>
+            Personal to this iPhone.
+          </PillyText>
+        </View>
+      </View>
+      <PillyField
+        label="Name"
+        optional
+        icon="profile"
+        value={name}
+        onChangeText={setNameDraft}
+        placeholder="What should Pilly call you?"
+        maxLength={40}
+        hint="Shown in your greeting."
+      />
+      <PillyButton
+        label="Save name"
+        icon="save"
+        size="compact"
+        disabled={saveName.isPending || name.trim() === (profileName.data ?? '')}
+        onPress={() => saveName.mutate(name)}
+        style={styles.save}
+      />
+      {saveName.isError ? (
+        <PillyBanner kind="error" message="Couldn’t save your name." compact />
+      ) : null}
+
       <View style={styles.section}>
         <PillyText role="caption" muted>
-          ON THIS IPHONE
+          PRIVACY
         </PillyText>
         <SettingRow
           icon="phone"
-          title="Saved on this device"
+          title="Saved on this iPhone"
           message="No account. Works offline."
         />
         <SettingRow
@@ -114,7 +166,23 @@ function SettingRow({
 }
 
 const styles = StyleSheet.create({
+  screen: { gap: spacing.lg },
   header: { minHeight: 52, flexDirection: 'row', alignItems: 'center', gap: spacing.md },
+  profileCard: {
+    minHeight: 72,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+  },
+  profileMark: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.brandSoft,
+  },
+  save: { alignSelf: 'flex-start' },
   row: {
     minHeight: 64,
     flexDirection: 'row',
@@ -123,6 +191,6 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.sm,
   },
   copy: { flex: 1, gap: spacing.xs },
-  section: { gap: spacing.sm, marginTop: spacing.md },
-  boundary: { textAlign: 'center', marginTop: spacing.lg },
+  section: { gap: spacing.sm },
+  boundary: { textAlign: 'center' },
 });
