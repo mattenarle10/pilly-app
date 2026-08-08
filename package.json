@@ -52,7 +52,7 @@
     "lint": "eslint .",
     "format:check": "prettier --check .",
     "test": "jest --runInBand",
-    "verify": "bun run typecheck && bun run lint && bun run test"
+    "verify": "bun run format:check && bun run typecheck && bun run lint && bun run test"
   },
   "private": true,
   "jest": {
