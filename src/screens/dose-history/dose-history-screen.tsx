@@ -12,7 +12,7 @@ import {
   StatusLabel,
 } from '@/design/components';
 import { spacing } from '@/design/tokens';
-import { useRepository } from '@/providers';
+import { useRepository } from '@/hooks';
 
 type Props = { medicationId: string };
 

@@ -1,4 +1,4 @@
-import { and, asc, desc, eq, inArray, isNull, sql } from 'drizzle-orm';
+import { and, asc, desc, eq, inArray, isNull, like, sql } from 'drizzle-orm';
 import { drizzle } from 'drizzle-orm/expo-sqlite';
 import type { SQLiteDatabase } from 'expo-sqlite';
 import * as Crypto from 'expo-crypto';
@@ -439,6 +439,23 @@ export class PillyRepository {
       .set({ archivedAt: archived ? now : null, updatedAt: now })
       .where(eq(medications.id, medicationId))
       .run();
+  }
+
+  async deleteMedication(medicationId: string): Promise<void> {
+    const medicationSchedules = this.db
+      .select({ id: schedules.id })
+      .from(schedules)
+      .where(eq(schedules.medicationId, medicationId))
+      .all();
+    this.db.transaction((transaction) => {
+      medicationSchedules.forEach(({ id }) => {
+        transaction
+          .delete(doseEvents)
+          .where(like(doseEvents.occurrenceId, `${id}:%`))
+          .run();
+      });
+      transaction.delete(medications).where(eq(medications.id, medicationId)).run();
+    });
   }
 
   async getSetting(key: string): Promise<string | null> {

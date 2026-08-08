@@ -14,7 +14,7 @@ import {
 } from '@/design/components';
 import { spacing } from '@/design/tokens';
 import { formatTime, toLocalDate, weekStartingToday } from '@/domain/schedule';
-import { useRepository } from '@/providers';
+import { useRepository } from '@/hooks';
 
 export function WeekScreen() {
   const repository = useRepository();

@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react';
 import { Modal, Pressable, StyleSheet, useWindowDimensions, View } from 'react-native';
 
 import { PillyButton } from './pilly-button';
@@ -7,10 +8,12 @@ import { colors, radii, spacing } from '@/design/tokens';
 type Props = {
   visible: boolean;
   title: string;
-  message: string;
+  message?: string;
+  children?: ReactNode;
   confirmLabel: string;
   cancelLabel?: string;
   destructive?: boolean;
+  confirmLoading?: boolean;
   onConfirm: () => void;
   onClose: () => void;
 };
@@ -19,9 +22,11 @@ export function PillyModal({
   visible,
   title,
   message,
+  children,
   confirmLabel,
   cancelLabel = 'Cancel',
   destructive,
+  confirmLoading,
   onConfirm,
   onClose,
 }: Props) {
@@ -39,8 +44,9 @@ export function PillyModal({
             <PillyText role="title" accessibilityRole="header">
               {title}
             </PillyText>
-            <PillyText muted>{message}</PillyText>
+            {message ? <PillyText muted>{message}</PillyText> : null}
           </View>
+          {children}
           <View style={[styles.actions, fontScale >= 1.3 && styles.actionsLarge]}>
             <PillyButton
               label={cancelLabel}
@@ -52,6 +58,7 @@ export function PillyModal({
             <PillyButton
               label={confirmLabel}
               variant={destructive ? 'danger' : 'primary'}
+              loading={confirmLoading}
               onPress={onConfirm}
               style={fontScale < 1.3 ? styles.action : undefined}
               fullWidth={fontScale >= 1.3}

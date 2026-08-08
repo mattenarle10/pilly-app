@@ -1,24 +1,25 @@
 import { useState } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { Pressable, StyleSheet, View } from 'react-native';
 import { router } from 'expo-router';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
 import {
   EmptyState,
   PillyBanner,
-  PillyButton,
   PillyCard,
   PillyIconButton,
+  PillyIconTile,
   PillyModal,
   PillyNumberPicker,
   PillyText,
   Screen,
 } from '@/design/components';
-import { spacing } from '@/design/tokens';
+import { PillyIcon, type PillyIconName } from '@/design/icons';
+import { colors, radii, spacing } from '@/design/tokens';
 import { formatTime } from '@/domain/schedule';
 import { estimateSupply } from '@/domain/supply';
 import { scheduleLocalReminders } from '@/platform/notifications';
-import { useRepository } from '@/providers';
+import { useRepository } from '@/hooks';
 
 type Props = { medicationId: string };
 
@@ -37,6 +38,7 @@ export function MedicineDetailScreen({ medicationId }: Props) {
     value: number | null;
   }>({ changed: false, value: null });
   const [confirmArchive, setConfirmArchive] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState(false);
   const query = useQuery({
     queryKey: ['medication', medicationId],
     queryFn: () => repository.getMedication(medicationId),
@@ -61,24 +63,41 @@ export function MedicineDetailScreen({ medicationId }: Props) {
       await refresh();
     },
   });
+  const syncReminders = async () => {
+    try {
+      const reminderStatus = await scheduleLocalReminders(await repository.listReminderSchedules());
+      await repository.setSetting(
+        'reminderNotice',
+        reminderStatus === 'denied' ? 'denied' : 'none',
+      );
+    } catch {
+      await repository.setSetting('reminderNotice', 'failed');
+    }
+  };
   const archiveMutation = useMutation({
     mutationFn: async (archived: boolean) => {
       await repository.setMedicationArchived(medicationId, archived);
-      try {
-        const reminderStatus = await scheduleLocalReminders(
-          await repository.listReminderSchedules(),
-        );
-        await repository.setSetting(
-          'reminderNotice',
-          reminderStatus === 'denied' ? 'denied' : 'none',
-        );
-      } catch {
-        await repository.setSetting('reminderNotice', 'failed');
-      }
+      await syncReminders();
     },
     onSuccess: async () => {
       setConfirmArchive(false);
       await refresh();
+    },
+  });
+  const deleteMutation = useMutation({
+    mutationFn: async () => {
+      await repository.deleteMedication(medicationId);
+      await syncReminders();
+    },
+    onSuccess: async () => {
+      setConfirmDelete(false);
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['medications'] }),
+        queryClient.invalidateQueries({ queryKey: ['scheduled-doses'] }),
+        queryClient.invalidateQueries({ queryKey: ['week'] }),
+        queryClient.invalidateQueries({ queryKey: ['organizer-week'] }),
+      ]);
+      router.replace('/(tabs)/medicines');
     },
   });
 
@@ -123,7 +142,7 @@ export function MedicineDetailScreen({ medicationId }: Props) {
   );
   const supplyEstimate = estimateSupply(medication.supplyCount, scheduledDays);
   return (
-    <Screen>
+    <Screen contentStyle={styles.screen}>
       <View style={styles.header}>
         <PillyIconButton icon="back" label="Back" onPress={() => router.back()} />
         <View style={styles.headerCopy}>
@@ -134,36 +153,28 @@ export function MedicineDetailScreen({ medicationId }: Props) {
             {medication.archivedAt ? 'Archived' : 'Saved on this iPhone'}
           </PillyText>
         </View>
+        {!medication.archivedAt ? (
+          <PillyIconButton
+            icon="edit"
+            label="Edit medicine"
+            onPress={() =>
+              router.push({ pathname: '/medicine/[id]/edit', params: { id: medication.id } })
+            }
+          />
+        ) : null}
       </View>
 
       {medication.instructions ? (
-        <PillyCard tone="peach" style={styles.card}>
-          <PillyText role="label">Instruction</PillyText>
-          <PillyText>{medication.instructions}</PillyText>
+        <PillyCard tone="peach" padding="medium" style={styles.instructionCard}>
+          <PillyIconTile icon="document" tone="peach" />
+          <View style={styles.instructionCopy}>
+            <PillyText role="caption" muted>
+              Instruction
+            </PillyText>
+            <PillyText>{medication.instructions}</PillyText>
+          </View>
         </PillyCard>
       ) : null}
-
-      {!medication.archivedAt ? (
-        <PillyButton
-          label="Edit medicine"
-          icon="edit"
-          variant="secondary"
-          onPress={() =>
-            router.push({ pathname: '/medicine/[id]/edit', params: { id: medication.id } })
-          }
-          fullWidth
-        />
-      ) : null}
-
-      <PillyButton
-        label="Dose history"
-        icon="time"
-        variant="secondary"
-        onPress={() =>
-          router.push({ pathname: '/medicine/[id]/history', params: { id: medication.id } })
-        }
-        fullWidth
-      />
 
       <View style={styles.section}>
         <PillyText role="headline">Schedule</PillyText>
@@ -187,16 +198,13 @@ export function MedicineDetailScreen({ medicationId }: Props) {
           label="Doses left"
           value={supply}
           onChange={(value) => setSupplyDraft({ changed: true, value })}
+          action={{
+            icon: 'save',
+            label: 'Save count',
+            disabled: !supplyChanged || supplyMutation.isPending,
+            onPress: () => supplyMutation.mutate(),
+          }}
         />
-        {supplyChanged ? (
-          <PillyButton
-            label="Save count"
-            icon="save"
-            loading={supplyMutation.isPending}
-            onPress={() => supplyMutation.mutate()}
-            fullWidth
-          />
-        ) : null}
         {supplyMutation.isError ? (
           <PillyBanner kind="error" title="Count not saved" message="Try again." />
         ) : null}
@@ -213,27 +221,39 @@ export function MedicineDetailScreen({ medicationId }: Props) {
         ) : null}
       </View>
 
-      {archiveMutation.isError ? (
+      {archiveMutation.isError || deleteMutation.isError ? (
         <PillyBanner kind="error" title="Change not saved" message="Try again." />
       ) : null}
-      {medication.archivedAt ? (
-        <PillyButton
-          label="Restore medicine"
-          icon="refresh"
-          variant="secondary"
-          loading={archiveMutation.isPending}
-          onPress={() => archiveMutation.mutate(false)}
-          fullWidth
+      <View style={styles.section}>
+        <PillyText role="headline">Manage</PillyText>
+        <DetailAction
+          icon="time"
+          label="Dose history"
+          message="View recorded changes."
+          onPress={() =>
+            router.push({ pathname: '/medicine/[id]/history', params: { id: medication.id } })
+          }
         />
-      ) : (
-        <PillyButton
-          label="Archive medicine"
-          icon="archive"
-          variant="quiet"
-          onPress={() => setConfirmArchive(true)}
-          fullWidth
+        <DetailAction
+          icon={medication.archivedAt ? 'refresh' : 'archive'}
+          label={medication.archivedAt ? 'Restore medicine' : 'Archive medicine'}
+          message={
+            medication.archivedAt ? 'Return it to your schedule.' : 'Hide it from Today and Week.'
+          }
+          disabled={archiveMutation.isPending}
+          onPress={() =>
+            medication.archivedAt ? archiveMutation.mutate(false) : setConfirmArchive(true)
+          }
         />
-      )}
+        <DetailAction
+          icon="delete"
+          label="Delete medicine"
+          message="Permanently remove its history."
+          danger
+          disabled={deleteMutation.isPending}
+          onPress={() => setConfirmDelete(true)}
+        />
+      </View>
 
       <PillyModal
         visible={confirmArchive}
@@ -244,15 +264,102 @@ export function MedicineDetailScreen({ medicationId }: Props) {
         onConfirm={() => archiveMutation.mutate(true)}
         onClose={() => setConfirmArchive(false)}
       />
+      <PillyModal
+        visible={confirmDelete}
+        title="Delete this medicine?"
+        message="Its schedules, dose records, and supply history will be permanently deleted. This cannot be undone."
+        confirmLabel="Delete"
+        destructive
+        onConfirm={() => deleteMutation.mutate()}
+        onClose={() => setConfirmDelete(false)}
+      />
     </Screen>
   );
 }
 
+function DetailAction({
+  icon,
+  label,
+  message,
+  danger = false,
+  disabled = false,
+  onPress,
+}: {
+  icon: PillyIconName;
+  label: string;
+  message: string;
+  danger?: boolean;
+  disabled?: boolean;
+  onPress: () => void;
+}) {
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityState={{ disabled }}
+      disabled={disabled}
+      onPress={onPress}
+      style={({ pressed }) => [
+        styles.actionRow,
+        danger && styles.dangerRow,
+        pressed && styles.actionPressed,
+        disabled && styles.actionDisabled,
+      ]}
+    >
+      {({ pressed }) => (
+        <>
+          <View style={[styles.actionIcon, danger && styles.dangerIcon]}>
+            <PillyIcon
+              name={icon}
+              size={20}
+              color={danger ? colors.danger : colors.brand}
+              active={pressed}
+            />
+          </View>
+          <View style={styles.actionCopy}>
+            <PillyText role="headline" style={danger ? styles.dangerText : undefined}>
+              {label}
+            </PillyText>
+            <PillyText role="caption" muted>
+              {message}
+            </PillyText>
+          </View>
+          <PillyIcon name="next" size={18} color={colors.textSecondary} active={pressed} />
+        </>
+      )}
+    </Pressable>
+  );
+}
+
 const styles = StyleSheet.create({
+  screen: { gap: spacing.lg },
   header: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
   headerCopy: { flex: 1, gap: spacing.xs },
   section: { gap: spacing.md },
-  card: { gap: spacing.sm },
+  instructionCard: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
+  instructionCopy: { flex: 1, gap: spacing.xs },
   scheduleRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
   scheduleCopy: { flex: 1, gap: spacing.xs },
+  actionRow: {
+    minHeight: 72,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+    padding: spacing.md,
+    borderRadius: radii.lg,
+    backgroundColor: colors.glass,
+  },
+  actionPressed: { opacity: 0.76, transform: [{ scale: 0.99 }] },
+  actionDisabled: { opacity: 0.42 },
+  actionIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: radii.md,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.brandSoft,
+  },
+  actionCopy: { flex: 1, gap: spacing.xs },
+  dangerRow: { backgroundColor: colors.dangerSoft },
+  dangerIcon: { backgroundColor: colors.surface },
+  dangerText: { color: colors.danger },
 });

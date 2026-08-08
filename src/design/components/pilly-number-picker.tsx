@@ -4,6 +4,7 @@ import { PillyButton } from './pilly-button';
 import { PillyCard } from './pilly-card';
 import { PillyIconButton } from './pilly-icon-button';
 import { PillyText } from './pilly-text';
+import type { PillyIconName } from '@/design/icons';
 import { colors, radii, spacing } from '@/design/tokens';
 
 type Props = {
@@ -11,9 +12,21 @@ type Props = {
   value: number | null;
   onChange: (value: number | null) => void;
   presets?: readonly number[];
+  action?: {
+    icon: PillyIconName;
+    label: string;
+    onPress: () => void;
+    disabled?: boolean;
+  };
 };
 
-export function PillyNumberPicker({ label, value, onChange, presets = [7, 14, 30, 90] }: Props) {
+export function PillyNumberPicker({
+  label,
+  value,
+  onChange,
+  presets = [7, 14, 30, 90],
+  action,
+}: Props) {
   const decrement = () => {
     if (value !== null && value > 0) onChange(value - 1);
   };
@@ -22,9 +35,20 @@ export function PillyNumberPicker({ label, value, onChange, presets = [7, 14, 30
     <View style={styles.group}>
       <View style={styles.labelRow}>
         <PillyText role="label">{label}</PillyText>
-        <PillyText role="caption" muted>
-          Optional
-        </PillyText>
+        <View style={styles.labelActions}>
+          <PillyText role="caption" muted>
+            Optional
+          </PillyText>
+          {action ? (
+            <PillyIconButton
+              icon={action.icon}
+              label={action.label}
+              tone={action.disabled ? 'plain' : 'brand'}
+              disabled={action.disabled}
+              onPress={action.onPress}
+            />
+          ) : null}
+        </View>
       </View>
       <PillyCard
         padding="medium"
@@ -85,6 +109,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     gap: spacing.md,
   },
+  labelActions: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
   stepper: {
     minHeight: 72,
     flexDirection: 'row',

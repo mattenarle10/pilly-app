@@ -14,7 +14,7 @@ import {
 } from '@/design/components';
 import { PillyIcon } from '@/design/icons';
 import { colors, spacing } from '@/design/tokens';
-import { useRepository } from '@/providers';
+import { useRepository } from '@/hooks';
 
 export function MedicinesScreen() {
   const repository = useRepository();

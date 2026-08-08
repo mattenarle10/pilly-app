@@ -3,7 +3,7 @@ import { Pressable, StyleSheet, View } from 'react-native';
 import { PillyIcon } from '@/design/icons';
 import { StarterOrganizer } from '@/design/illustrations';
 import { colors, radii, shadows, spacing } from '@/design/tokens';
-import { PillyText } from './pilly-text';
+import { PillyText } from '@/design/components/pilly-text';
 
 export function TodayStarter({ onPress }: { onPress: () => void }) {
   return (

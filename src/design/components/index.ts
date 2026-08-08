@@ -11,5 +11,4 @@ export * from './pilly-text';
 export * from './pilly-toggle';
 export * from './screen';
 export * from './status-label';
-export * from './today-starter';
 export * from './week-status-strip';

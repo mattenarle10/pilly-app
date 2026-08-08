@@ -2,7 +2,7 @@ import { ActivityIndicator, StyleSheet, View } from 'react-native';
 import { Redirect } from 'expo-router';
 import { useQuery } from '@tanstack/react-query';
 import { colors } from '@/design/tokens';
-import { useRepository } from '@/providers';
+import { useRepository } from '@/hooks';
 
 export default function IndexRoute() {
   const repository = useRepository();

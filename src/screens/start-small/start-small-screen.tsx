@@ -4,7 +4,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { PillyButton, PillyIconTile, PillyText, Screen } from '@/design/components';
 import type { PillyIconName } from '@/design/icons';
 import { spacing } from '@/design/tokens';
-import { useRepository } from '@/providers';
+import { useRepository } from '@/hooks';
 
 export function StartSmallScreen() {
   const router = useRouter();

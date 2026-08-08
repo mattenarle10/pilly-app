@@ -16,7 +16,7 @@ import {
 import { spacing } from '@/design/tokens';
 import { weekdayMask } from '@/domain/schedule';
 import { scheduleLocalReminders } from '@/platform/notifications';
-import { useRepository } from '@/providers';
+import { useRepository } from '@/hooks';
 import { draftMessages, friendlySaveError } from './new-medication-errors';
 import {
   assertMedicationDraft,

@@ -20,6 +20,8 @@ The core tracker works without an account or network connection. Medication deta
 
 Pilly Plus is reserved for themes, alternate icons, printable plans, and CSV export. Today, week, dose history, reminders, and supply estimates remain free.
 
+The current product decisions, code boundaries, data map, screen inventory, and release roadmap are maintained in [`docs/product-knowledge.md`](docs/product-knowledge.md).
+
 ## Stack
 
 - Expo SDK 57 and Expo Router

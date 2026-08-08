@@ -43,9 +43,11 @@ const icons = {
   statusEmpty: { glyph: 'ellipse-outline', motion: 'none' },
   success: { glyph: 'checkmark-circle-outline', motion: 'press' },
   taken: { glyph: 'checkmark-circle', motion: 'press' },
+  delete: { glyph: 'trash-outline', motion: 'press' },
   time: { glyph: 'time-outline', motion: 'none' },
   unlock: { glyph: 'lock-open-outline', motion: 'press' },
   warning: { glyph: 'alert-circle-outline', motion: 'press' },
+  website: { glyph: 'globe-outline', motion: 'press' },
 } as const satisfies Record<string, { glyph: IoniconName; motion: Motion }>;
 
 export type PillyIconName = keyof typeof icons;

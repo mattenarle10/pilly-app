@@ -16,7 +16,7 @@ import {
 import { PillyIcon, type PillyIconName } from '@/design/icons';
 import { colors, spacing } from '@/design/tokens';
 import { purchasePlus, refreshPlusEntitlement, restorePlus } from '@/platform/purchases';
-import { useRepository } from '@/providers';
+import { useRepository } from '@/hooks';
 
 type Notice = { kind: 'error' | 'success'; message: string };
 
