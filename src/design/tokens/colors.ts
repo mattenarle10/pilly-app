@@ -1,6 +1,7 @@
 export const colors = {
   background: '#fff9f7',
   surface: '#ffffff',
+  glass: 'rgba(255, 255, 255, 0.82)',
   surfaceSubtle: '#f3f1eb',
   textPrimary: '#2b2327',
   textSecondary: '#746a6f',
