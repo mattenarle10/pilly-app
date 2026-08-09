@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { router } from 'expo-router';
-import Animated, { FadeInDown, ReduceMotion } from 'react-native-reanimated';
+import Animated, { FadeInDown, FadeOutDown, ReduceMotion } from 'react-native-reanimated';
 
 import type { ScheduledDose } from '@/data/repositories';
 import {
@@ -47,7 +47,10 @@ export default function Today() {
       contentStyle={styles.screen}
       footer={
         recentDose ? (
-          <Animated.View entering={FadeInDown.duration(180).reduceMotion(ReduceMotion.System)}>
+          <Animated.View
+            entering={FadeInDown.duration(180).reduceMotion(ReduceMotion.System)}
+            exiting={FadeOutDown.duration(160).reduceMotion(ReduceMotion.System)}
+          >
             <PillyBanner
               kind="success"
               message="Dose recorded"

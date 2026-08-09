@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { AccessibilityInfo } from 'react-native';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import * as Haptics from 'expo-haptics';
 
@@ -7,10 +8,31 @@ import { useRepository } from './use-repository';
 
 export type DoseActionStatus = 'taken' | 'skipped' | 'notRecorded';
 
+const toastDurationMs = 6000;
+const screenReaderToastDurationMs = 12000;
+
 export function useDoseActions() {
   const repository = useRepository();
   const queryClient = useQueryClient();
   const [recentDose, setRecentDose] = useState<ScheduledDose | null>(null);
+
+  useEffect(() => {
+    if (!recentDose) return;
+    let canceled = false;
+    let timeout: ReturnType<typeof setTimeout> | undefined;
+    void AccessibilityInfo.isScreenReaderEnabled().then((screenReaderEnabled) => {
+      if (canceled) return;
+      timeout = setTimeout(
+        () => setRecentDose(null),
+        screenReaderEnabled ? screenReaderToastDurationMs : toastDurationMs,
+      );
+    });
+    return () => {
+      canceled = true;
+      if (timeout) clearTimeout(timeout);
+    };
+  }, [recentDose]);
+
   const mutation = useMutation({
     networkMode: 'always',
     mutationFn: ({ dose, status }: { dose: ScheduledDose; status: DoseActionStatus }) =>
