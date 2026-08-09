@@ -45,6 +45,7 @@ const icons = {
   taken: { glyph: 'checkmark-circle', motion: 'press' },
   delete: { glyph: 'trash-outline', motion: 'press' },
   time: { glyph: 'time-outline', motion: 'none' },
+  undo: { glyph: 'arrow-undo-outline', motion: 'horizontal' },
   unlock: { glyph: 'lock-open-outline', motion: 'press' },
   warning: { glyph: 'alert-circle-outline', motion: 'press' },
   website: { glyph: 'globe-outline', motion: 'press' },
