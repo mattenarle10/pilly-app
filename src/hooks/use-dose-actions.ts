@@ -7,31 +7,37 @@ import type { ScheduledDose } from '@/data/repositories';
 import { useRepository } from './use-repository';
 
 export type DoseActionStatus = 'taken' | 'skipped' | 'notRecorded';
+export type RecentDoseAction = {
+  dose: ScheduledDose;
+  status: Exclude<DoseActionStatus, 'notRecorded'>;
+};
 
-const toastDurationMs = 6000;
-const screenReaderToastDurationMs = 12000;
+const toastDurationMs = 4000;
+const screenReaderToastDurationMs = 10000;
 
 export function useDoseActions() {
   const repository = useRepository();
   const queryClient = useQueryClient();
-  const [recentDose, setRecentDose] = useState<ScheduledDose | null>(null);
+  const [recentAction, setRecentAction] = useState<RecentDoseAction | null>(null);
 
   useEffect(() => {
-    if (!recentDose) return;
+    if (!recentAction) return;
     let canceled = false;
     let timeout: ReturnType<typeof setTimeout> | undefined;
-    void AccessibilityInfo.isScreenReaderEnabled().then((screenReaderEnabled) => {
+    const dismissAfter = (duration: number) => {
       if (canceled) return;
-      timeout = setTimeout(
-        () => setRecentDose(null),
-        screenReaderEnabled ? screenReaderToastDurationMs : toastDurationMs,
-      );
-    });
+      timeout = setTimeout(() => setRecentAction(null), duration);
+    };
+    void AccessibilityInfo.isScreenReaderEnabled()
+      .then((screenReaderEnabled) =>
+        dismissAfter(screenReaderEnabled ? screenReaderToastDurationMs : toastDurationMs),
+      )
+      .catch(() => dismissAfter(toastDurationMs));
     return () => {
       canceled = true;
       if (timeout) clearTimeout(timeout);
     };
-  }, [recentDose]);
+  }, [recentAction]);
 
   const mutation = useMutation({
     networkMode: 'always',
@@ -43,7 +49,11 @@ export function useDoseActions() {
           ? Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)
           : Haptics.selectionAsync();
       void feedback.catch(() => undefined);
-      setRecentDose(variables.status === 'notRecorded' ? null : variables.dose);
+      setRecentAction(
+        variables.status === 'notRecorded'
+          ? null
+          : { dose: variables.dose, status: variables.status },
+      );
       return queryClient.invalidateQueries({ queryKey: ['scheduled-doses'] });
     },
     onSettled: () => queryClient.invalidateQueries({ queryKey: ['organizer-week'] }),
@@ -51,11 +61,11 @@ export function useDoseActions() {
 
   return {
     mutation,
-    recentDose,
+    recentAction,
     recordDose: (dose: ScheduledDose, status: DoseActionStatus) =>
       mutation.mutate({ dose, status }),
     undoRecent: () => {
-      if (recentDose) mutation.mutate({ dose: recentDose, status: 'notRecorded' });
+      if (recentAction) mutation.mutate({ dose: recentAction.dose, status: 'notRecorded' });
     },
   };
 }

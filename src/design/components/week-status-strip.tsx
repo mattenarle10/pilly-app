@@ -44,7 +44,7 @@ export function WeekStatusStrip({
         const selected = index === selectedIndex;
         const color =
           day.state === 'taken'
-            ? colors.success
+            ? colors.brandStrong
             : day.state === 'skipped'
               ? colors.warning
               : selected

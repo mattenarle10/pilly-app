@@ -1,15 +1,15 @@
 import { useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { router } from 'expo-router';
-import Animated, { FadeInDown, FadeOutDown, ReduceMotion } from 'react-native-reanimated';
+import Animated, { FadeInRight, FadeOutRight, ReduceMotion } from 'react-native-reanimated';
 
 import type { ScheduledDose } from '@/data/repositories';
 import {
   PillyBanner,
   PillyCard,
   PillyIconButton,
-  PillyModal,
   PillyText,
+  PillyToast,
   Screen,
   WeekStatusStrip,
 } from '@/design/components';
@@ -17,6 +17,7 @@ import { colors, radii, spacing } from '@/design/tokens';
 import { useDoseActions } from '@/hooks';
 import {
   buildOrganizerDays,
+  DoseStatusSheet,
   groupTodayDoses,
   greetingFor,
   TodayCompanion,
@@ -29,34 +30,36 @@ import {
 export default function Today() {
   const { repository, today, dates, doses, weekDoses, medicines, reminderNotice, firstName } =
     useTodayData();
-  const { mutation, recentDose, recordDose, undoRecent } = useDoseActions();
+  const { mutation, recentAction, recordDose, undoRecent } = useDoseActions();
   const [correction, setCorrection] = useState<ScheduledDose | null>(null);
+  const [correctionVisible, setCorrectionVisible] = useState(false);
   const organizerDays = buildOrganizerDays(dates, weekDoses.data);
   const doseGroups = groupTodayDoses(doses.data);
   const progress = todayProgress(doses.data);
   const nextScheduledDay = organizerDays.slice(1).find((day) => day.state !== 'empty');
 
-  const correctDose = () => {
+  const correctDose = (status: ScheduledDose['status']) => {
     if (!correction) return;
-    recordDose(correction, 'notRecorded');
-    setCorrection(null);
+    if (status !== correction.status) recordDose(correction, status);
+    setCorrectionVisible(false);
   };
 
   return (
     <Screen
+      safeAreaEdges={['top']}
       contentStyle={styles.screen}
-      footer={
-        recentDose ? (
+      overlay={
+        recentAction ? (
           <Animated.View
-            entering={FadeInDown.duration(180).reduceMotion(ReduceMotion.System)}
-            exiting={FadeOutDown.duration(160).reduceMotion(ReduceMotion.System)}
+            entering={FadeInRight.duration(180).reduceMotion(ReduceMotion.System)}
+            exiting={FadeOutRight.duration(160).reduceMotion(ReduceMotion.System)}
           >
-            <PillyBanner
-              kind="success"
-              message="Dose recorded"
+            <PillyToast
+              tone={recentAction.status === 'taken' ? 'brand' : 'warning'}
+              message={recentAction.status === 'taken' ? 'Taken' : 'Skipped'}
               actionLabel="Undo"
               onAction={undoRecent}
-              compact
+              actionDisabled={mutation.isPending}
             />
           </Animated.View>
         ) : undefined
@@ -158,15 +161,20 @@ export default function Today() {
         busy={mutation.isPending}
         pendingOccurrenceId={mutation.variables?.dose.occurrenceId}
         onRecord={recordDose}
-        onCorrect={setCorrection}
+        onCorrect={(dose) => {
+          setCorrection(dose);
+          setCorrectionVisible(true);
+        }}
+        onOpenMedicine={(dose) =>
+          router.push({ pathname: '/medicine/[id]', params: { id: dose.medication.id } })
+        }
       />
-      <PillyModal
-        visible={correction !== null}
-        title="Change this record?"
-        message="It will return to Not yet. You can record it again."
-        confirmLabel="Change"
-        onConfirm={correctDose}
-        onClose={() => setCorrection(null)}
+      <DoseStatusSheet
+        dose={correction}
+        visible={correctionVisible}
+        busy={mutation.isPending}
+        onSelect={correctDose}
+        onClose={() => setCorrectionVisible(false)}
       />
     </Screen>
   );

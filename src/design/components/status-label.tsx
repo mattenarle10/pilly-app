@@ -5,14 +5,19 @@ import { PillyIcon, type PillyIconName } from '@/design/icons';
 import { colors, radii, spacing } from '@/design/tokens';
 import type { DoseStatus } from '@/domain/dose';
 
-const states = {
+export const doseStatusVisuals = {
   notRecorded: {
     label: 'Not yet',
     icon: 'pending',
     color: colors.textSecondary,
     background: colors.surfaceSubtle,
   },
-  taken: { label: 'Taken', icon: 'taken', color: colors.success, background: '#e4f2e9' },
+  taken: {
+    label: 'Taken',
+    icon: 'taken',
+    color: colors.brandStrong,
+    background: colors.brandSoft,
+  },
   skipped: {
     label: 'Skipped',
     icon: 'skipped',
@@ -30,7 +35,7 @@ export function StatusLabel(props: Props) {
   const status =
     props.status ??
     (props.label === 'Taken' ? 'taken' : props.label === 'Skipped' ? 'skipped' : 'notRecorded');
-  const state = states[status];
+  const state = doseStatusVisuals[status];
   return (
     <View
       accessibilityLabel={`Status: ${state.label}`}
