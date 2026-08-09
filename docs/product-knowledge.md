@@ -76,6 +76,21 @@ There is no cloud sync, account, or finished export/import flow yet. App deletio
 
 Recommended visual review order: Today, Medicine detail, Add medicine, Edit medicine, Medicines, Week, Profile, Pilly Plus, Welcome, Start Small, then Dose history.
 
+### Design review checklist
+
+| Screen                  | Status                 | Next review                                                            |
+| ----------------------- | ---------------------- | ---------------------------------------------------------------------- |
+| Today                   | 90%, checkpoint review | Large text, VoiceOver order, empty/error states, and final device pass |
+| Medicine detail         | Next                   | Information hierarchy, supply controls, edit, archive, and delete      |
+| Add medicine            | Pending                | Complete setup flow at default and accessibility text sizes            |
+| Edit medicine           | Pending                | Match setup controls without changing past records                     |
+| Medicines               | Pending                | Recognition, appearance customization, empty state, and archive access |
+| Week                    | Pending                | Day selection, status consistency, and dense schedules                 |
+| Profile                 | Pending                | Identity card, local photo, privacy, and manage links                  |
+| Pilly Plus              | Pending                | Honest value, purchase, restore, and offline entitlement               |
+| Welcome and Start Small | Pending                | First-run composition and local-first explanation                      |
+| Dose history            | Pending                | Correction clarity and audit readability                               |
+
 ## Profile decision
 
 The MVP has one optional local profile with a first name, optional last name, and optional on-device photo. The photo is free because basic identity and recognition are not premium safety features.
