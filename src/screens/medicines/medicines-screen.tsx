@@ -24,7 +24,7 @@ export function MedicinesScreen() {
     networkMode: 'always',
   });
   return (
-    <Screen>
+    <Screen safeAreaEdges={['top']}>
       <View style={styles.header}>
         <View style={styles.headerCopy}>
           <PillyText role="large-title">Medicines</PillyText>

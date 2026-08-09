@@ -12,9 +12,7 @@ export default function TabsLayout() {
         default: { color: colors.textSecondary, fontSize: 11, fontWeight: '600' },
         selected: { color: colors.brand, fontSize: 11, fontWeight: '600' },
       }}
-      blurEffect="systemUltraThinMaterial"
-      minimizeBehavior="never"
-      shadowColor="transparent"
+      minimizeBehavior="onScrollDown"
       disableIndicator
     >
       <NativeTabs.Trigger name="today">

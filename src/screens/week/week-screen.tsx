@@ -49,7 +49,7 @@ export function WeekScreen() {
     } as const;
   });
   return (
-    <Screen contentStyle={styles.screen}>
+    <Screen safeAreaEdges={['top']} contentStyle={styles.screen}>
       <View style={styles.heading}>
         <PillyText role="large-title">Week</PillyText>
         <PillyText role="caption" muted>
