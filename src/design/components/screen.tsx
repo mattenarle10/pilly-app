@@ -1,17 +1,29 @@
 import type { PropsWithChildren, ReactNode } from 'react';
 import { ScrollView, StyleSheet, View, type ViewStyle } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets, type Edge } from 'react-native-safe-area-context';
 import { colors, spacing } from '@/design/tokens';
 
 type ScreenProps = PropsWithChildren<{
   scroll?: boolean;
   contentStyle?: ViewStyle;
   footer?: ReactNode;
+  overlay?: ReactNode;
+  safeAreaEdges?: readonly Edge[];
 }>;
-export function Screen({ children, scroll = true, contentStyle, footer }: ScreenProps) {
+const defaultEdges = ['top', 'bottom'] as const;
+
+export function Screen({
+  children,
+  scroll = true,
+  contentStyle,
+  footer,
+  overlay,
+  safeAreaEdges = defaultEdges,
+}: ScreenProps) {
+  const insets = useSafeAreaInsets();
   const content = <View style={[styles.content, contentStyle]}>{children}</View>;
   return (
-    <SafeAreaView edges={['top', 'bottom']} style={styles.safeArea}>
+    <SafeAreaView edges={safeAreaEdges} style={styles.safeArea}>
       {scroll ? (
         <ScrollView
           automaticallyAdjustKeyboardInsets
@@ -26,6 +38,11 @@ export function Screen({ children, scroll = true, contentStyle, footer }: Screen
         content
       )}
       {footer ? <View style={styles.footer}>{footer}</View> : null}
+      {overlay ? (
+        <View pointerEvents="box-none" style={[styles.overlay, { top: insets.top + spacing.sm }]}>
+          {overlay}
+        </View>
+      ) : null}
     </SafeAreaView>
   );
 }
@@ -38,5 +55,12 @@ const styles = StyleSheet.create({
     paddingTop: spacing.md,
     paddingBottom: spacing.sm,
     backgroundColor: colors.background,
+  },
+  overlay: {
+    position: 'absolute',
+    left: spacing.xl,
+    right: spacing.xl,
+    zIndex: 10,
+    alignItems: 'flex-end',
   },
 });
