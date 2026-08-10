@@ -77,4 +77,28 @@ describe('TodayDoseList future actions', () => {
     expect(screen.queryByText('Later today')).toBeNull();
     expect(onRecord).toHaveBeenCalledWith(dose, 'taken');
   });
+
+  test('uses a quiet text action to correct a recorded dose', async () => {
+    const recordedDose: ScheduledDose = {
+      ...dose,
+      status: 'taken',
+      recordedAt: new Date('2026-08-10T13:01:00.000Z'),
+    };
+    const onCorrect = jest.fn();
+    const screen = await render(
+      <TodayDoseList
+        groups={[{ ...groups[0]!, doses: [recordedDose] }]}
+        now={recordedDose.scheduledAt}
+        busy={false}
+        onRecord={jest.fn()}
+        onCorrect={onCorrect}
+        onOpenMedicine={jest.fn()}
+      />,
+    );
+
+    fireEvent.press(screen.getByText('Change'));
+
+    expect(screen.queryByLabelText('Change status for Evening capsule')).toBeOnTheScreen();
+    expect(onCorrect).toHaveBeenCalledWith(recordedDose);
+  });
 });

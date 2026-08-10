@@ -149,6 +149,7 @@ Today action-timing checkpoint completed on 2026-08-10:
 - [x] Keep future unrecorded doses visible as schedule information without presenting Taken or Skip early.
 - [x] Reveal Taken and Skip at the exact local scheduled time and refresh the resting screen at minute boundaries.
 - [x] Keep already recorded future states correctable for resilient existing data.
+- [x] Present recorded-dose correction as a quiet, explicit Change action instead of a repeated decorative edit bubble.
 - [x] Distinguish doses ready to record from doses later today in the progress summary.
 - [x] Add focused boundary and rendering tests for upcoming and available states.
 - [ ] Confirm background-to-foreground minute refresh and time-zone changes during physical-device release QA.

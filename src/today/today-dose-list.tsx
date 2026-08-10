@@ -160,13 +160,22 @@ function DoseRow({
                 </PillyText>
               ) : null}
             </View>
-            <PillyIconButton
-              icon="edit"
-              label={`Change status for ${dose.medication.name}`}
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={`Change status for ${dose.medication.name}`}
+              accessibilityState={{ disabled: busy }}
               disabled={busy}
               onPress={onCorrect}
-              style={styles.skip}
-            />
+              style={({ pressed }) => [
+                styles.correction,
+                pressed && styles.correctionPressed,
+                busy && styles.correctionDisabled,
+              ]}
+            >
+              <PillyText role="caption" muted>
+                Change
+              </PillyText>
+            </Pressable>
           </>
         )}
       </Animated.View>
@@ -228,4 +237,12 @@ const styles = StyleSheet.create({
   },
   takeAction: { flex: 1 },
   skip: { borderRadius: radii.round, backgroundColor: colors.surfaceSubtle },
+  correction: {
+    minWidth: 60,
+    minHeight: 44,
+    alignItems: 'flex-end',
+    justifyContent: 'center',
+  },
+  correctionPressed: { opacity: 0.58 },
+  correctionDisabled: { opacity: 0.35 },
 });
