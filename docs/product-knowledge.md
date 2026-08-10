@@ -82,7 +82,7 @@ Recommended visual review order: Today, Medicine detail, Edit medicine, Add medi
 | ----------------------- | ---------------------- | ---------------------------------------------------------------------- |
 | Today                   | 90%, checkpoint review | Large text, VoiceOver order, empty/error states, and final device pass |
 | Medicine detail         | Complete               | Release QA only: physical device and accessibility extremes            |
-| Add medicine            | Pending                | Complete setup flow at default and accessibility text sizes            |
+| Add medicine            | Architecture complete  | Design and behavior pass at default and accessibility text sizes       |
 | Edit medicine           | Complete               | Release QA only: keyboard, VoiceOver, large text, and physical device  |
 | Medicines               | Pending                | Recognition, appearance customization, empty state, and archive access |
 | Week                    | Pending                | Day selection, status consistency, and dense schedules                 |
@@ -110,6 +110,14 @@ Medicine Detail design and architecture checkpoint completed on 2026-08-10:
 - [x] Replace transient supply-saving copy with quiet autosave and visible failure recovery only.
 - [x] Add a persisted, data-driven medicine appearance with safe migration defaults.
 - [x] Move appearance controls into a dedicated sheet and support split capsule colors.
+
+Add Medicine architecture checkpoint completed on 2026-08-10:
+
+- [x] Own the page composition in `app/medicine/new.tsx`.
+- [x] Remove the legacy `src/screens/new-medication/` wrapper.
+- [x] Keep reusable Add/Edit fields in `src/medicine-form/`.
+- [x] Preserve draft restoration, validation, medicine creation, reminder reconciliation, and leave-draft behavior during the move.
+- [ ] Complete the separate design and behavior review on the simulator; the architecture checkpoint does not mark the screen design complete.
 
 Edit Medicine implementation checkpoint completed on 2026-08-10:
 
@@ -199,6 +207,7 @@ Before release:
 - 2026-08-08: A basic local profile photo is free. Multiple profiles are deferred.
 - 2026-08-08: Liquid glass is progressive enhancement and never carries safety-critical readability alone.
 - 2026-08-09: Route files are the actual screens. Keep route-only UI in `app/`, route-facing data hooks in `src/hooks/`, and remove duplicate `src/screens/` wrappers one page at a time. Create a product-area module only when several substantial reusable units justify it, as Today currently does.
+- 2026-08-10: Add Medicine page composition now lives in `app/medicine/new.tsx`; reusable Add/Edit fields remain in `src/medicine-form/`. Do not reintroduce a `src/screens/` page wrapper for this route.
 - 2026-08-10: Detail screens use a calm, text-first hierarchy. Medicine Detail uses the medicine name as its single signature typographic moment, groups Schedule and Supply in one Overview surface, keeps setup presets in Add/Edit, and auto-saves reversible supply changes with visible failure recovery.
 - 2026-08-10: Visual richness comes from hierarchy, composition, typography, material, and interaction before color. New color meanings require an explicit design-direction and decision-log update; polish passes do not invent route-specific tint mappings.
 - 2026-08-10: Medicine appearance is recognition data, not decoration. A saved shape, size, and person-selected soft tone drive one code-native silhouette on Detail and a focused preview in Add/Edit. Existing medicines migrate to a medium rose capsule.
