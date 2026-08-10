@@ -54,8 +54,10 @@ describe('useEditMedicine', () => {
         instructions: ' With food ',
         supply: '12',
         selectedDays: [1, 3, 5],
-        time: '20:15',
-        reminderEnabled: true,
+        schedules: [
+          { time: '20:15', reminderEnabled: true },
+          { time: '08:00', reminderEnabled: false },
+        ],
         appearanceTone: 'lavender',
         appearanceSecondaryTone: 'peach',
       }),
@@ -71,10 +73,17 @@ describe('useEditMedicine', () => {
       appearanceSecondaryTone: 'peach',
       schedules: [
         {
+          hour: 8,
+          minute: 0,
+          weekdayMask: 21,
+          sortOrder: 0,
+          reminderEnabled: false,
+        },
+        {
           hour: 20,
           minute: 15,
           weekdayMask: 21,
-          sortOrder: 0,
+          sortOrder: 1,
           reminderEnabled: true,
         },
       ],

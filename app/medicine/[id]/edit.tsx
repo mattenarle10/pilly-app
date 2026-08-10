@@ -18,14 +18,14 @@ import { schedulesMatch } from '@/domain/schedule';
 import { useEditMedicine } from '@/hooks';
 import {
   AppearanceStep,
-  DaysStep,
   DetailsStep,
   friendlySaveError,
   medicationDraftsMatch,
   NameStep,
+  ScheduleStep,
   scheduleConfigurationFromDraft,
+  scheduleDraftsFromSchedules,
   selectedDaysFromMask,
-  TimeStep,
   validateMedicationDraft,
   type MedicationDraft,
 } from '@/medicine-form';
@@ -65,11 +65,8 @@ function EditMedicineForm({
         name: detail.medication.name,
         instructions: detail.medication.instructions,
         selectedDays: schedule ? selectedDaysFromMask(schedule.weekdayMask) : [],
-        time: schedule
-          ? `${schedule.hour}`.padStart(2, '0') + ':' + `${schedule.minute}`.padStart(2, '0')
-          : '09:00',
+        schedules: scheduleDraftsFromSchedules(detail.schedules),
         supply: detail.medication.supplyCount === null ? '' : `${detail.medication.supplyCount}`,
-        reminderEnabled: schedule?.reminderEnabled ?? false,
         appearanceShape: detail.medication.appearanceShape,
         appearanceSize: detail.medication.appearanceSize,
         appearanceTone: detail.medication.appearanceTone,
@@ -171,18 +168,21 @@ function EditMedicineForm({
           onToneChange={(tone) => setFieldValue('appearanceTone', tone)}
           onSecondaryToneChange={(tone) => setFieldValue('appearanceSecondaryTone', tone)}
         />
-        <DaysStep
-          selected={values.selectedDays}
-          error={issue?.field === 'selectedDays' ? issue.message : undefined}
-          onChange={(days) => setFieldValue('selectedDays', days)}
+        <ScheduleStep
+          selectedDays={values.selectedDays}
+          schedules={values.schedules}
+          error={
+            issue?.field === 'selectedDays' || issue?.field === 'schedules'
+              ? issue.message
+              : undefined
+          }
+          onDaysChange={(days) => setFieldValue('selectedDays', days)}
+          onSchedulesChange={(schedules) => setFieldValue('schedules', schedules)}
         />
-        <TimeStep value={values.time} onChange={(time) => setFieldValue('time', time)} />
         <DetailsStep
           supply={values.supply}
-          reminderEnabled={values.reminderEnabled}
           error={issue?.field === 'supply' ? issue.message : undefined}
           onSupplyChange={(supply) => setFieldValue('supply', supply)}
-          onReminderChange={(enabled) => setFieldValue('reminderEnabled', enabled)}
         />
         {scheduleChanged ? (
           <PillyBanner

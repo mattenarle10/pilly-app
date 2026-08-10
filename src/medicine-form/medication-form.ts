@@ -4,32 +4,47 @@ import {
   medicationAppearanceSizeSchema,
   medicationAppearanceToneSchema,
 } from '@/domain/medication';
-import { weekdayMask, type ScheduleConfiguration } from '@/domain/schedule';
+import { weekdayMask, type Schedule, type ScheduleConfiguration } from '@/domain/schedule';
 
 export const draftKey = 'new-medication-draft-v1';
-export const draftSchema = z.object({
+export const medicationScheduleDraftSchema = z.object({
+  time: z.string(),
+  reminderEnabled: z.boolean(),
+});
+const currentDraftSchema = z.object({
   name: z.string(),
   instructions: z.string(),
   selectedDays: z.array(z.number()),
-  time: z.string(),
+  schedules: z
+    .array(medicationScheduleDraftSchema)
+    .default([{ time: '09:00', reminderEnabled: false }]),
   supply: z.string(),
-  reminderEnabled: z.boolean(),
   appearanceShape: medicationAppearanceShapeSchema.default('capsule'),
   appearanceSize: medicationAppearanceSizeSchema.default('medium'),
   appearanceTone: medicationAppearanceToneSchema.default('rose'),
   appearanceSecondaryTone: medicationAppearanceToneSchema.default('rose'),
 });
+export const draftSchema = z.preprocess((value) => {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return value;
+  const legacy = value as Record<string, unknown>;
+  if (Array.isArray(legacy.schedules) || typeof legacy.time !== 'string') return value;
+  const { time, reminderEnabled, ...rest } = legacy;
+  return {
+    ...rest,
+    schedules: [{ time, reminderEnabled: reminderEnabled === true }],
+  };
+}, currentDraftSchema);
 export type MedicationDraft = z.infer<typeof draftSchema>;
-export type MedicationDraftField = 'name' | 'selectedDays' | 'time' | 'supply';
+export type MedicationScheduleDraft = z.infer<typeof medicationScheduleDraftSchema>;
+export type MedicationDraftField = 'name' | 'selectedDays' | 'schedules' | 'supply';
 export type MedicationFormIssue = { field: MedicationDraftField; step: number; message: string };
 
 export const defaults: MedicationDraft = {
   name: '',
   instructions: '',
   selectedDays: [1, 2, 3, 4, 5, 6, 7],
-  time: '09:00',
+  schedules: [{ time: '09:00', reminderEnabled: false }],
   supply: '',
-  reminderEnabled: false,
   appearanceShape: 'capsule',
   appearanceSize: 'medium',
   appearanceTone: 'rose',
@@ -58,13 +73,25 @@ const rules = [
         .safeParse(draft.selectedDays),
   },
   {
-    field: 'time',
+    field: 'schedules',
     step: 2,
     parse: (draft: MedicationDraft) =>
       z
-        .string()
-        .regex(/^([01]\d|2[0-3]):[0-5]\d$/, 'Choose a valid time.')
-        .safeParse(draft.time),
+        .array(
+          z.object({
+            time: z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/, 'Choose a valid time.'),
+            reminderEnabled: z.boolean(),
+          }),
+        )
+        .min(1, 'Add at least one dose time.')
+        .max(8, 'Use eight dose times or fewer.')
+        .superRefine((schedules, context) => {
+          const times = schedules.map((schedule) => schedule.time);
+          if (new Set(times).size !== times.length) {
+            context.addIssue({ code: 'custom', message: 'Use each dose time once.' });
+          }
+        })
+        .safeParse(draft.schedules),
   },
   {
     field: 'supply',
@@ -132,26 +159,50 @@ export function selectedDaysFromMask(mask: number): number[] {
 }
 
 export function scheduleConfigurationFromDraft(draft: MedicationDraft): ScheduleConfiguration[] {
-  const time = parseTime(draft.time);
-  return [
-    {
-      hour: time.getHours(),
-      minute: time.getMinutes(),
-      weekdayMask: weekdayMask(draft.selectedDays),
-      sortOrder: 0,
-      reminderEnabled: draft.reminderEnabled,
-    },
-  ];
+  return [...draft.schedules]
+    .sort((left, right) => left.time.localeCompare(right.time))
+    .map((schedule, index) => {
+      const time = parseTime(schedule.time);
+      return {
+        hour: time.getHours(),
+        minute: time.getMinutes(),
+        weekdayMask: weekdayMask(draft.selectedDays),
+        sortOrder: index,
+        reminderEnabled: schedule.reminderEnabled,
+      };
+    });
+}
+
+export function scheduleDraftsFromSchedules(
+  schedules: readonly Pick<Schedule, 'hour' | 'minute' | 'reminderEnabled'>[],
+): MedicationScheduleDraft[] {
+  if (schedules.length === 0) return defaults.schedules.map((schedule) => ({ ...schedule }));
+  return [...schedules]
+    .sort((left, right) => left.hour - right.hour || left.minute - right.minute)
+    .map((schedule) => ({
+      time: `${schedule.hour}`.padStart(2, '0') + ':' + `${schedule.minute}`.padStart(2, '0'),
+      reminderEnabled: schedule.reminderEnabled,
+    }));
 }
 
 export function medicationDraftsMatch(current: MedicationDraft, next: MedicationDraft): boolean {
+  const currentSchedules = scheduleConfigurationFromDraft(current);
+  const nextSchedules = scheduleConfigurationFromDraft(next);
   return (
     current.name === next.name &&
     current.instructions === next.instructions &&
     weekdayMask(current.selectedDays) === weekdayMask(next.selectedDays) &&
-    current.time === next.time &&
+    currentSchedules.length === nextSchedules.length &&
+    currentSchedules.every((schedule, index) => {
+      const candidate = nextSchedules[index];
+      return (
+        candidate !== undefined &&
+        schedule.hour === candidate.hour &&
+        schedule.minute === candidate.minute &&
+        schedule.reminderEnabled === candidate.reminderEnabled
+      );
+    }) &&
     supplyValue(current.supply) === supplyValue(next.supply) &&
-    current.reminderEnabled === next.reminderEnabled &&
     current.appearanceShape === next.appearanceShape &&
     current.appearanceSize === next.appearanceSize &&
     current.appearanceTone === next.appearanceTone &&

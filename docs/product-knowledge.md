@@ -82,7 +82,7 @@ Recommended visual review order: Today, Medicine detail, Edit medicine, Add medi
 | ----------------------- | ---------------------- | ----------------------------------------------------------------------- |
 | Today                   | 90%, checkpoint review | Large text, VoiceOver order, empty/error states, and final device pass  |
 | Medicine detail         | Complete               | Release QA only: physical device and accessibility extremes             |
-| Add medicine            | Architecture complete  | Design and behavior pass at default and accessibility text sizes        |
+| Add medicine            | In progress            | Complete end-to-end default and accessibility-size review               |
 | Edit medicine           | Complete               | Release QA only: keyboard, VoiceOver, large text, and physical device   |
 | Medicines               | In progress            | Empty, error, archived, varied-appearance, large-text, and VoiceOver QA |
 | Week                    | Pending                | Day selection, status consistency, and dense schedules                  |
@@ -117,7 +117,21 @@ Add Medicine architecture checkpoint completed on 2026-08-10:
 - [x] Remove the legacy `src/screens/new-medication/` wrapper.
 - [x] Keep reusable Add/Edit fields in `src/medicine-form/`.
 - [x] Preserve draft restoration, validation, medicine creation, reminder reconciliation, and leave-draft behavior during the move.
+- [x] Keep Back and Add in a quiet navigation lane so a large sticky action never covers the form.
 - [ ] Complete the separate design and behavior review on the simulator; the architecture checkpoint does not mark the screen design complete.
+
+Multiple daily schedule checkpoint completed on 2026-08-10:
+
+- [x] Reuse the existing schedule-row model and repository transaction; no database migration is required.
+- [x] Let Add and Edit store up to eight exact local times under one shared weekday pattern.
+- [x] Keep reminders attached to their exact time instead of presenting one ambiguous medicine-level switch.
+- [x] Use contextual labels such as Morning and Evening only as derived orientation; the editable exact time remains the source of truth.
+- [x] Keep all times in one purposeful schedule surface with separators, quiet removal, and one Add another time continuation.
+- [x] Restore all active schedule rows in Edit and migrate legacy one-time Add drafts without losing their reminder choice.
+- [x] Sort saved times chronologically and reject invalid or duplicate exact times.
+- [x] Add focused validation, draft-migration, form-interaction, and edit-orchestration tests.
+- [x] Review one-time and three-time density at the default iOS content size in the simulator.
+- [ ] Complete release QA for VoiceOver order, accessibility text extremes, and physical-device notification delivery.
 
 Medicines recognition checkpoint started on 2026-08-10:
 
@@ -224,4 +238,6 @@ Before release:
 - 2026-08-10: Medicine appearance is recognition data, not decoration. A saved shape, size, and person-selected soft tone drive one code-native silhouette on Detail, a focused preview in Add/Edit, a compact Medicines-list cue, and a quieter Today cue. Existing medicines migrate to a medium rose capsule.
 - 2026-08-10: Add/Edit show appearance as one compact preview row. A dedicated sheet owns shape, size, and curated color choices; capsules persist separate colors for their two halves.
 - 2026-08-10: Edit Medicine uses transparent Back and Done actions in a fixed 44-point navigation lane because saving the full form is consequential. The lane never overlays fields, Done stays disabled until the draft is valid and semantically changed, and dirty navigation requires an explicit discard decision. Per-control Liquid Glass was rejected after simulator review because it read as two pasted-on bubbles.
+- 2026-08-10: Add Medicine mirrors the quiet Back/action navigation lane and keeps its page title below it. Add validates on press and remains reachable without a full-width sticky footer covering form content at large text sizes.
+- 2026-08-10: Add/Edit schedules use one shared weekday pattern with one or more exact local times. Each time owns its reminder state; Morning, Midday, Afternoon, Evening, and Night are derived context rather than saved meal semantics. One schedule surface and quiet separators scale the form without turning each time into another card.
 - 2026-08-08: Replace custom provider nesting with one `AppRuntime`; derive the stateless repository through `useRepository()` from Expo SQLite context.

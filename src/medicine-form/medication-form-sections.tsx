@@ -7,7 +7,7 @@ import {
   PillyButton,
   PillyCard,
   PillyField,
-  PillyIconTile,
+  PillyIconButton,
   MedicationAppearance,
   PillyNumberPicker,
   PillySheet,
@@ -15,14 +15,13 @@ import {
   PillyToggle,
 } from '@/design/components';
 import { PillyIcon } from '@/design/icons';
-import { TimeOrbit } from '@/design/illustrations';
 import { colors, radii, shadows, spacing } from '@/design/tokens';
 import type {
   MedicationAppearanceShape,
   MedicationAppearanceSize,
   MedicationAppearanceTone,
 } from '@/domain/medication';
-import { parseTime } from './medication-form';
+import { parseTime, type MedicationScheduleDraft } from './medication-form';
 
 const appearanceShapes: { value: MedicationAppearanceShape; label: string }[] = [
   { value: 'round', label: 'Round' },
@@ -277,23 +276,54 @@ function ChoiceGroup<Value extends string>({
   );
 }
 
-export function DaysStep({
-  selected,
+export function ScheduleStep({
+  selectedDays,
+  schedules,
   error,
-  onChange,
+  onDaysChange,
+  onSchedulesChange,
 }: {
-  selected: number[];
+  selectedDays: number[];
+  schedules: MedicationScheduleDraft[];
   error?: string;
-  onChange: (value: number[]) => void;
+  onDaysChange: (value: number[]) => void;
+  onSchedulesChange: (value: MedicationScheduleDraft[]) => void;
 }) {
   const toggle = (day: number) =>
-    onChange(selected.includes(day) ? selected.filter((item) => item !== day) : [...selected, day]);
+    onDaysChange(
+      selectedDays.includes(day)
+        ? selectedDays.filter((item) => item !== day)
+        : [...selectedDays, day],
+    );
+  const updateSchedule = (index: number, next: Partial<MedicationScheduleDraft>) =>
+    onSchedulesChange(
+      schedules.map((schedule, scheduleIndex) =>
+        scheduleIndex === index ? { ...schedule, ...next } : schedule,
+      ),
+    );
+  const addSchedule = () => {
+    if (schedules.length >= 8) return;
+    const time = nextScheduleTime(schedules);
+    const lastSchedule = [...schedules]
+      .sort((left, right) => left.time.localeCompare(right.time))
+      .at(-1);
+    onSchedulesChange(
+      [...schedules, { time, reminderEnabled: lastSchedule?.reminderEnabled ?? false }].sort(
+        (left, right) => left.time.localeCompare(right.time),
+      ),
+    );
+  };
+  const removeSchedule = (index: number) => {
+    if (schedules.length <= 1) return;
+    onSchedulesChange(schedules.filter((_, scheduleIndex) => scheduleIndex !== index));
+  };
+
   return (
     <View style={styles.section}>
-      <StepHeading title="Schedule" message="Choose days." />
+      <StepHeading title="Schedule" message="Choose days and exact local times." />
       <View style={styles.days}>
         {days.map((day) => {
-          const active = selected.includes(day.value);
+          const active = selectedDays.includes(day.value);
           return (
             <Pressable
               key={day.value}
@@ -320,93 +350,136 @@ export function DaysStep({
           label="Every day"
           size="compact"
           variant="secondary"
-          onPress={() => onChange([1, 2, 3, 4, 5, 6, 7])}
+          onPress={() => onDaysChange([1, 2, 3, 4, 5, 6, 7])}
           style={styles.quickAction}
         />
         <PillyButton
           label="Weekdays"
           size="compact"
           variant="secondary"
-          onPress={() => onChange([1, 2, 3, 4, 5])}
+          onPress={() => onDaysChange([1, 2, 3, 4, 5])}
           style={styles.quickAction}
         />
       </View>
+      <PillyCard padding="none" style={styles.scheduleSurface}>
+        {schedules.map((schedule, index) => {
+          const time = parseTime(schedule.time);
+          return (
+            <View key={index}>
+              {index > 0 ? <View style={styles.scheduleSeparator} /> : null}
+              <View style={styles.scheduleItem}>
+                <View style={styles.scheduleTimeRow}>
+                  <PillyText role="label" style={styles.scheduleLabel}>
+                    {timeContextLabel(schedule.time)}
+                  </PillyText>
+                  <DateTimePicker
+                    accessibilityLabel={`${timeContextLabel(schedule.time)} dose time`}
+                    value={time}
+                    mode="time"
+                    display="compact"
+                    onValueChange={(_, date) =>
+                      updateSchedule(index, {
+                        time:
+                          `${date.getHours()}`.padStart(2, '0') +
+                          ':' +
+                          `${date.getMinutes()}`.padStart(2, '0'),
+                      })
+                    }
+                  />
+                  {schedules.length > 1 ? (
+                    <PillyIconButton
+                      icon="remove"
+                      label={`Remove ${timeContextLabel(schedule.time)} dose time`}
+                      onPress={() => removeSchedule(index)}
+                      style={styles.removeSchedule}
+                    />
+                  ) : null}
+                </View>
+                <View style={styles.scheduleReminderRow}>
+                  <PillyText role="caption" muted style={styles.scheduleLabel}>
+                    Reminder
+                  </PillyText>
+                  <PillyToggle
+                    label={`Reminder for ${timeContextLabel(schedule.time)} dose`}
+                    value={schedule.reminderEnabled}
+                    onValueChange={(reminderEnabled) => updateSchedule(index, { reminderEnabled })}
+                  />
+                </View>
+              </View>
+            </View>
+          );
+        })}
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Add another dose time"
+          accessibilityState={{ disabled: schedules.length >= 8 }}
+          disabled={schedules.length >= 8}
+          onPress={addSchedule}
+          style={({ pressed }) => [
+            styles.addSchedule,
+            pressed && styles.addSchedulePressed,
+            schedules.length >= 8 && styles.addScheduleDisabled,
+          ]}
+        >
+          <PillyIcon name="add" size={18} color={colors.brand} />
+          <PillyText role="label" style={styles.addScheduleLabel}>
+            Add another time
+          </PillyText>
+        </Pressable>
+      </PillyCard>
       {error ? <PillyBanner kind="error" message={error} compact /> : null}
     </View>
   );
 }
 
-export function TimeStep({
-  value,
-  onChange,
-}: {
-  value: string;
-  onChange: (value: string) => void;
-}) {
-  const time = parseTime(value);
-  return (
-    <View style={styles.section}>
-      <StepHeading title="Time" message="Choose a local time." />
-      <PillyCard padding="medium" style={styles.timeRow}>
-        <TimeOrbit hour={time.getHours()} minute={time.getMinutes()} />
-        <View style={styles.timeCopy}>
-          <PillyText role="headline">Dose time</PillyText>
-          <PillyText role="caption" muted>
-            Local time
-          </PillyText>
-        </View>
-        <DateTimePicker
-          accessibilityLabel="Dose time"
-          value={time}
-          mode="time"
-          display="compact"
-          onValueChange={(_, date) =>
-            onChange(
-              `${date.getHours()}`.padStart(2, '0') + ':' + `${date.getMinutes()}`.padStart(2, '0'),
-            )
-          }
-        />
-      </PillyCard>
-    </View>
+function timeContextLabel(value: string): string {
+  const hour = parseTime(value).getHours();
+  if (hour < 5) return 'Night';
+  if (hour < 11) return 'Morning';
+  if (hour < 14) return 'Midday';
+  if (hour < 18) return 'Afternoon';
+  if (hour < 22) return 'Evening';
+  return 'Night';
+}
+
+function nextScheduleTime(schedules: MedicationScheduleDraft[]): string {
+  const existing = new Set(schedules.map((schedule) => schedule.time));
+  const latest = [...existing].sort().at(-1) ?? '09:00';
+  const suggestion = ['08:00', '12:00', '18:00', '21:00'].find(
+    (time) => time > latest && !existing.has(time),
   );
+  if (suggestion) return suggestion;
+  const unusedSuggestion = ['08:00', '12:00', '18:00', '21:00'].find((time) => !existing.has(time));
+  if (unusedSuggestion) return unusedSuggestion;
+
+  const latestTime = parseTime(latest);
+  for (let offset = 1; offset < 24; offset += 1) {
+    const hour = (latestTime.getHours() + offset) % 24;
+    const candidate =
+      `${hour}`.padStart(2, '0') + ':' + `${latestTime.getMinutes()}`.padStart(2, '0');
+    if (!existing.has(candidate)) return candidate;
+  }
+  return '09:00';
 }
 
 export function DetailsStep({
   supply,
-  reminderEnabled,
   error,
   onSupplyChange,
-  onReminderChange,
 }: {
   supply: string;
-  reminderEnabled: boolean;
   error?: string;
   onSupplyChange: (value: string) => void;
-  onReminderChange: (value: boolean) => void;
 }) {
   return (
     <View style={styles.section}>
-      <StepHeading title="Supply and reminder" message="Optional." />
+      <StepHeading title="Supply" message="Optional." />
       <PillyNumberPicker
         label="Doses left"
         value={supply.trim() === '' ? null : Number(supply)}
         onChange={(next) => onSupplyChange(next === null ? '' : `${next}`)}
       />
       {error ? <PillyBanner kind="error" message={error} compact /> : null}
-      <PillyCard padding="medium" style={styles.switchRow}>
-        <PillyIconTile icon="reminder" />
-        <View style={styles.switchCopy}>
-          <PillyText role="headline">Reminder</PillyText>
-          <PillyText role="caption" muted>
-            Names stay hidden.
-          </PillyText>
-        </View>
-        <PillyToggle
-          label="Local reminder"
-          value={reminderEnabled}
-          onValueChange={onReminderChange}
-        />
-      </PillyCard>
     </View>
   );
 }
@@ -473,8 +546,32 @@ const styles = StyleSheet.create({
   dayTextActive: { color: colors.surface },
   quickDays: { flexDirection: 'row', gap: spacing.sm },
   quickAction: { flex: 1 },
-  timeRow: { minHeight: 72, flexDirection: 'row', alignItems: 'center', gap: spacing.md },
-  timeCopy: { flex: 1, gap: spacing.xs },
-  switchRow: { minHeight: 72, flexDirection: 'row', alignItems: 'center', gap: spacing.md },
-  switchCopy: { flex: 1, gap: spacing.xs },
+  scheduleSurface: { overflow: 'hidden' },
+  scheduleItem: { gap: spacing.xs, paddingHorizontal: spacing.lg, paddingVertical: spacing.sm },
+  scheduleTimeRow: { minHeight: 44, flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
+  scheduleReminderRow: {
+    minHeight: 44,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+  },
+  scheduleLabel: { flex: 1 },
+  removeSchedule: { width: 44, height: 44, backgroundColor: colors.surfaceSubtle },
+  scheduleSeparator: {
+    height: 1,
+    marginLeft: spacing.lg,
+    backgroundColor: colors.surfaceSubtle,
+  },
+  addSchedule: {
+    minHeight: 52,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.sm,
+    borderTopWidth: 1,
+    borderTopColor: colors.surfaceSubtle,
+  },
+  addSchedulePressed: { backgroundColor: colors.surfaceSubtle },
+  addScheduleDisabled: { opacity: 0.4 },
+  addScheduleLabel: { color: colors.brand },
 });

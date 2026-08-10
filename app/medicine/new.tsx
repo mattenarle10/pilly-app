@@ -13,13 +13,10 @@ import {
   PillyText,
   Screen,
 } from '@/design/components';
-import { spacing } from '@/design/tokens';
-import { weekdayMask } from '@/domain/schedule';
 import { useRepository } from '@/hooks';
 import {
   AppearanceStep,
   assertMedicationDraft,
-  DaysStep,
   defaults,
   DetailsStep,
   draftKey,
@@ -27,9 +24,9 @@ import {
   draftSchema,
   friendlySaveError,
   NameStep,
-  parseTime,
+  ScheduleStep,
+  scheduleConfigurationFromDraft,
   supplyValue,
-  TimeStep,
   type MedicationDraft,
   useMedicationValidation,
 } from '@/medicine-form';
@@ -57,15 +54,7 @@ export default function NewMedicationRoute() {
         appearanceSize: value.appearanceSize,
         appearanceTone: value.appearanceTone,
         appearanceSecondaryTone: value.appearanceSecondaryTone,
-        schedules: [
-          {
-            hour: parseTime(value.time).getHours(),
-            minute: parseTime(value.time).getMinutes(),
-            weekdayMask: weekdayMask(value.selectedDays),
-            sortOrder: 0,
-            reminderEnabled: value.reminderEnabled,
-          },
-        ],
+        schedules: scheduleConfigurationFromDraft(value),
       });
       let reminderStatus: 'notRequested' | 'denied' | 'scheduled' | 'failed' = 'notRequested';
       try {
@@ -119,27 +108,25 @@ export default function NewMedicationRoute() {
   const fieldError = validation.fieldIssue;
 
   return (
-    <Screen
-      footer={
+    <Screen>
+      <View style={styles.navigation}>
+        <PillyIconButton icon="back" label="Back" onPress={() => setShowExit(true)} />
         <form.Subscribe selector={(state) => state.values}>
           {(value) => (
             <PillyButton
-              label="Add medicine"
-              icon="done"
+              label="Add"
+              variant="quiet"
+              tone="brand"
+              size="compact"
               loading={createMutation.isPending}
               onPress={() => submit(value)}
-              fullWidth
             />
           )}
         </form.Subscribe>
-      }
-    >
-      <View style={styles.header}>
-        <PillyIconButton icon="back" label="Back" onPress={() => setShowExit(true)} />
-        <PillyText role="title" accessibilityRole="header">
-          Add medicine
-        </PillyText>
       </View>
+      <PillyText role="large-title" accessibilityRole="header">
+        Add medicine
+      </PillyText>
       {validation.bannerIssue ? (
         <PillyBanner kind="error" message={validation.bannerIssue.message} compact />
       ) : null}
@@ -175,30 +162,30 @@ export default function NewMedicationRoute() {
               onToneChange={(tone) => form.setFieldValue('appearanceTone', tone)}
               onSecondaryToneChange={(tone) => form.setFieldValue('appearanceSecondaryTone', tone)}
             />
-            <DaysStep
-              selected={value.selectedDays}
-              error={fieldError?.field === 'selectedDays' ? fieldError.message : undefined}
-              onChange={(days) => {
+            <ScheduleStep
+              selectedDays={value.selectedDays}
+              schedules={value.schedules}
+              error={
+                fieldError?.field === 'selectedDays' || fieldError?.field === 'schedules'
+                  ? fieldError.message
+                  : undefined
+              }
+              onDaysChange={(days) => {
                 clearErrors();
                 form.setFieldValue('selectedDays', days);
               }}
-            />
-            <TimeStep
-              value={value.time}
-              onChange={(time) => {
+              onSchedulesChange={(schedules) => {
                 clearErrors();
-                form.setFieldValue('time', time);
+                form.setFieldValue('schedules', schedules);
               }}
             />
             <DetailsStep
               supply={value.supply}
-              reminderEnabled={value.reminderEnabled}
               error={fieldError?.field === 'supply' ? fieldError.message : undefined}
               onSupplyChange={(supply) => {
                 clearErrors();
                 form.setFieldValue('supply', supply);
               }}
-              onReminderChange={(enabled) => form.setFieldValue('reminderEnabled', enabled)}
             />
           </>
         )}
@@ -219,5 +206,10 @@ export default function NewMedicationRoute() {
 }
 
 const styles = StyleSheet.create({
-  header: { minHeight: 52, flexDirection: 'row', alignItems: 'center', gap: spacing.md },
+  navigation: {
+    minHeight: 44,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
 });
