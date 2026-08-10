@@ -125,6 +125,7 @@ function DoseRow({
               loading={loading}
               disabled={busy && !loading}
               onPress={() => onRecord('taken')}
+              style={styles.takeAction}
             />
             <PillyIconButton
               icon="remove"
@@ -204,10 +205,11 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
   },
   actions: {
-    marginLeft: 'auto',
+    width: '100%',
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.sm,
   },
+  takeAction: { flex: 1 },
   skip: { borderRadius: radii.round, backgroundColor: colors.surfaceSubtle },
 });
