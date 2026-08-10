@@ -3,6 +3,7 @@ import Animated, { FadeIn, FadeOut, LinearTransition, ReduceMotion } from 'react
 
 import type { ScheduledDose } from '@/data/repositories';
 import {
+  MedicationAppearance,
   PillyButton,
   PillyCard,
   PillyIconButton,
@@ -89,7 +90,14 @@ function DoseRow({
         onPress={onOpen}
         style={({ pressed }) => [styles.medicineLink, pressed && styles.pressedLink]}
       >
-        <PillyText role="headline" style={styles.medicineName}>
+        <MedicationAppearance
+          shape={dose.medication.appearanceShape}
+          size={dose.medication.appearanceSize}
+          tone={dose.medication.appearanceTone}
+          secondaryTone={dose.medication.appearanceSecondaryTone}
+          display="mini"
+        />
+        <PillyText role="headline" numberOfLines={2} style={styles.medicineName}>
           {dose.medication.name}
         </PillyText>
         <PillyIcon name="next" size={17} color={colors.textSecondary} />

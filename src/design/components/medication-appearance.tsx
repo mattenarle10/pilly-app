@@ -12,7 +12,7 @@ type Props = {
   size: MedicationAppearanceSize;
   tone: MedicationAppearanceTone;
   secondaryTone?: MedicationAppearanceTone;
-  display?: 'compact' | 'hero';
+  display?: 'mini' | 'compact' | 'hero';
 };
 
 const dimensions: Record<MedicationAppearanceShape, { width: number; height: number }> = {
@@ -49,7 +49,7 @@ export function MedicationAppearance({
   secondaryTone = tone,
   display = 'hero',
 }: Props) {
-  const displayScale = display === 'compact' ? 0.72 : 1;
+  const displayScale = display === 'mini' ? 0.5 : display === 'compact' ? 0.72 : 1;
   const scale = sizeScale[size] * displayScale;
   const width = dimensions[shape].width * scale;
   const height = dimensions[shape].height * scale;
@@ -58,7 +58,11 @@ export function MedicationAppearance({
     <View
       accessibilityElementsHidden
       importantForAccessibility="no-hide-descendants"
-      style={[styles.frame, display === 'compact' && styles.compactFrame]}
+      style={[
+        styles.frame,
+        display === 'compact' && styles.compactFrame,
+        display === 'mini' && styles.miniFrame,
+      ]}
     >
       <View style={[styles.shadow, { width, height, borderRadius: height / 2 }]}>
         <View
@@ -96,6 +100,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   compactFrame: { width: 72, height: 52 },
+  miniFrame: { width: 44, height: 34 },
   shadow: { ...shadows.soft },
   pill: {
     overflow: 'hidden',

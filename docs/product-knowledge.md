@@ -78,20 +78,20 @@ Recommended visual review order: Today, Medicine detail, Edit medicine, Add medi
 
 ### Design review checklist
 
-| Screen                  | Status                 | Next review                                                            |
-| ----------------------- | ---------------------- | ---------------------------------------------------------------------- |
-| Today                   | 90%, checkpoint review | Large text, VoiceOver order, empty/error states, and final device pass |
-| Medicine detail         | Complete               | Release QA only: physical device and accessibility extremes            |
-| Add medicine            | Architecture complete  | Design and behavior pass at default and accessibility text sizes       |
-| Edit medicine           | Complete               | Release QA only: keyboard, VoiceOver, large text, and physical device  |
-| Medicines               | Pending                | Recognition, appearance customization, empty state, and archive access |
-| Week                    | Pending                | Day selection, status consistency, and dense schedules                 |
-| Profile                 | Pending                | Identity card, local photo, privacy, and manage links                  |
-| Pilly Plus              | Pending                | Honest value, purchase, restore, and offline entitlement               |
-| Welcome and Start Small | Pending                | First-run composition and local-first explanation                      |
-| Dose history            | Pending                | Correction clarity and audit readability                               |
+| Screen                  | Status                 | Next review                                                             |
+| ----------------------- | ---------------------- | ----------------------------------------------------------------------- |
+| Today                   | 90%, checkpoint review | Large text, VoiceOver order, empty/error states, and final device pass  |
+| Medicine detail         | Complete               | Release QA only: physical device and accessibility extremes             |
+| Add medicine            | Architecture complete  | Design and behavior pass at default and accessibility text sizes        |
+| Edit medicine           | Complete               | Release QA only: keyboard, VoiceOver, large text, and physical device   |
+| Medicines               | In progress            | Empty, error, archived, varied-appearance, large-text, and VoiceOver QA |
+| Week                    | Pending                | Day selection, status consistency, and dense schedules                  |
+| Profile                 | Pending                | Identity card, local photo, privacy, and manage links                   |
+| Pilly Plus              | Pending                | Honest value, purchase, restore, and offline entitlement                |
+| Welcome and Start Small | Pending                | First-run composition and local-first explanation                       |
+| Dose history            | Pending                | Correction clarity and audit readability                                |
 
-Medicine appearance is local, optional recognition data. Shape, size, and curated soft tones are stored on the medicine and drive the code-native silhouette on Medicine Detail and the Add/Edit preview. Capsules support independently selected colors for each half; round and oval pills use one color. Add/Edit keeps only a compact preview row in the form and opens a dedicated editor sheet for the controls. The name remains the primary identifier. A future pattern or user photo should ship only if it improves recognition, remains legible without motion, and has an explicit privacy and storage model.
+Medicine appearance is local, optional recognition data. Shape, size, and curated soft tones are stored on the medicine and drive the code-native silhouette on Medicine Detail, the Add/Edit preview, the Medicines list, and a quieter cue beside each Today dose. Capsules support independently selected colors for each half; round and oval pills use one color. Add/Edit keeps only a compact preview row in the form and opens a dedicated editor sheet for the controls. The name remains the primary identifier. A future pattern or user photo should ship only if it improves recognition, remains legible without motion, and has an explicit privacy and storage model.
 
 Medicine Detail design and architecture checkpoint completed on 2026-08-10:
 
@@ -118,6 +118,17 @@ Add Medicine architecture checkpoint completed on 2026-08-10:
 - [x] Keep reusable Add/Edit fields in `src/medicine-form/`.
 - [x] Preserve draft restoration, validation, medicine creation, reminder reconciliation, and leave-draft behavior during the move.
 - [ ] Complete the separate design and behavior review on the simulator; the architecture checkpoint does not mark the screen design complete.
+
+Medicines recognition checkpoint started on 2026-08-10:
+
+- [x] Own the page composition in `app/(tabs)/medicines.tsx`; remove the legacy Medicines screen wrapper.
+- [x] Replace generic decorative medicine tiles with each medicine's saved code-native silhouette.
+- [x] Use one list surface with separators instead of a separate card for every medicine.
+- [x] Keep long names to two list lines while preserving the full name on Medicine Detail.
+- [x] Reuse a smaller version of the same silhouette beside the medicine name on Today.
+- [x] Remove the duplicate Pilly Plus promotion from Medicines; Profile remains the Plus entry point.
+- [x] Review populated Medicines and Today states with long-name data on the simulator.
+- [ ] Review empty, error, archived, varied-appearance, large-text, and VoiceOver states before completing the Medicines checkpoint.
 
 Edit Medicine implementation checkpoint completed on 2026-08-10:
 
@@ -210,7 +221,7 @@ Before release:
 - 2026-08-10: Add Medicine page composition now lives in `app/medicine/new.tsx`; reusable Add/Edit fields remain in `src/medicine-form/`. Do not reintroduce a `src/screens/` page wrapper for this route.
 - 2026-08-10: Detail screens use a calm, text-first hierarchy. Medicine Detail uses the medicine name as its single signature typographic moment, groups Schedule and Supply in one Overview surface, keeps setup presets in Add/Edit, and auto-saves reversible supply changes with visible failure recovery.
 - 2026-08-10: Visual richness comes from hierarchy, composition, typography, material, and interaction before color. New color meanings require an explicit design-direction and decision-log update; polish passes do not invent route-specific tint mappings.
-- 2026-08-10: Medicine appearance is recognition data, not decoration. A saved shape, size, and person-selected soft tone drive one code-native silhouette on Detail and a focused preview in Add/Edit. Existing medicines migrate to a medium rose capsule.
+- 2026-08-10: Medicine appearance is recognition data, not decoration. A saved shape, size, and person-selected soft tone drive one code-native silhouette on Detail, a focused preview in Add/Edit, a compact Medicines-list cue, and a quieter Today cue. Existing medicines migrate to a medium rose capsule.
 - 2026-08-10: Add/Edit show appearance as one compact preview row. A dedicated sheet owns shape, size, and curated color choices; capsules persist separate colors for their two halves.
 - 2026-08-10: Edit Medicine uses transparent Back and Done actions in a fixed 44-point navigation lane because saving the full form is consequential. The lane never overlays fields, Done stays disabled until the draft is valid and semantically changed, and dirty navigation requires an explicit discard decision. Per-control Liquid Glass was rejected after simulator review because it read as two pasted-on bubbles.
 - 2026-08-08: Replace custom provider nesting with one `AppRuntime`; derive the stateless repository through `useRepository()` from Expo SQLite context.
