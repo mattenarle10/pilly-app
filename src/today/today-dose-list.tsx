@@ -10,7 +10,6 @@ import {
   PillyText,
   StatusLabel,
 } from '@/design/components';
-import { PillyIcon } from '@/design/icons';
 import { colors, radii, spacing } from '@/design/tokens';
 import { estimatedDaysLeft } from '@/domain/supply';
 import type { DoseActionStatus } from '@/hooks';
@@ -100,7 +99,6 @@ function DoseRow({
         <PillyText role="headline" numberOfLines={2} style={styles.medicineName}>
           {dose.medication.name}
         </PillyText>
-        <PillyIcon name="next" size={17} color={colors.textSecondary} />
       </Pressable>
       {dose.medication.instructions ? (
         <PillyText role="caption" muted>
@@ -118,14 +116,6 @@ function DoseRow({
         exiting={FadeOut.duration(100).reduceMotion(ReduceMotion.System)}
         style={styles.footer}
       >
-        <View style={styles.metadata}>
-          <StatusLabel status={dose.status} />
-          {dose.status !== 'notRecorded' && daysLeft !== null ? (
-            <PillyText role="caption" muted>
-              About {daysLeft} {daysLeft === 1 ? 'day' : 'days'} left
-            </PillyText>
-          ) : null}
-        </View>
         {dose.status === 'notRecorded' ? (
           <View style={styles.actions}>
             <PillyButton
@@ -145,13 +135,23 @@ function DoseRow({
             />
           </View>
         ) : (
-          <PillyIconButton
-            icon="edit"
-            label={`Change status for ${dose.medication.name}`}
-            disabled={busy}
-            onPress={onCorrect}
-            style={styles.skip}
-          />
+          <>
+            <View style={styles.metadata}>
+              <StatusLabel status={dose.status} />
+              {daysLeft !== null ? (
+                <PillyText role="caption" muted>
+                  About {daysLeft} {daysLeft === 1 ? 'day' : 'days'} left
+                </PillyText>
+              ) : null}
+            </View>
+            <PillyIconButton
+              icon="edit"
+              label={`Change status for ${dose.medication.name}`}
+              disabled={busy}
+              onPress={onCorrect}
+              style={styles.skip}
+            />
+          </>
         )}
       </Animated.View>
     </Animated.View>
@@ -203,6 +203,11 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
     gap: spacing.sm,
   },
-  actions: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
+  actions: {
+    marginLeft: 'auto',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+  },
   skip: { borderRadius: radii.round, backgroundColor: colors.surfaceSubtle },
 });

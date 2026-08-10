@@ -49,7 +49,7 @@ export function MedicationAppearance({
   secondaryTone = tone,
   display = 'hero',
 }: Props) {
-  const displayScale = display === 'mini' ? 0.5 : display === 'compact' ? 0.72 : 1;
+  const displayScale = display === 'mini' ? 0.42 : display === 'compact' ? 0.72 : 1;
   const scale = sizeScale[size] * displayScale;
   const width = dimensions[shape].width * scale;
   const height = dimensions[shape].height * scale;
@@ -100,7 +100,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   compactFrame: { width: 72, height: 52 },
-  miniFrame: { width: 44, height: 34 },
+  miniFrame: { width: 38, height: 30 },
   shadow: { ...shadows.soft },
   pill: {
     overflow: 'hidden',
