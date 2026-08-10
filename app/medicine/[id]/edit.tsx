@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { ScrollView, StyleSheet, View } from 'react-native';
+import { ScrollView, StyleSheet, useWindowDimensions, View } from 'react-native';
 import { router, useLocalSearchParams, useNavigation } from 'expo-router';
 import { useForm, useStore } from '@tanstack/react-form';
 
@@ -55,6 +55,7 @@ function EditMedicineForm({
   detail: MedicationDetail;
   saveMutation: ReturnType<typeof useEditMedicine>['saveMutation'];
 }) {
+  const { width: windowWidth } = useWindowDimensions();
   const navigation = useNavigation();
   const schedule = detail.schedules[0];
   const allowLeave = useRef(false);
@@ -125,11 +126,12 @@ function EditMedicineForm({
           loading={saveMutation.isPending}
           disabled={!isDirty || issue !== null}
           onPress={() => void form.handleSubmit()}
+          style={styles.navigationAction}
         />
       </View>
       <ScrollView
         automaticallyAdjustKeyboardInsets
-        contentContainerStyle={styles.formContent}
+        contentContainerStyle={[styles.formContent, { width: windowWidth }]}
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
         style={styles.formViewport}
@@ -236,19 +238,21 @@ function EditState({
 }
 
 const styles = StyleSheet.create({
-  screen: { gap: spacing.md, paddingVertical: spacing.sm },
+  screen: { paddingHorizontal: 0, paddingVertical: spacing.sm },
   navigation: {
     minHeight: 44,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
+    paddingHorizontal: spacing.xl,
   },
-  formViewport: { flex: 1, marginHorizontal: -spacing.xl },
+  formViewport: { flex: 1 },
   formContent: {
     gap: spacing.lg,
     paddingHorizontal: spacing.xl,
-    paddingTop: spacing.md,
-    paddingBottom: spacing.lg,
+    paddingTop: spacing.sm,
+    paddingBottom: spacing.xxxl,
   },
   navigationIconButton: { width: 44, height: 44 },
+  navigationAction: { minWidth: 88, paddingHorizontal: spacing.sm },
 });
