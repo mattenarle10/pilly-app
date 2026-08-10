@@ -82,7 +82,7 @@ Recommended visual review order: Today, Medicine detail, Edit medicine, Add medi
 | ----------------------- | ---------------------- | ----------------------------------------------------------------------- |
 | Today                   | 90%, checkpoint review | Large text, VoiceOver order, empty/error states, and final device pass  |
 | Medicine detail         | Complete               | Release QA only: physical device and accessibility extremes             |
-| Add medicine            | In progress            | Complete end-to-end default and accessibility-size review               |
+| Add medicine            | Complete               | Release QA only: keyboard, VoiceOver, and physical device               |
 | Edit medicine           | Complete               | Release QA only: keyboard, VoiceOver, large text, and physical device   |
 | Medicines               | In progress            | Empty, error, archived, varied-appearance, large-text, and VoiceOver QA |
 | Week                    | Pending                | Day selection, status consistency, and dense schedules                  |
@@ -118,7 +118,8 @@ Add Medicine architecture checkpoint completed on 2026-08-10:
 - [x] Keep reusable Add/Edit fields in `src/medicine-form/`.
 - [x] Preserve draft restoration, validation, medicine creation, reminder reconciliation, and leave-draft behavior during the move.
 - [x] Keep Back and Add in a quiet navigation lane so a large sticky action never covers the form.
-- [ ] Complete the separate design and behavior review on the simulator; the architecture checkpoint does not mark the screen design complete.
+- [x] Complete the separate default-size and largest-accessibility-size design review on the simulator.
+- [x] Keep compact labels responsive so accessibility text never widens or clips the form.
 
 Multiple daily schedule checkpoint completed on 2026-08-10:
 
@@ -249,7 +250,7 @@ Before release:
 - 2026-08-10: Medicine appearance is recognition data, not decoration. A saved shape, size, and person-selected soft tone drive one code-native silhouette on Detail, a focused preview in Add/Edit, a compact Medicines-list cue, and a quieter Today cue. Existing medicines migrate to a medium rose capsule.
 - 2026-08-10: Add/Edit show appearance as one compact preview row. A dedicated sheet owns shape, size, and curated color choices; capsules persist separate colors for their two halves.
 - 2026-08-10: Edit Medicine uses transparent Back and Done actions in a fixed 44-point navigation lane because saving the full form is consequential. The lane never overlays fields, Done stays disabled until the draft is valid and semantically changed, and dirty navigation requires an explicit discard decision. Per-control Liquid Glass was rejected after simulator review because it read as two pasted-on bubbles.
-- 2026-08-10: Add Medicine mirrors the quiet Back/action navigation lane and keeps its page title below it. Add validates on press and remains reachable without a full-width sticky footer covering form content at large text sizes.
+- 2026-08-10: Add Medicine mirrors the quiet Back/action navigation lane and keeps its page title below it. The transparent lane remains fixed outside the form scroll; Add validates on press and remains reachable without a full-width sticky footer covering editable content. Compact control labels receive real layout width at accessibility text sizes instead of clipping or forcing the whole form smaller.
 - 2026-08-10: Add/Edit schedules use one shared weekday pattern with one or more exact local times. Each time owns its reminder state; Morning, Midday, Afternoon, Evening, and Night are derived context rather than saved meal semantics. One schedule surface and quiet separators scale the form without turning each time into another card.
 - 2026-08-10: Today treats a future dose as schedule information, not an available action. An unrecorded dose shows a quiet Later today state until its exact local time; Taken and Skip appear at that time. Recorded states remain visible and correctable, and the summary separates ready doses from later doses.
 - 2026-08-10: Today is limited to medicine identity, scheduled time, and recording state. Supply estimates belong on Medicine Detail and must not increase Today-row density.

@@ -60,15 +60,16 @@ export function PillyButton({
           ) : null}
           <PillyText
             role="label"
-            style={
+            style={[
+              styles.label,
               variant === 'primary'
                 ? styles.primaryLabel
                 : variant === 'danger'
                   ? styles.dangerLabel
                   : tone === 'brand'
                     ? styles.brandLabel
-                    : undefined
-            }
+                    : undefined,
+            ]}
           >
             {label}
           </PillyText>
@@ -84,11 +85,13 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   content: {
+    width: '100%',
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: spacing.sm,
   },
+  label: { flex: 1, textAlign: 'center' },
   fullWidth: { width: '100%' },
   primaryLabel: { color: colors.surface },
   brandLabel: { color: colors.brand },

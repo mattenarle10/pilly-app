@@ -44,7 +44,7 @@ export function PillyField({
           {label}
         </PillyText>
         {optional ? (
-          <PillyText role="caption" muted>
+          <PillyText role="caption" muted style={styles.optionalLabel}>
             Optional
           </PillyText>
         ) : null}
@@ -114,7 +114,8 @@ const styles = StyleSheet.create({
     ...controlTypography,
   },
   inputLargeText: { height: undefined, minHeight: 32 },
-  label: { fontWeight: '600' },
+  label: { flex: 1, fontWeight: '600' },
+  optionalLabel: { flex: 1, textAlign: 'right' },
   iconSlot: {
     width: 24,
     height: 24,
