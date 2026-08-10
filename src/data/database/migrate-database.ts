@@ -1,6 +1,6 @@
 import type { SQLiteDatabase } from 'expo-sqlite';
 
-const databaseVersion = 3;
+const databaseVersion = 5;
 
 export async function migrateDatabase(database: SQLiteDatabase): Promise<void> {
   await database.execAsync('PRAGMA journal_mode = WAL; PRAGMA foreign_keys = ON;');
@@ -108,6 +108,24 @@ export async function migrateDatabase(database: SQLiteDatabase): Promise<void> {
       DROP TABLE supply_events;
       ALTER TABLE supply_events_v3 RENAME TO supply_events;
       CREATE INDEX supply_events_medication_id_idx ON supply_events(medication_id);
+    `);
+  }
+
+  if (currentVersion < 4) {
+    await database.execAsync(`
+      ALTER TABLE medications ADD COLUMN appearance_shape TEXT NOT NULL DEFAULT 'capsule'
+        CHECK(appearance_shape IN ('round', 'oval', 'capsule'));
+      ALTER TABLE medications ADD COLUMN appearance_size TEXT NOT NULL DEFAULT 'medium'
+        CHECK(appearance_size IN ('small', 'medium', 'large'));
+      ALTER TABLE medications ADD COLUMN appearance_tone TEXT NOT NULL DEFAULT 'rose'
+        CHECK(appearance_tone IN ('rose', 'peach', 'lavender', 'neutral'));
+    `);
+  }
+
+  if (currentVersion < 5) {
+    await database.execAsync(`
+      ALTER TABLE medications ADD COLUMN appearance_secondary_tone TEXT NOT NULL DEFAULT 'rose'
+        CHECK(appearance_secondary_tone IN ('rose', 'peach', 'lavender', 'neutral'));
     `);
   }
   await database.execAsync(`PRAGMA user_version = ${databaseVersion}`);

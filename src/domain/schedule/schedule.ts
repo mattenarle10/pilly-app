@@ -1,5 +1,10 @@
 import type { Schedule } from './schedule.schema';
 
+export type ScheduleConfiguration = Pick<
+  Schedule,
+  'hour' | 'minute' | 'weekdayMask' | 'sortOrder' | 'reminderEnabled'
+>;
+
 export const everyDayMask = 127;
 
 export function weekdayMask(days: readonly number[]): number {
@@ -45,4 +50,22 @@ export function formatTime(hour: number, minute: number): string {
   return new Intl.DateTimeFormat(undefined, { hour: 'numeric', minute: '2-digit' }).format(
     new Date(2000, 0, 1, hour, minute),
   );
+}
+
+export function schedulesMatch(
+  current: readonly ScheduleConfiguration[],
+  next: readonly ScheduleConfiguration[],
+): boolean {
+  if (current.length !== next.length) return false;
+  return current.every((schedule, index) => {
+    const candidate = next[index];
+    return (
+      candidate !== undefined &&
+      schedule.hour === candidate.hour &&
+      schedule.minute === candidate.minute &&
+      schedule.weekdayMask === candidate.weekdayMask &&
+      schedule.sortOrder === candidate.sortOrder &&
+      schedule.reminderEnabled === candidate.reminderEnabled
+    );
+  });
 }

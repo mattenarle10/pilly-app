@@ -3,6 +3,7 @@ import {
   everyDayMask,
   isScheduledOn,
   occurrenceId,
+  schedulesMatch,
   toLocalDate,
   weekdayMask,
 } from './schedule';
@@ -27,5 +28,18 @@ describe('schedule', () => {
     const scheduled = dateForSchedule({ hour: 9, minute: 15 }, new Date(2026, 7, 7, 20, 0));
     expect(scheduled.getHours()).toBe(9);
     expect(scheduled.getMinutes()).toBe(15);
+  });
+
+  test('detects whether an edit requires a new schedule version', () => {
+    const schedule = {
+      hour: 9,
+      minute: 0,
+      weekdayMask: 127,
+      sortOrder: 0,
+      reminderEnabled: true,
+    };
+    expect(schedulesMatch([schedule], [{ ...schedule }])).toBe(true);
+    expect(schedulesMatch([schedule], [{ ...schedule, minute: 15 }])).toBe(false);
+    expect(schedulesMatch([schedule], [])).toBe(false);
   });
 });

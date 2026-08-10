@@ -24,6 +24,7 @@ import {
   dateForSchedule,
   isScheduledOn,
   occurrenceId,
+  schedulesMatch,
   scheduleSchema,
   toLocalDate,
   type Schedule,
@@ -95,6 +96,10 @@ export class PillyRepository {
           name: validated.name,
           instructions: validated.instructions,
           supplyCount: validated.supplyCount,
+          appearanceShape: validated.appearanceShape,
+          appearanceSize: validated.appearanceSize,
+          appearanceTone: validated.appearanceTone,
+          appearanceSecondaryTone: validated.appearanceSecondaryTone,
           createdAt: now,
           updatedAt: now,
           archivedAt: null,
@@ -161,15 +166,33 @@ export class PillyRepository {
       .where(eq(medications.id, medicationId))
       .get();
     if (!medication) throw new Error('Medicine not found.');
+    const currentSchedules = this.db
+      .select()
+      .from(schedules)
+      .where(and(eq(schedules.medicationId, medicationId), isNull(schedules.endsOn)))
+      .orderBy(asc(schedules.sortOrder))
+      .all();
+    const scheduleChanged = !schedulesMatch(currentSchedules, validated.schedules);
     const now = new Date();
     const effectiveDate = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
     const startsOn = toLocalDate(effectiveDate);
     const endsOn = toLocalDate(now);
     const createdAt = now.toISOString();
-    const createdSchedules = validated.schedules.map((schedule) => ({
-      ...schedule,
-      id: Crypto.randomUUID(),
-    }));
+    const savedSchedules = scheduleChanged
+      ? validated.schedules.map((schedule) => ({ ...schedule, id: Crypto.randomUUID() }))
+      : currentSchedules.map((schedule) => ({
+          id: schedule.id,
+          hour: schedule.hour,
+          minute: schedule.minute,
+          weekdayMask: schedule.weekdayMask,
+          sortOrder: schedule.sortOrder,
+          reminderEnabled: schedule.reminderEnabled,
+        }));
+    const supplyChanged = medication.supplyCount !== validated.supplyCount;
+    const supplyDelta =
+      medication.supplyCount === null || validated.supplyCount === null
+        ? null
+        : validated.supplyCount - medication.supplyCount;
 
     this.db.transaction((transaction) => {
       transaction
@@ -177,34 +200,55 @@ export class PillyRepository {
         .set({
           name: validated.name,
           instructions: validated.instructions,
+          supplyCount: validated.supplyCount,
+          appearanceShape: validated.appearanceShape,
+          appearanceSize: validated.appearanceSize,
+          appearanceTone: validated.appearanceTone,
+          appearanceSecondaryTone: validated.appearanceSecondaryTone,
           updatedAt: createdAt,
         })
         .where(eq(medications.id, medicationId))
         .run();
-      transaction
-        .update(schedules)
-        .set({ endsOn })
-        .where(and(eq(schedules.medicationId, medicationId), isNull(schedules.endsOn)))
-        .run();
-      createdSchedules.forEach((schedule, index) => {
+      if (supplyChanged) {
         transaction
-          .insert(schedules)
+          .insert(supplyEvents)
           .values({
-            id: schedule.id,
+            id: Crypto.randomUUID(),
             medicationId,
-            hour: schedule.hour,
-            minute: schedule.minute,
-            weekdayMask: schedule.weekdayMask,
-            sortOrder: index,
-            reminderEnabled: schedule.reminderEnabled,
-            startsOn,
-            endsOn: null,
-            createdAt,
+            doseOccurrenceId: null,
+            delta: supplyDelta,
+            resultingCount: validated.supplyCount,
+            reason: 'manualCount',
+            occurredAt: createdAt,
           })
           .run();
-      });
+      }
+      if (scheduleChanged) {
+        transaction
+          .update(schedules)
+          .set({ endsOn })
+          .where(and(eq(schedules.medicationId, medicationId), isNull(schedules.endsOn)))
+          .run();
+        savedSchedules.forEach((schedule, index) => {
+          transaction
+            .insert(schedules)
+            .values({
+              id: schedule.id,
+              medicationId,
+              hour: schedule.hour,
+              minute: schedule.minute,
+              weekdayMask: schedule.weekdayMask,
+              sortOrder: index,
+              reminderEnabled: schedule.reminderEnabled,
+              startsOn,
+              endsOn: null,
+              createdAt,
+            })
+            .run();
+        });
+      }
     });
-    return { medicationId, schedules: createdSchedules };
+    return { medicationId, schedules: savedSchedules };
   }
 
   async listReminderSchedules(): Promise<ReminderSchedule[]> {
@@ -430,6 +474,14 @@ export class PillyRepository {
         })
         .run();
     });
+  }
+
+  async setScheduleReminderEnabled(scheduleId: string, enabled: boolean): Promise<void> {
+    this.db
+      .update(schedules)
+      .set({ reminderEnabled: enabled })
+      .where(eq(schedules.id, scheduleId))
+      .run();
   }
 
   async setMedicationArchived(medicationId: string, archived: boolean): Promise<void> {
