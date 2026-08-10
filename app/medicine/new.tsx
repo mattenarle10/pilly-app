@@ -1,19 +1,11 @@
 import { useEffect, useRef, useState } from 'react';
-import { ScrollView, StyleSheet, useWindowDimensions, View } from 'react-native';
-import { useForm } from '@tanstack/react-form';
+import { ScrollView } from 'react-native';
+import { useForm, useStore } from '@tanstack/react-form';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { router } from 'expo-router';
+import { router, useNavigation } from 'expo-router';
 import Storage from 'expo-sqlite/kv-store';
 
-import {
-  PillyBanner,
-  PillyButton,
-  PillyIconButton,
-  PillyModal,
-  PillyText,
-  Screen,
-} from '@/design/components';
-import { spacing } from '@/design/tokens';
+import { PillyBanner, PillyModal } from '@/design/components';
 import { useRepository } from '@/hooks';
 import {
   AppearanceStep,
@@ -24,6 +16,7 @@ import {
   draftMessages,
   draftSchema,
   friendlySaveError,
+  MedicineFormShell,
   NameStep,
   ScheduleStep,
   scheduleConfigurationFromDraft,
@@ -34,11 +27,13 @@ import {
 import { scheduleLocalReminders } from '@/platform/notifications';
 
 export default function NewMedicationRoute() {
-  const { width: windowWidth } = useWindowDimensions();
+  const navigation = useNavigation();
   const repository = useRepository();
   const queryClient = useQueryClient();
   const validation = useMedicationValidation();
   const formScroll = useRef<ScrollView>(null);
+  const allowLeave = useRef(false);
+  const [pendingNavigation, setPendingNavigation] = useState<(() => void) | null>(null);
   const [draftWarning, setDraftWarning] = useState<string | null>(null);
   const [showExit, setShowExit] = useState(false);
   const form = useForm({
@@ -74,9 +69,11 @@ export default function NewMedicationRoute() {
         reminderStatus === 'denied' ? 'denied' : reminderStatus === 'failed' ? 'failed' : 'none',
       );
       await queryClient.invalidateQueries();
+      allowLeave.current = true;
       router.replace('/(tabs)/today');
     },
   });
+  const values = useStore(form.store, (state) => state.values);
 
   useEffect(() => {
     void Storage.getItem(draftKey)
@@ -91,6 +88,17 @@ export default function NewMedicationRoute() {
       })
       .catch(() => setDraftWarning(draftMessages.reset));
   }, [form]);
+
+  useEffect(
+    () =>
+      navigation.addListener('beforeRemove', (event) => {
+        if (allowLeave.current) return;
+        event.preventDefault();
+        setPendingNavigation(() => () => navigation.dispatch(event.data.action));
+        setShowExit(true);
+      }),
+    [navigation],
+  );
 
   const saveDraft = async (value: MedicationDraft) => {
     try {
@@ -114,136 +122,92 @@ export default function NewMedicationRoute() {
   const fieldError = validation.fieldIssue;
 
   return (
-    <Screen scroll={false} contentStyle={styles.screen}>
-      <View style={styles.navigation}>
-        <PillyIconButton
-          icon="back"
-          label="Back"
-          style={styles.navigationIconButton}
-          onPress={() => setShowExit(true)}
+    <MedicineFormShell
+      title="Add medicine"
+      actionLabel="Add"
+      actionLoading={createMutation.isPending}
+      onAction={() => submit(values)}
+      scrollRef={formScroll}
+      modal={
+        <PillyModal
+          visible={showExit}
+          title="Leave setup?"
+          message="Your draft stays on this iPhone."
+          confirmLabel="Leave"
+          cancelLabel="Keep editing"
+          onConfirm={() => {
+            const leave = pendingNavigation ?? (() => router.back());
+            void saveDraft(form.state.values).finally(() => {
+              allowLeave.current = true;
+              setShowExit(false);
+              setPendingNavigation(null);
+              leave();
+            });
+          }}
+          onClose={() => {
+            setShowExit(false);
+            setPendingNavigation(null);
+          }}
         />
-        <form.Subscribe selector={(state) => state.values}>
-          {(value) => (
-            <PillyButton
-              label="Add"
-              variant="quiet"
-              tone="brand"
-              size="compact"
-              loading={createMutation.isPending}
-              onPress={() => submit(value)}
-              style={styles.navigationAction}
-            />
-          )}
-        </form.Subscribe>
-      </View>
-      <ScrollView
-        ref={formScroll}
-        automaticallyAdjustKeyboardInsets
-        contentContainerStyle={[styles.formContent, { width: windowWidth }]}
-        keyboardShouldPersistTaps="handled"
-        showsVerticalScrollIndicator={false}
-        style={styles.formViewport}
-      >
-        <PillyText role="large-title" accessibilityRole="header">
-          Add medicine
-        </PillyText>
-        {validation.bannerIssue ? (
-          <PillyBanner kind="error" message={validation.bannerIssue.message} compact />
-        ) : null}
-        {createMutation.isError ? (
-          <PillyBanner
-            kind="error"
-            title="Not saved"
-            message={friendlySaveError(createMutation.error)}
-            compact
-          />
-        ) : null}
-        {draftWarning ? <PillyBanner kind="warning" message={draftWarning} compact /> : null}
-        <form.Subscribe selector={(state) => state.values}>
-          {(value) => (
-            <>
-              <NameStep
-                name={value.name}
-                instructions={value.instructions}
-                error={fieldError?.field === 'name' ? fieldError.message : undefined}
-                onNameChange={(text) => {
-                  clearErrors();
-                  form.setFieldValue('name', text);
-                }}
-                onInstructionsChange={(text) => form.setFieldValue('instructions', text)}
-              />
-              <AppearanceStep
-                shape={value.appearanceShape}
-                size={value.appearanceSize}
-                tone={value.appearanceTone}
-                secondaryTone={value.appearanceSecondaryTone}
-                onShapeChange={(shape) => form.setFieldValue('appearanceShape', shape)}
-                onSizeChange={(size) => form.setFieldValue('appearanceSize', size)}
-                onToneChange={(tone) => form.setFieldValue('appearanceTone', tone)}
-                onSecondaryToneChange={(tone) =>
-                  form.setFieldValue('appearanceSecondaryTone', tone)
-                }
-              />
-              <ScheduleStep
-                selectedDays={value.selectedDays}
-                schedules={value.schedules}
-                error={
-                  fieldError?.field === 'selectedDays' || fieldError?.field === 'schedules'
-                    ? fieldError.message
-                    : undefined
-                }
-                onDaysChange={(days) => {
-                  clearErrors();
-                  form.setFieldValue('selectedDays', days);
-                }}
-                onSchedulesChange={(schedules) => {
-                  clearErrors();
-                  form.setFieldValue('schedules', schedules);
-                }}
-              />
-              <DetailsStep
-                supply={value.supply}
-                error={fieldError?.field === 'supply' ? fieldError.message : undefined}
-                onSupplyChange={(supply) => {
-                  clearErrors();
-                  form.setFieldValue('supply', supply);
-                }}
-              />
-            </>
-          )}
-        </form.Subscribe>
-      </ScrollView>
-      <PillyModal
-        visible={showExit}
-        title="Leave setup?"
-        message="Your draft stays on this iPhone."
-        confirmLabel="Leave"
-        cancelLabel="Keep editing"
-        onConfirm={() => {
-          void saveDraft(form.state.values).finally(() => router.back());
+      }
+    >
+      {validation.bannerIssue ? (
+        <PillyBanner kind="error" message={validation.bannerIssue.message} compact />
+      ) : null}
+      {createMutation.isError ? (
+        <PillyBanner
+          kind="error"
+          title="Not saved"
+          message={friendlySaveError(createMutation.error)}
+          compact
+        />
+      ) : null}
+      {draftWarning ? <PillyBanner kind="warning" message={draftWarning} compact /> : null}
+      <NameStep
+        name={values.name}
+        instructions={values.instructions}
+        error={fieldError?.field === 'name' ? fieldError.message : undefined}
+        onNameChange={(text) => {
+          clearErrors();
+          form.setFieldValue('name', text);
         }}
-        onClose={() => setShowExit(false)}
+        onInstructionsChange={(text) => form.setFieldValue('instructions', text)}
       />
-    </Screen>
+      <AppearanceStep
+        shape={values.appearanceShape}
+        size={values.appearanceSize}
+        tone={values.appearanceTone}
+        secondaryTone={values.appearanceSecondaryTone}
+        onShapeChange={(shape) => form.setFieldValue('appearanceShape', shape)}
+        onSizeChange={(size) => form.setFieldValue('appearanceSize', size)}
+        onToneChange={(tone) => form.setFieldValue('appearanceTone', tone)}
+        onSecondaryToneChange={(tone) => form.setFieldValue('appearanceSecondaryTone', tone)}
+      />
+      <ScheduleStep
+        selectedDays={values.selectedDays}
+        schedules={values.schedules}
+        error={
+          fieldError?.field === 'selectedDays' || fieldError?.field === 'schedules'
+            ? fieldError.message
+            : undefined
+        }
+        onDaysChange={(days) => {
+          clearErrors();
+          form.setFieldValue('selectedDays', days);
+        }}
+        onSchedulesChange={(schedules) => {
+          clearErrors();
+          form.setFieldValue('schedules', schedules);
+        }}
+      />
+      <DetailsStep
+        supply={values.supply}
+        error={fieldError?.field === 'supply' ? fieldError.message : undefined}
+        onSupplyChange={(supply) => {
+          clearErrors();
+          form.setFieldValue('supply', supply);
+        }}
+      />
+    </MedicineFormShell>
   );
 }
-
-const styles = StyleSheet.create({
-  screen: { paddingHorizontal: 0, paddingVertical: spacing.sm },
-  navigation: {
-    minHeight: 44,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: spacing.xl,
-  },
-  formViewport: { flex: 1 },
-  formContent: {
-    gap: spacing.lg,
-    paddingHorizontal: spacing.xl,
-    paddingTop: spacing.sm,
-    paddingBottom: spacing.lg,
-  },
-  navigationIconButton: { width: 44, height: 44 },
-  navigationAction: { minWidth: 88, paddingHorizontal: spacing.sm },
-});

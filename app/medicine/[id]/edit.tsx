@@ -1,25 +1,16 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { ScrollView, StyleSheet, useWindowDimensions, View } from 'react-native';
 import { router, useLocalSearchParams, useNavigation } from 'expo-router';
 import { useForm, useStore } from '@tanstack/react-form';
 
 import type { MedicationDetail } from '@/data/repositories';
-import {
-  EmptyState,
-  PillyBanner,
-  PillyButton,
-  PillyIconButton,
-  PillyModal,
-  PillyText,
-  Screen,
-} from '@/design/components';
-import { spacing } from '@/design/tokens';
+import { EmptyState, PillyBanner, PillyModal, Screen } from '@/design/components';
 import { schedulesMatch } from '@/domain/schedule';
 import { useEditMedicine } from '@/hooks';
 import {
   AppearanceStep,
   DetailsStep,
   friendlySaveError,
+  MedicineFormShell,
   medicationDraftsMatch,
   NameStep,
   ScheduleStep,
@@ -55,7 +46,6 @@ function EditMedicineForm({
   detail: MedicationDetail;
   saveMutation: ReturnType<typeof useEditMedicine>['saveMutation'];
 }) {
-  const { width: windowWidth } = useWindowDimensions();
   const navigation = useNavigation();
   const schedule = detail.schedules[0];
   const allowLeave = useRef(false);
@@ -110,105 +100,79 @@ function EditMedicineForm({
   };
 
   return (
-    <Screen scroll={false} contentStyle={styles.screen}>
-      <View style={styles.navigation}>
-        <PillyIconButton
-          icon="back"
-          label="Back"
-          style={styles.navigationIconButton}
-          onPress={() => router.back()}
+    <MedicineFormShell
+      title="Edit medicine"
+      actionLabel="Done"
+      actionLoading={saveMutation.isPending}
+      actionDisabled={!isDirty || issue !== null}
+      onAction={() => void form.handleSubmit()}
+      modal={
+        <PillyModal
+          visible={pendingNavigation !== null}
+          title="Discard changes?"
+          message="Your edits haven’t been saved."
+          confirmLabel="Discard"
+          destructive
+          onConfirm={() => {
+            if (!pendingNavigation) return;
+            allowLeave.current = true;
+            setPendingNavigation(null);
+            pendingNavigation();
+          }}
+          onClose={() => setPendingNavigation(null)}
         />
-        <PillyButton
-          label="Done"
-          variant="quiet"
-          tone="brand"
-          size="compact"
-          loading={saveMutation.isPending}
-          disabled={!isDirty || issue !== null}
-          onPress={() => void form.handleSubmit()}
-          style={styles.navigationAction}
+      }
+    >
+      {saveMutation.isError ? (
+        <PillyBanner
+          kind="error"
+          title="Changes not saved"
+          message={friendlySaveError(saveMutation.error)}
+          compact
         />
-      </View>
-      <ScrollView
-        automaticallyAdjustKeyboardInsets
-        contentContainerStyle={[styles.formContent, { width: windowWidth }]}
-        keyboardShouldPersistTaps="handled"
-        showsVerticalScrollIndicator={false}
-        style={styles.formViewport}
-      >
-        <PillyText
-          role="large-title"
-          accessibilityRole="header"
-          numberOfLines={2}
-          ellipsizeMode="tail"
-        >
-          {detail.medication.name}
-        </PillyText>
-        {saveMutation.isError ? (
-          <PillyBanner
-            kind="error"
-            title="Changes not saved"
-            message={friendlySaveError(saveMutation.error)}
-            compact
-          />
-        ) : null}
-        <NameStep
-          autoFocus={false}
-          name={values.name}
-          instructions={values.instructions}
-          error={issue?.field === 'name' ? issue.message : undefined}
-          onNameChange={(text) => setFieldValue('name', text)}
-          onInstructionsChange={(text) => setFieldValue('instructions', text)}
-        />
-        <AppearanceStep
-          shape={values.appearanceShape}
-          size={values.appearanceSize}
-          tone={values.appearanceTone}
-          secondaryTone={values.appearanceSecondaryTone}
-          onShapeChange={(shape) => setFieldValue('appearanceShape', shape)}
-          onSizeChange={(size) => setFieldValue('appearanceSize', size)}
-          onToneChange={(tone) => setFieldValue('appearanceTone', tone)}
-          onSecondaryToneChange={(tone) => setFieldValue('appearanceSecondaryTone', tone)}
-        />
-        <ScheduleStep
-          selectedDays={values.selectedDays}
-          schedules={values.schedules}
-          error={
-            issue?.field === 'selectedDays' || issue?.field === 'schedules'
-              ? issue.message
-              : undefined
-          }
-          onDaysChange={(days) => setFieldValue('selectedDays', days)}
-          onSchedulesChange={(schedules) => setFieldValue('schedules', schedules)}
-        />
-        <DetailsStep
-          supply={values.supply}
-          error={issue?.field === 'supply' ? issue.message : undefined}
-          onSupplyChange={(supply) => setFieldValue('supply', supply)}
-        />
-        {scheduleChanged ? (
-          <PillyBanner
-            kind="info"
-            message="Schedule changes start tomorrow. Past records stay unchanged."
-            compact
-          />
-        ) : null}
-      </ScrollView>
-      <PillyModal
-        visible={pendingNavigation !== null}
-        title="Discard changes?"
-        message="Your edits haven’t been saved."
-        confirmLabel="Discard"
-        destructive
-        onConfirm={() => {
-          if (!pendingNavigation) return;
-          allowLeave.current = true;
-          setPendingNavigation(null);
-          pendingNavigation();
-        }}
-        onClose={() => setPendingNavigation(null)}
+      ) : null}
+      <NameStep
+        autoFocus={false}
+        name={values.name}
+        instructions={values.instructions}
+        error={issue?.field === 'name' ? issue.message : undefined}
+        onNameChange={(text) => setFieldValue('name', text)}
+        onInstructionsChange={(text) => setFieldValue('instructions', text)}
       />
-    </Screen>
+      <AppearanceStep
+        shape={values.appearanceShape}
+        size={values.appearanceSize}
+        tone={values.appearanceTone}
+        secondaryTone={values.appearanceSecondaryTone}
+        onShapeChange={(shape) => setFieldValue('appearanceShape', shape)}
+        onSizeChange={(size) => setFieldValue('appearanceSize', size)}
+        onToneChange={(tone) => setFieldValue('appearanceTone', tone)}
+        onSecondaryToneChange={(tone) => setFieldValue('appearanceSecondaryTone', tone)}
+      />
+      <ScheduleStep
+        selectedDays={values.selectedDays}
+        schedules={values.schedules}
+        error={
+          issue?.field === 'selectedDays' || issue?.field === 'schedules'
+            ? issue.message
+            : undefined
+        }
+        onDaysChange={(days) => setFieldValue('selectedDays', days)}
+        onSchedulesChange={(schedules) => setFieldValue('schedules', schedules)}
+      />
+      <DetailsStep
+        supply={values.supply}
+        error={issue?.field === 'supply' ? issue.message : undefined}
+        onSupplyChange={(supply) => setFieldValue('supply', supply)}
+      />
+      {scheduleChanged ? (
+        <PillyBanner
+          kind="info"
+          message="Schedule changes start tomorrow. Past records stay unchanged."
+          compact
+        />
+      ) : null}
+    </MedicineFormShell>
   );
 }
 
@@ -236,23 +200,3 @@ function EditState({
     </Screen>
   );
 }
-
-const styles = StyleSheet.create({
-  screen: { paddingHorizontal: 0, paddingVertical: spacing.sm },
-  navigation: {
-    minHeight: 44,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: spacing.xl,
-  },
-  formViewport: { flex: 1 },
-  formContent: {
-    gap: spacing.lg,
-    paddingHorizontal: spacing.xl,
-    paddingTop: spacing.sm,
-    paddingBottom: spacing.xxxl,
-  },
-  navigationIconButton: { width: 44, height: 44 },
-  navigationAction: { minWidth: 88, paddingHorizontal: spacing.sm },
-});

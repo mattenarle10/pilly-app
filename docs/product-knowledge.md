@@ -117,7 +117,8 @@ Add Medicine architecture checkpoint completed on 2026-08-10:
 - [x] Remove the legacy `src/screens/new-medication/` wrapper.
 - [x] Keep reusable Add/Edit fields in `src/medicine-form/`.
 - [x] Preserve draft restoration, validation, medicine creation, reminder reconciliation, and leave-draft behavior during the move.
-- [x] Keep Back and Add in a quiet navigation lane so a large sticky action never covers the form.
+- [x] Keep Back, Add medicine, and Add in the native compact navigation header so no sticky action covers the form.
+- [x] Intercept native Back and swipe navigation so the leave-draft decision applies consistently.
 - [x] Complete the separate default-size and largest-accessibility-size design review on the simulator.
 - [x] Keep compact labels responsive so accessibility text never widens or clips the form.
 
@@ -163,9 +164,9 @@ Edit Medicine implementation checkpoint completed on 2026-08-10:
 - [x] Persist independent capsule-half colors while keeping round and oval pills single-color.
 - [x] Own the page composition in `app/medicine/[id]/edit.tsx`; remove the legacy Edit screen wrapper.
 - [x] Share reusable Add/Edit fields from `src/medicine-form/` without putting route UI back in `src/screens/`.
-- [x] Put a compact Done action in the navigation hierarchy instead of covering the form with a sticky footer.
-- [x] Keep Back and Done transparent in a fixed 44-point navigation lane; do not add per-control glass when it reads as pasted-on bubbles.
-- [x] Bound the Edit form to the live window width and keep its final field clear of the bottom safe-area edge.
+- [x] Put Back, Edit medicine, and Done in the native compact navigation header instead of covering the form with a sticky footer.
+- [x] Show the editable medicine name once, in the Name field; Medicine Detail owns the entity-name hero title.
+- [x] Share the native form shell, live-window width, margins, and bottom safe-area clearance with Add Medicine.
 - [x] Disable Done while the form is pristine, invalid, or saving; surface validation and save failures near the form.
 - [x] Compare semantic draft values so reverting an edit disables Done and removes the discard warning.
 - [x] Confirm before discarding dirty changes through back, swipe, or other navigation actions.
@@ -250,8 +251,8 @@ Before release:
 - 2026-08-10: Visual richness comes from hierarchy, composition, typography, material, and interaction before color. New color meanings require an explicit design-direction and decision-log update; polish passes do not invent route-specific tint mappings.
 - 2026-08-10: Medicine appearance is recognition data, not decoration. A saved shape, size, and person-selected soft tone drive one code-native silhouette on Detail, a focused preview in Add/Edit, a compact Medicines-list cue, and a quieter Today cue. Existing medicines migrate to a medium rose capsule.
 - 2026-08-10: Add/Edit show appearance as one compact preview row. A dedicated sheet owns shape, size, and curated color choices; capsules persist separate colors for their two halves.
-- 2026-08-10: Edit Medicine uses transparent Back and Done actions in a fixed 44-point navigation lane because saving the full form is consequential. The lane never overlays fields, the form is bounded to the live window width with bottom safe-area breathing room, Done stays disabled until the draft is valid and semantically changed, and dirty navigation requires an explicit discard decision. Per-control Liquid Glass was rejected after simulator review because it read as two pasted-on bubbles.
-- 2026-08-10: Add Medicine mirrors the quiet Back/action navigation lane and keeps its page title below it. The transparent lane remains fixed outside the form scroll; Add validates on press and remains reachable without a full-width sticky footer covering editable content. Compact control labels receive real layout width at accessibility text sizes instead of clipping or forcing the whole form smaller.
+- 2026-08-10: Add and Edit Medicine share one native compact form header and one responsive scroll shell. The native header owns Back, the task title, safe-area spacing, and Add/Done; the form owns Name exactly once. Medicine Detail continues to use the saved medicine name as its hero title. This removes the duplicate identity and hand-built navigation tier while preserving explicit consequential actions.
+- 2026-08-10: Add validates on press and intercepts native Back and swipe gestures before saving its local draft. Edit keeps Done disabled until the draft is valid and semantically changed, and dirty navigation requires an explicit discard decision. Both forms are bounded to the live window width with shared bottom safe-area breathing room.
 - 2026-08-10: Add/Edit schedules use one shared weekday pattern with one or more exact local times. Each time owns its reminder state; Morning, Midday, Afternoon, Evening, and Night are derived context rather than saved meal semantics. One schedule surface and quiet separators scale the form without turning each time into another card.
 - 2026-08-10: Today treats a future dose as schedule information, not an available action. An unrecorded dose shows a quiet Later today state until its exact local time; Taken and Skip appear at that time. Recorded states remain visible and correctable, and the summary separates ready doses from later doses.
 - 2026-08-10: Today is limited to medicine identity, scheduled time, and recording state. Supply estimates belong on Medicine Detail and must not increase Today-row density.
