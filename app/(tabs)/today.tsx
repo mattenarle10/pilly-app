@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { router } from 'expo-router';
 import Animated, { FadeInRight, FadeOutRight, ReduceMotion } from 'react-native-reanimated';
@@ -24,18 +24,20 @@ import {
   TodayDoseList,
   TodayStarter,
   todayProgress,
+  todayProgressMessage,
   useTodayData,
 } from '@/today';
 
 export default function Today() {
   const { repository, today, dates, doses, weekDoses, medicines, reminderNotice, firstName } =
     useTodayData();
+  const now = useCurrentMinute();
   const { mutation, recentAction, recordDose, undoRecent } = useDoseActions();
   const [correction, setCorrection] = useState<ScheduledDose | null>(null);
   const [correctionVisible, setCorrectionVisible] = useState(false);
   const organizerDays = buildOrganizerDays(dates, weekDoses.data);
   const doseGroups = groupTodayDoses(doses.data);
-  const progress = todayProgress(doses.data);
+  const progress = todayProgress(doses.data, now);
   const nextScheduledDay = organizerDays.slice(1).find((day) => day.state !== 'empty');
 
   const correctDose = (status: ScheduledDose['status']) => {
@@ -91,9 +93,7 @@ export default function Today() {
               {progress.recorded} of {progress.total} recorded
             </PillyText>
             <PillyText role="caption" muted>
-              {progress.recorded === progress.total
-                ? 'Everything is recorded for today.'
-                : `${progress.total - progress.recorded} ${progress.total - progress.recorded === 1 ? 'dose' : 'doses'} not recorded yet.`}
+              {todayProgressMessage(progress)}
             </PillyText>
           </View>
         </View>
@@ -158,6 +158,7 @@ export default function Today() {
       ) : null}
       <TodayDoseList
         groups={doseGroups}
+        now={now}
         busy={mutation.isPending}
         pendingOccurrenceId={mutation.variables?.dose.occurrenceId}
         onRecord={recordDose}
@@ -205,3 +206,23 @@ const styles = StyleSheet.create({
   restDay: { minHeight: 76, flexDirection: 'row', alignItems: 'center', gap: spacing.md },
   restCopy: { flex: 1, gap: spacing.xs },
 });
+
+function useCurrentMinute(): Date {
+  const [now, setNow] = useState(() => new Date());
+
+  useEffect(() => {
+    let timeout: ReturnType<typeof setTimeout>;
+    const scheduleRefresh = () => {
+      const milliseconds = Date.now();
+      const untilNextMinute = 60_000 - (milliseconds % 60_000) + 25;
+      timeout = setTimeout(() => {
+        setNow(new Date());
+        scheduleRefresh();
+      }, untilNextMinute);
+    };
+    scheduleRefresh();
+    return () => clearTimeout(timeout);
+  }, []);
+
+  return now;
+}

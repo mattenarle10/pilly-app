@@ -13,10 +13,11 @@ import {
 import { colors, radii, spacing } from '@/design/tokens';
 import { estimatedDaysLeft } from '@/domain/supply';
 import type { DoseActionStatus } from '@/hooks';
-import type { TodayDoseGroup } from '@/today/today-state';
+import { isDoseAvailable, type TodayDoseGroup } from '@/today/today-state';
 
 export function TodayDoseList({
   groups,
+  now,
   busy,
   pendingOccurrenceId,
   onRecord,
@@ -24,6 +25,7 @@ export function TodayDoseList({
   onOpenMedicine,
 }: {
   groups: TodayDoseGroup[];
+  now: Date;
   busy: boolean;
   pendingOccurrenceId?: string;
   onRecord: (dose: ScheduledDose, status: Exclude<DoseActionStatus, 'notRecorded'>) => void;
@@ -43,6 +45,7 @@ export function TodayDoseList({
                 {index > 0 ? <View style={styles.separator} /> : null}
                 <DoseRow
                   dose={dose}
+                  now={now}
                   busy={busy}
                   loading={busy && pendingOccurrenceId === dose.occurrenceId}
                   onRecord={(status) => onRecord(dose, status)}
@@ -60,6 +63,7 @@ export function TodayDoseList({
 
 function DoseRow({
   dose,
+  now,
   busy,
   loading,
   onRecord,
@@ -67,6 +71,7 @@ function DoseRow({
   onOpen,
 }: {
   dose: ScheduledDose;
+  now: Date;
   busy: boolean;
   loading: boolean;
   onRecord: (status: Exclude<DoseActionStatus, 'notRecorded'>) => void;
@@ -77,6 +82,7 @@ function DoseRow({
     dose.medication.supplyCount,
     countDays(dose.schedule.weekdayMask),
   );
+  const available = isDoseAvailable(dose, now);
 
   return (
     <Animated.View
@@ -114,27 +120,36 @@ function DoseRow({
         key={dose.status}
         entering={FadeIn.duration(160).reduceMotion(ReduceMotion.System)}
         exiting={FadeOut.duration(100).reduceMotion(ReduceMotion.System)}
-        style={styles.footer}
+        style={[
+          styles.footer,
+          dose.status === 'notRecorded' && !available && styles.upcomingFooter,
+        ]}
       >
         {dose.status === 'notRecorded' ? (
-          <View style={styles.actions}>
-            <PillyButton
-              label="Taken"
-              icon="done"
-              size="compact"
-              loading={loading}
-              disabled={busy && !loading}
-              onPress={() => onRecord('taken')}
-              style={styles.takeAction}
-            />
-            <PillyIconButton
-              icon="remove"
-              label={`Skip ${dose.medication.name}`}
-              disabled={busy}
-              onPress={() => onRecord('skipped')}
-              style={styles.skip}
-            />
-          </View>
+          available ? (
+            <View style={styles.actions}>
+              <PillyButton
+                label="Taken"
+                icon="done"
+                size="compact"
+                loading={loading}
+                disabled={busy && !loading}
+                onPress={() => onRecord('taken')}
+                style={styles.takeAction}
+              />
+              <PillyIconButton
+                icon="remove"
+                label={`Skip ${dose.medication.name}`}
+                disabled={busy}
+                onPress={() => onRecord('skipped')}
+                style={styles.skip}
+              />
+            </View>
+          ) : (
+            <PillyText role="caption" muted>
+              Later today
+            </PillyText>
+          )
         ) : (
           <>
             <View style={styles.metadata}>
@@ -197,6 +212,7 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
     gap: spacing.md,
   },
+  upcomingFooter: { minHeight: 24 },
   metadata: {
     flex: 1,
     flexDirection: 'row',
