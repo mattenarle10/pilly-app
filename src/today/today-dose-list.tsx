@@ -111,7 +111,7 @@ function DoseRow({
           {dose.medication.instructions}
         </PillyText>
       ) : null}
-      {dose.status === 'notRecorded' && daysLeft !== null ? (
+      {daysLeft !== null ? (
         <PillyText role="caption" muted>
           About {daysLeft} {daysLeft === 1 ? 'day' : 'days'} left
         </PillyText>
@@ -154,11 +154,6 @@ function DoseRow({
           <>
             <View style={styles.metadata}>
               <StatusLabel status={dose.status} />
-              {daysLeft !== null ? (
-                <PillyText role="caption" muted>
-                  About {daysLeft} {daysLeft === 1 ? 'day' : 'days'} left
-                </PillyText>
-              ) : null}
             </View>
             <Pressable
               accessibilityRole="button"
