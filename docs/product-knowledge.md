@@ -150,6 +150,7 @@ Today action-timing checkpoint completed on 2026-08-10:
 - [x] Reveal Taken and Skip at the exact local scheduled time and refresh the resting screen at minute boundaries.
 - [x] Keep already recorded future states correctable for resilient existing data.
 - [x] Present recorded-dose correction as a quiet, explicit Change action instead of a repeated decorative edit bubble.
+- [x] Keep supply estimates out of Today; Medicine Detail owns supply context and editing.
 - [x] Distinguish doses ready to record from doses later today in the progress summary.
 - [x] Add focused boundary and rendering tests for upcoming and available states.
 - [ ] Confirm background-to-foreground minute refresh and time-zone changes during physical-device release QA.
@@ -251,4 +252,5 @@ Before release:
 - 2026-08-10: Add Medicine mirrors the quiet Back/action navigation lane and keeps its page title below it. Add validates on press and remains reachable without a full-width sticky footer covering form content at large text sizes.
 - 2026-08-10: Add/Edit schedules use one shared weekday pattern with one or more exact local times. Each time owns its reminder state; Morning, Midday, Afternoon, Evening, and Night are derived context rather than saved meal semantics. One schedule surface and quiet separators scale the form without turning each time into another card.
 - 2026-08-10: Today treats a future dose as schedule information, not an available action. An unrecorded dose shows a quiet Later today state until its exact local time; Taken and Skip appear at that time. Recorded states remain visible and correctable, and the summary separates ready doses from later doses.
+- 2026-08-10: Today is limited to medicine identity, scheduled time, and recording state. Supply estimates belong on Medicine Detail and must not increase Today-row density.
 - 2026-08-08: Replace custom provider nesting with one `AppRuntime`; derive the stateless repository through `useRepository()` from Expo SQLite context.

@@ -11,7 +11,6 @@ import {
   StatusLabel,
 } from '@/design/components';
 import { colors, radii, spacing } from '@/design/tokens';
-import { estimatedDaysLeft } from '@/domain/supply';
 import type { DoseActionStatus } from '@/hooks';
 import { isDoseAvailable, type TodayDoseGroup } from '@/today/today-state';
 
@@ -78,10 +77,6 @@ function DoseRow({
   onCorrect: () => void;
   onOpen: () => void;
 }) {
-  const daysLeft = estimatedDaysLeft(
-    dose.medication.supplyCount,
-    countDays(dose.schedule.weekdayMask),
-  );
   const available = isDoseAvailable(dose, now);
 
   return (
@@ -109,11 +104,6 @@ function DoseRow({
       {dose.medication.instructions ? (
         <PillyText role="caption" muted>
           {dose.medication.instructions}
-        </PillyText>
-      ) : null}
-      {daysLeft !== null ? (
-        <PillyText role="caption" muted>
-          About {daysLeft} {daysLeft === 1 ? 'day' : 'days'} left
         </PillyText>
       ) : null}
       <Animated.View
@@ -177,12 +167,6 @@ function DoseRow({
     </Animated.View>
   );
 }
-
-const countDays = (weekdayMask: number) =>
-  weekdayMask
-    .toString(2)
-    .split('')
-    .filter((bit) => bit === '1').length;
 
 const styles = StyleSheet.create({
   list: { gap: spacing.xl },

@@ -68,6 +68,7 @@ describe('TodayDoseList future actions', () => {
     );
 
     expect(screen.getByText('Later today')).toBeOnTheScreen();
+    expect(screen.queryByText(/days left/)).toBeNull();
     expect(screen.queryByText('Taken')).toBeNull();
     expect(screen.queryByLabelText('Skip Evening capsule')).toBeNull();
 
@@ -98,6 +99,7 @@ describe('TodayDoseList future actions', () => {
 
     fireEvent.press(screen.getByText('Change'));
 
+    expect(screen.queryByText(/days left/)).toBeNull();
     expect(screen.queryByLabelText('Change status for Evening capsule')).toBeOnTheScreen();
     expect(onCorrect).toHaveBeenCalledWith(recordedDose);
   });
