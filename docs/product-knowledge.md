@@ -1,6 +1,6 @@
 # Pilly product knowledge
 
-Last updated: 2026-08-08
+Last updated: 2026-08-10
 
 This is the versioned product and architecture reference for the current Expo app. `AGENTS.md` remains the binding instruction file. The earlier Swift prototype and its local planning files are archived context, not the implementation source of truth.
 
@@ -12,18 +12,18 @@ Pilly records what a person enters. It does not recommend doses, diagnose condit
 
 ## Code boundaries
 
-| Area            | Responsibility                                                                                           |
-| --------------- | -------------------------------------------------------------------------------------------------------- |
-| `app/`          | Expo Router pages. Each route owns its page composition and navigation.                                  |
-| `src/<area>/`   | Small product-area modules such as `src/today/`, containing extracted UI, data hooks, and derived state. |
-| `src/screens/`  | Legacy page wrappers. Remove these as each route is reviewed; do not add new screen wrappers.            |
-| `src/hooks/`    | Hooks reused by multiple routes or product areas.                                                        |
-| `src/core/`     | App runtime wiring such as SQLite and TanStack Query initialization.                                     |
-| `src/design/`   | Shared controls, icons, illustrations, type, spacing, color, radius, and motion rules.                   |
-| `src/domain/`   | Deterministic business rules and Zod schemas. No React Native or persistence imports.                    |
-| `src/data/`     | SQLite schema, migrations, and repository operations.                                                    |
-| `src/platform/` | Native capabilities such as local notifications, purchases, and profile-photo file access.               |
-| `src/config/`   | Parsed environment configuration.                                                                        |
+| Area            | Responsibility                                                                                    |
+| --------------- | ------------------------------------------------------------------------------------------------- |
+| `app/`          | Expo Router pages. Each route owns its screen UI, page composition, and navigation.               |
+| `src/<area>/`   | Larger reusable product modules only when one route has several substantial units, such as Today. |
+| `src/screens/`  | Legacy page wrappers. Remove these as each route is reviewed; do not add new screen wrappers.     |
+| `src/hooks/`    | Shared hooks and small route-facing data orchestration hooks. No screen UI.                       |
+| `src/core/`     | App runtime wiring such as SQLite and TanStack Query initialization.                              |
+| `src/design/`   | Shared controls, icons, illustrations, type, spacing, color, radius, and motion rules.            |
+| `src/domain/`   | Deterministic business rules and Zod schemas. No React Native or persistence imports.             |
+| `src/data/`     | SQLite schema, migrations, and repository operations.                                             |
+| `src/platform/` | Native capabilities such as local notifications, purchases, and profile-photo file access.        |
+| `src/config/`   | Parsed environment configuration.                                                                 |
 
 The route may coordinate a use case, but it should not know SQLite queries, file paths, native picker details, RevenueCat calls, or notification scheduling internals.
 
@@ -33,14 +33,14 @@ Medication data is stored in an on-device SQLite database through Expo SQLite an
 
 | Table           | Stored data                                                                                                                      |
 | --------------- | -------------------------------------------------------------------------------------------------------------------------------- |
-| `medications`   | Name, instructions, optional supply count, timezone, created/updated time, and archive time.                                     |
+| `medications`   | Name, instructions, optional supply count, saved appearance, timezone, created/updated time, and archive time.                   |
 | `schedules`     | Medication link, local time, selected weekdays, reminder choice, effective start/end dates, and ordering.                        |
 | `dose_records`  | Current Taken or Skipped state for a stable scheduled occurrence, plus scheduled and recorded times. Absence means Not recorded. |
 | `dose_events`   | Audit trail of dose corrections and undo operations.                                                                             |
 | `supply_events` | Manual counts and supply changes caused by dose records or corrections.                                                          |
 | `settings`      | Small local preferences such as onboarding, reminder notices, profile name/photo URI, and cached Plus entitlement.               |
 
-The current database schema version is 3. Migrations live in `src/data/database/migrate-database.ts`. New schema changes must increment the version and preserve existing medication history.
+The current database schema version is 5. Migrations live in `src/data/database/migrate-database.ts`. New schema changes must increment the version and preserve existing medication history. Version 4 adds shape, size, and a primary tone. Version 5 adds a secondary capsule tone with a safe matching-color default for existing medicines.
 
 ### Profile photo
 
@@ -74,22 +74,62 @@ There is no cloud sync, account, or finished export/import flow yet. App deletio
 
 `/settings` is a compatibility route to Profile, not a separate screen.
 
-Recommended visual review order: Today, Medicine detail, Add medicine, Edit medicine, Medicines, Week, Profile, Pilly Plus, Welcome, Start Small, then Dose history.
+Recommended visual review order: Today, Medicine detail, Edit medicine, Add medicine, Medicines, Week, Profile, Pilly Plus, Welcome, Start Small, then Dose history.
 
 ### Design review checklist
 
 | Screen                  | Status                 | Next review                                                            |
 | ----------------------- | ---------------------- | ---------------------------------------------------------------------- |
 | Today                   | 90%, checkpoint review | Large text, VoiceOver order, empty/error states, and final device pass |
-| Medicine detail         | Next                   | Information hierarchy, supply controls, edit, archive, and delete      |
+| Medicine detail         | Complete               | Release QA only: physical device and accessibility extremes            |
 | Add medicine            | Pending                | Complete setup flow at default and accessibility text sizes            |
-| Edit medicine           | Pending                | Match setup controls without changing past records                     |
+| Edit medicine           | Complete               | Release QA only: keyboard, VoiceOver, large text, and physical device  |
 | Medicines               | Pending                | Recognition, appearance customization, empty state, and archive access |
 | Week                    | Pending                | Day selection, status consistency, and dense schedules                 |
 | Profile                 | Pending                | Identity card, local photo, privacy, and manage links                  |
 | Pilly Plus              | Pending                | Honest value, purchase, restore, and offline entitlement               |
 | Welcome and Start Small | Pending                | First-run composition and local-first explanation                      |
 | Dose history            | Pending                | Correction clarity and audit readability                               |
+
+Medicine appearance is local, optional recognition data. Shape, size, and curated soft tones are stored on the medicine and drive the code-native silhouette on Medicine Detail and the Add/Edit preview. Capsules support independently selected colors for each half; round and oval pills use one color. Add/Edit keeps only a compact preview row in the form and opens a dedicated editor sheet for the controls. The name remains the primary identifier. A future pattern or user photo should ship only if it improves recognition, remains legible without motion, and has an explicit privacy and storage model.
+
+Medicine Detail design and architecture checkpoint completed on 2026-08-10:
+
+- [x] Screen composition lives in `app/medicine/[id]/index.tsx`.
+- [x] Route-facing repository and mutation coordination lives in `src/hooks/use-medicine-detail.ts`.
+- [x] The legacy `src/screens/medicine-detail/` wrapper is removed.
+- [x] The temporary `src/medicine-detail/` area is removed.
+- [x] Supply editing, archive, restore, delete, loading, missing, and retry paths are represented.
+- [x] TypeScript, ESLint, formatting, and focused Jest checks pass.
+- [x] First default-size review: compact supply actions, reminder toggles, Manage rows, and confirmation copy.
+- [x] Review the default-size composition on the simulator.
+- [x] Review a long medicine name and long instruction at the app's large text setting.
+- [x] Review tracked and not-tracked supply states, debounced auto-save, persistence, and retry handling.
+- [x] Review archive and delete confirmation copy, pending wiring, error surfaces, and destructive separation.
+- [x] Review VoiceOver labels/order and dynamic type at default and the largest standard size. Accessibility extremes remain part of release QA.
+- [x] Replace transient supply-saving copy with quiet autosave and visible failure recovery only.
+- [x] Add a persisted, data-driven medicine appearance with safe migration defaults.
+- [x] Move appearance controls into a dedicated sheet and support split capsule colors.
+
+Edit Medicine implementation checkpoint completed on 2026-08-10:
+
+- [x] Keep appearance as one compact preview row in the form.
+- [x] Put shape, size, and curated color choices in a dedicated sheet.
+- [x] Persist independent capsule-half colors while keeping round and oval pills single-color.
+- [x] Own the page composition in `app/medicine/[id]/edit.tsx`; remove the legacy Edit screen wrapper.
+- [x] Share reusable Add/Edit fields from `src/medicine-form/` without putting route UI back in `src/screens/`.
+- [x] Put a compact Done action in the navigation hierarchy instead of covering the form with a sticky footer.
+- [x] Keep Back and Done transparent in a fixed 44-point navigation lane; do not add per-control glass when it reads as pasted-on bubbles.
+- [x] Disable Done while the form is pristine, invalid, or saving; surface validation and save failures near the form.
+- [x] Compare semantic draft values so reverting an edit disables Done and removes the discard warning.
+- [x] Confirm before discarding dirty changes through back, swipe, or other navigation actions.
+- [x] Save medicine details, supply, appearance, and schedule in one repository transaction.
+- [x] Preserve current schedule rows when the schedule did not actually change; version changed schedules from tomorrow.
+- [x] Treat reminder reconciliation as best-effort after the local medicine save succeeds.
+- [x] Add focused tests for edit orchestration, validation, appearance, and schedule-change detection.
+- [x] Review default and long-content composition, scrolled navigation spacing, dirty navigation, and save persistence on the simulator.
+
+Release QA remains intentionally separate from this completed implementation checkpoint: software-keyboard overlap at accessibility text sizes, VoiceOver order, and physical-device reminder behavior.
 
 ## Profile decision
 
@@ -158,5 +198,10 @@ Before release:
 - 2026-08-08: The MVP remains local-first with no required account or cloud medication storage.
 - 2026-08-08: A basic local profile photo is free. Multiple profiles are deferred.
 - 2026-08-08: Liquid glass is progressive enhancement and never carries safety-critical readability alone.
-- 2026-08-08: Route files are the actual pages. Remove duplicate `src/screens/` wrappers one page at a time and keep extracted code in flat product-area modules such as `src/today/`.
+- 2026-08-09: Route files are the actual screens. Keep route-only UI in `app/`, route-facing data hooks in `src/hooks/`, and remove duplicate `src/screens/` wrappers one page at a time. Create a product-area module only when several substantial reusable units justify it, as Today currently does.
+- 2026-08-10: Detail screens use a calm, text-first hierarchy. Medicine Detail uses the medicine name as its single signature typographic moment, groups Schedule and Supply in one Overview surface, keeps setup presets in Add/Edit, and auto-saves reversible supply changes with visible failure recovery.
+- 2026-08-10: Visual richness comes from hierarchy, composition, typography, material, and interaction before color. New color meanings require an explicit design-direction and decision-log update; polish passes do not invent route-specific tint mappings.
+- 2026-08-10: Medicine appearance is recognition data, not decoration. A saved shape, size, and person-selected soft tone drive one code-native silhouette on Detail and a focused preview in Add/Edit. Existing medicines migrate to a medium rose capsule.
+- 2026-08-10: Add/Edit show appearance as one compact preview row. A dedicated sheet owns shape, size, and curated color choices; capsules persist separate colors for their two halves.
+- 2026-08-10: Edit Medicine uses transparent Back and Done actions in a fixed 44-point navigation lane because saving the full form is consequential. The lane never overlays fields, Done stays disabled until the draft is valid and semantically changed, and dirty navigation requires an explicit discard decision. Per-control Liquid Glass was rejected after simulator review because it read as two pasted-on bubbles.
 - 2026-08-08: Replace custom provider nesting with one `AppRuntime`; derive the stateless repository through `useRepository()` from Expo SQLite context.
