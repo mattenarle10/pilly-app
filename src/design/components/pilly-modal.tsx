@@ -38,6 +38,7 @@ export function PillyModal({
         <PillyButton
           label={cancelLabel}
           variant="secondary"
+          size="medium"
           onPress={onClose}
           style={fontScale < 1.3 ? styles.action : undefined}
           fullWidth={fontScale >= 1.3}
@@ -45,6 +46,7 @@ export function PillyModal({
         <PillyButton
           label={confirmLabel}
           variant={destructive ? 'danger' : 'primary'}
+          size="medium"
           loading={confirmLoading}
           onPress={onConfirm}
           style={fontScale < 1.3 ? styles.action : undefined}

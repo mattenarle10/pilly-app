@@ -4,13 +4,18 @@ import { StyleSheet, View, type ViewProps } from 'react-native';
 import { colors, radii, shadows, spacing } from '@/design/tokens';
 
 type Props = PropsWithChildren<
-  ViewProps & { tone?: 'plain' | 'peach' | 'lavender'; padding?: 'medium' | 'large' }
+  ViewProps & { tone?: 'plain' | 'peach' | 'lavender'; padding?: 'none' | 'medium' | 'large' }
 >;
 
 export function PillyCard({ children, tone = 'plain', padding = 'large', style, ...props }: Props) {
   return (
     <View
-      style={[styles.base, tones[tone], padding === 'large' ? styles.large : styles.medium, style]}
+      style={[
+        styles.base,
+        tones[tone],
+        padding === 'none' ? undefined : padding === 'large' ? styles.large : styles.medium,
+        style,
+      ]}
       {...props}
     >
       {children}

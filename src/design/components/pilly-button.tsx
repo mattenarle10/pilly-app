@@ -10,6 +10,7 @@ type PillyButtonProps = Omit<PressableProps, 'children'> & {
   icon?: PillyIconName;
   fullWidth?: boolean;
   loading?: boolean;
+  tone?: 'default' | 'brand';
 };
 export function PillyButton({
   label,
@@ -18,6 +19,7 @@ export function PillyButton({
   icon,
   fullWidth = false,
   loading = false,
+  tone = 'default',
   disabled,
   style,
   ...props
@@ -63,7 +65,9 @@ export function PillyButton({
                 ? styles.primaryLabel
                 : variant === 'danger'
                   ? styles.dangerLabel
-                  : undefined
+                  : tone === 'brand'
+                    ? styles.brandLabel
+                    : undefined
             }
           >
             {label}
@@ -87,6 +91,7 @@ const styles = StyleSheet.create({
   },
   fullWidth: { width: '100%' },
   primaryLabel: { color: colors.surface },
+  brandLabel: { color: colors.brand },
   dangerLabel: { color: colors.danger },
   pressed: { opacity: 0.76, transform: [{ scale: 0.98 }] },
   disabled: { opacity: 0.42 },

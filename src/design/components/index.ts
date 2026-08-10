@@ -1,4 +1,5 @@
 export * from './empty-state';
+export * from './medication-appearance';
 export * from './pilly-banner';
 export * from './pilly-button';
 export * from './pilly-card';

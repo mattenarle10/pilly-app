@@ -9,8 +9,13 @@ import Animated, {
 
 import { colors, radii, shadows } from '@/design/tokens';
 
-type Props = { value: boolean; label: string; onValueChange: (value: boolean) => void };
-export function PillyToggle({ value, label, onValueChange }: Props) {
+type Props = {
+  value: boolean;
+  label: string;
+  disabled?: boolean;
+  onValueChange: (value: boolean) => void;
+};
+export function PillyToggle({ value, label, disabled, onValueChange }: Props) {
   const reducedMotion = useReducedMotion();
   const position = useSharedValue(value ? 20 : 0);
   useEffect(() => {
@@ -25,10 +30,11 @@ export function PillyToggle({ value, label, onValueChange }: Props) {
     <Pressable
       accessibilityRole="switch"
       accessibilityLabel={label}
-      accessibilityState={{ checked: value }}
+      accessibilityState={{ checked: value, disabled }}
+      disabled={disabled}
       hitSlop={6}
       onPress={() => onValueChange(!value)}
-      style={[styles.track, value && styles.trackOn]}
+      style={[styles.track, value && styles.trackOn, disabled && styles.disabled]}
     >
       <Animated.View style={[styles.thumb, thumbStyle]} />
     </Pressable>
@@ -44,6 +50,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   trackOn: { backgroundColor: colors.brand },
+  disabled: { opacity: 0.4 },
   thumb: {
     width: 26,
     height: 26,
