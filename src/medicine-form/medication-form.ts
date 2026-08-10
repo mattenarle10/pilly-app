@@ -1,4 +1,10 @@
 import { z } from 'zod';
+import {
+  medicationAppearanceShapeSchema,
+  medicationAppearanceSizeSchema,
+  medicationAppearanceToneSchema,
+} from '@/domain/medication';
+import { weekdayMask, type ScheduleConfiguration } from '@/domain/schedule';
 
 export const draftKey = 'new-medication-draft-v1';
 export const draftSchema = z.object({
@@ -8,6 +14,10 @@ export const draftSchema = z.object({
   time: z.string(),
   supply: z.string(),
   reminderEnabled: z.boolean(),
+  appearanceShape: medicationAppearanceShapeSchema.default('capsule'),
+  appearanceSize: medicationAppearanceSizeSchema.default('medium'),
+  appearanceTone: medicationAppearanceToneSchema.default('rose'),
+  appearanceSecondaryTone: medicationAppearanceToneSchema.default('rose'),
 });
 export type MedicationDraft = z.infer<typeof draftSchema>;
 export type MedicationDraftField = 'name' | 'selectedDays' | 'time' | 'supply';
@@ -20,6 +30,10 @@ export const defaults: MedicationDraft = {
   time: '09:00',
   supply: '',
   reminderEnabled: false,
+  appearanceShape: 'capsule',
+  appearanceSize: 'medium',
+  appearanceTone: 'rose',
+  appearanceSecondaryTone: 'rose',
 };
 
 const rules = [
@@ -109,4 +123,38 @@ export function parseTime(value: string): Date {
 
 export function supplyValue(value: string): number | null {
   return value.trim() === '' ? null : Number(value);
+}
+
+export function selectedDaysFromMask(mask: number): number[] {
+  return Array.from({ length: 7 }, (_, index) => index + 1).filter(
+    (day) => (mask & (1 << (day - 1))) !== 0,
+  );
+}
+
+export function scheduleConfigurationFromDraft(draft: MedicationDraft): ScheduleConfiguration[] {
+  const time = parseTime(draft.time);
+  return [
+    {
+      hour: time.getHours(),
+      minute: time.getMinutes(),
+      weekdayMask: weekdayMask(draft.selectedDays),
+      sortOrder: 0,
+      reminderEnabled: draft.reminderEnabled,
+    },
+  ];
+}
+
+export function medicationDraftsMatch(current: MedicationDraft, next: MedicationDraft): boolean {
+  return (
+    current.name === next.name &&
+    current.instructions === next.instructions &&
+    weekdayMask(current.selectedDays) === weekdayMask(next.selectedDays) &&
+    current.time === next.time &&
+    supplyValue(current.supply) === supplyValue(next.supply) &&
+    current.reminderEnabled === next.reminderEnabled &&
+    current.appearanceShape === next.appearanceShape &&
+    current.appearanceSize === next.appearanceSize &&
+    current.appearanceTone === next.appearanceTone &&
+    current.appearanceSecondaryTone === next.appearanceSecondaryTone
+  );
 }

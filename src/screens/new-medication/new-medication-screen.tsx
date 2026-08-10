@@ -17,18 +17,23 @@ import { spacing } from '@/design/tokens';
 import { weekdayMask } from '@/domain/schedule';
 import { scheduleLocalReminders } from '@/platform/notifications';
 import { useRepository } from '@/hooks';
-import { draftMessages, friendlySaveError } from './new-medication-errors';
 import {
+  AppearanceStep,
   assertMedicationDraft,
+  DaysStep,
   defaults,
+  DetailsStep,
   draftKey,
   draftSchema,
+  draftMessages,
+  friendlySaveError,
+  NameStep,
   parseTime,
   supplyValue,
+  TimeStep,
   type MedicationDraft,
-} from './new-medication-form';
-import { DaysStep, DetailsStep, NameStep, TimeStep } from './new-medication-steps';
-import { useMedicationValidation } from './use-medication-validation';
+  useMedicationValidation,
+} from '@/medicine-form';
 
 export function NewMedicationScreen() {
   const repository = useRepository();
@@ -48,6 +53,10 @@ export function NewMedicationScreen() {
         name: value.name.trim(),
         instructions: value.instructions.trim(),
         supplyCount: supplyValue(value.supply),
+        appearanceShape: value.appearanceShape,
+        appearanceSize: value.appearanceSize,
+        appearanceTone: value.appearanceTone,
+        appearanceSecondaryTone: value.appearanceSecondaryTone,
         schedules: [
           {
             hour: parseTime(value.time).getHours(),
@@ -155,6 +164,16 @@ export function NewMedicationScreen() {
                 form.setFieldValue('name', text);
               }}
               onInstructionsChange={(text) => form.setFieldValue('instructions', text)}
+            />
+            <AppearanceStep
+              shape={value.appearanceShape}
+              size={value.appearanceSize}
+              tone={value.appearanceTone}
+              secondaryTone={value.appearanceSecondaryTone}
+              onShapeChange={(shape) => form.setFieldValue('appearanceShape', shape)}
+              onSizeChange={(size) => form.setFieldValue('appearanceSize', size)}
+              onToneChange={(tone) => form.setFieldValue('appearanceTone', tone)}
+              onSecondaryToneChange={(tone) => form.setFieldValue('appearanceSecondaryTone', tone)}
             />
             <DaysStep
               selected={value.selectedDays}

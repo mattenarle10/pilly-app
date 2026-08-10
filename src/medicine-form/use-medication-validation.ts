@@ -4,7 +4,7 @@ import {
   type MedicationFormIssue,
   validateMedicationDraft,
   validateMedicationStep,
-} from './new-medication-form';
+} from './medication-form';
 
 export function useMedicationValidation() {
   const [fieldIssue, setFieldIssue] = useState<MedicationFormIssue | null>(null);
