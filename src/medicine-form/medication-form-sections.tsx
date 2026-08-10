@@ -81,7 +81,7 @@ export function NameStep({
   onInstructionsChange: (value: string) => void;
 }) {
   return (
-    <View style={styles.section}>
+    <View style={styles.identitySection}>
       <PillyField
         label="Name"
         icon="medicine"
@@ -486,6 +486,7 @@ export function DetailsStep({
 
 const styles = StyleSheet.create({
   section: { gap: spacing.lg, paddingTop: spacing.lg },
+  identitySection: { gap: spacing.lg },
   heading: { gap: spacing.xs },
   appearanceRow: {
     minHeight: 76,

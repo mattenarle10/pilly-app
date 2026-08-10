@@ -229,7 +229,7 @@ export default function NewMedicationRoute() {
 }
 
 const styles = StyleSheet.create({
-  screen: { gap: spacing.md, paddingHorizontal: 0, paddingVertical: spacing.sm },
+  screen: { paddingHorizontal: 0, paddingVertical: spacing.sm },
   navigation: {
     minHeight: 44,
     flexDirection: 'row',
@@ -241,7 +241,7 @@ const styles = StyleSheet.create({
   formContent: {
     gap: spacing.lg,
     paddingHorizontal: spacing.xl,
-    paddingTop: spacing.md,
+    paddingTop: spacing.sm,
     paddingBottom: spacing.lg,
   },
   navigationIconButton: { width: 44, height: 44 },
