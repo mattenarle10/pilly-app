@@ -23,7 +23,7 @@ export function Screen({
   const insets = useSafeAreaInsets();
   const content = <View style={[styles.content, contentStyle]}>{children}</View>;
   return (
-    <SafeAreaView edges={safeAreaEdges} style={styles.safeArea}>
+    <SafeAreaView collapsable={false} edges={safeAreaEdges} style={styles.safeArea}>
       {scroll ? (
         <ScrollView
           automaticallyAdjustKeyboardInsets
