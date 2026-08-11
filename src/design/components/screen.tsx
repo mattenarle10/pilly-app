@@ -1,5 +1,5 @@
 import type { PropsWithChildren, ReactNode } from 'react';
-import { ScrollView, StyleSheet, View, type ViewStyle } from 'react-native';
+import { ScrollView, StyleSheet, View, type ScrollViewProps, type ViewStyle } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets, type Edge } from 'react-native-safe-area-context';
 import { colors, spacing } from '@/design/tokens';
 
@@ -9,6 +9,7 @@ type ScreenProps = PropsWithChildren<{
   footer?: ReactNode;
   overlay?: ReactNode;
   safeAreaEdges?: readonly Edge[];
+  contentInsetAdjustmentBehavior?: ScrollViewProps['contentInsetAdjustmentBehavior'];
 }>;
 const defaultEdges = ['top', 'bottom'] as const;
 
@@ -19,6 +20,7 @@ export function Screen({
   footer,
   overlay,
   safeAreaEdges = defaultEdges,
+  contentInsetAdjustmentBehavior = 'automatic',
 }: ScreenProps) {
   const insets = useSafeAreaInsets();
   const content = <View style={[styles.content, contentStyle]}>{children}</View>;
@@ -28,7 +30,7 @@ export function Screen({
         <ScrollView
           automaticallyAdjustKeyboardInsets
           contentContainerStyle={styles.scrollContent}
-          contentInsetAdjustmentBehavior="automatic"
+          contentInsetAdjustmentBehavior={contentInsetAdjustmentBehavior}
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
         >

@@ -34,14 +34,7 @@
           "enableBackgroundRemoteNotifications": false
         }
       ],
-      "expo-font",
-      [
-        "expo-image-picker",
-        {
-          "photosPermission": "Pilly uses the photo you choose only for your profile on this device.",
-          "microphonePermission": false
-        }
-      ]
+      "expo-font"
     ]
   }
 }

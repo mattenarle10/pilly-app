@@ -4,7 +4,6 @@ export const profileSettingKeys = {
   displayName: 'profileName',
   firstName: 'profileFirstName',
   lastName: 'profileLastName',
-  photoUri: 'profilePhotoUri',
 } as const;
 
 export const profileNameSchema = z.object({
