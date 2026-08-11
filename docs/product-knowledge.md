@@ -1,6 +1,6 @@
 # Pilly product knowledge
 
-Last updated: 2026-08-10
+Last updated: 2026-08-11
 
 This is the versioned product and architecture reference for the current Expo app. `AGENTS.md` remains the binding instruction file. The earlier Swift prototype and its local planning files are archived context, not the implementation source of truth.
 
@@ -26,6 +26,8 @@ Pilly records what a person enters. It does not recommend doses, diagnose condit
 | `src/config/`   | Parsed environment configuration.                                                                 |
 
 The route may coordinate a use case, but it should not know SQLite queries, file paths, native picker details, RevenueCat calls, or notification scheduling internals.
+
+Legacy wrapper cleanup is route-by-route. Today, Week, Medicine Detail, Add Medicine, Edit Medicine, and Medicines are Router-owned. The remaining wrappers are still live dependencies of Profile/settings, Pilly Plus, Welcome, Start Small, and Dose History; remove each only when its route composition moves into `app/`.
 
 ## Local data storage
 
@@ -76,20 +78,22 @@ There is no cloud sync, account, or finished export/import flow yet. App deletio
 
 Recommended visual review order: Today, Medicine detail, Edit medicine, Add medicine, Medicines, Week, Profile, Pilly Plus, Welcome, Start Small, then Dose history.
 
+Next active visual checkpoint after the Week pass: Profile. VoiceOver remains deferred to release QA.
+
 ### Design review checklist
 
-| Screen                  | Status                 | Next review                                                             |
-| ----------------------- | ---------------------- | ----------------------------------------------------------------------- |
-| Today                   | 90%, checkpoint review | Large text, VoiceOver order, empty/error states, and final device pass  |
-| Medicine detail         | Complete               | Release QA only: physical device and accessibility extremes             |
-| Add medicine            | Complete               | Release QA only: keyboard, VoiceOver, and physical device               |
-| Edit medicine           | Complete               | Release QA only: keyboard, VoiceOver, large text, and physical device   |
-| Medicines               | In progress            | Empty, error, archived, varied-appearance, large-text, and VoiceOver QA |
-| Week                    | Pending                | Day selection, status consistency, and dense schedules                  |
-| Profile                 | Pending                | Identity card, local photo, privacy, and manage links                   |
-| Pilly Plus              | Pending                | Honest value, purchase, restore, and offline entitlement                |
-| Welcome and Start Small | Pending                | First-run composition and local-first explanation                       |
-| Dose history            | Pending                | Correction clarity and audit readability                                |
+| Screen                  | Status                 | Next review                                                            |
+| ----------------------- | ---------------------- | ---------------------------------------------------------------------- |
+| Today                   | 90%, checkpoint review | Large text, VoiceOver order, empty/error states, and final device pass |
+| Medicine detail         | Complete               | Release QA only: physical device and accessibility extremes            |
+| Add medicine            | Complete               | Release QA only: keyboard, VoiceOver, and physical device              |
+| Edit medicine           | Complete               | Release QA only: keyboard, VoiceOver, large text, and physical device  |
+| Medicines               | Complete               | Release QA only: VoiceOver and physical device                         |
+| Week                    | Complete               | Release QA only: VoiceOver and physical device                         |
+| Profile                 | Pending                | Identity card, local photo, privacy, and manage links                  |
+| Pilly Plus              | Pending                | Honest value, purchase, restore, and offline entitlement               |
+| Welcome and Start Small | Pending                | First-run composition and local-first explanation                      |
+| Dose history            | Pending                | Correction clarity and audit readability                               |
 
 Medicine appearance is local, optional recognition data. Shape, size, and curated soft tones are stored on the medicine and drive the code-native silhouette on Medicine Detail, the Add/Edit preview, the Medicines list, and a quieter cue beside each Today dose. Capsules support independently selected colors for each half; round and oval pills use one color. Add/Edit keeps only a compact preview row in the form and opens a dedicated editor sheet for the controls. The name remains the primary identifier. A future pattern or user photo should ship only if it improves recognition, remains legible without motion, and has an explicit privacy and storage model.
 
@@ -118,7 +122,7 @@ Add Medicine architecture checkpoint completed on 2026-08-10:
 - [x] Keep reusable Add/Edit fields in `src/medicine-form/`.
 - [x] Preserve draft restoration, validation, medicine creation, reminder reconciliation, and leave-draft behavior during the move.
 - [x] Keep Back, Add medicine, and Add in the native compact navigation header so no sticky action covers the form.
-- [x] Intercept native Back and swipe navigation so the leave-draft decision applies consistently.
+- [x] Intercept native Back and swipe navigation with SDK 57's supported removal guard so the leave-draft decision applies consistently without desynchronizing native and JS navigation state.
 - [x] Complete the separate default-size and largest-accessibility-size design review on the simulator.
 - [x] Keep compact labels responsive so accessibility text never widens or clips the form.
 
@@ -135,16 +139,23 @@ Multiple daily schedule checkpoint completed on 2026-08-10:
 - [x] Review one-time and three-time density at the default iOS content size in the simulator.
 - [ ] Complete release QA for VoiceOver order, accessibility text extremes, and physical-device notification delivery.
 
-Medicines recognition checkpoint started on 2026-08-10:
+Medicines recognition checkpoint completed on 2026-08-11:
 
 - [x] Own the page composition in `app/(tabs)/medicines.tsx`; remove the legacy Medicines screen wrapper.
+- [x] Keep the Router page thin by extracting the reusable query hook, header, state content, list, and row composition without creating another `src/screens/` wrapper.
 - [x] Replace generic decorative medicine tiles with each medicine's saved code-native silhouette.
 - [x] Use one list surface with separators instead of a separate card for every medicine.
 - [x] Keep long names to two list lines while preserving the full name on Medicine Detail.
 - [x] Reuse a smaller version of the same silhouette beside the medicine name on Today.
 - [x] Remove the duplicate Pilly Plus promotion from Medicines; Profile remains the Plus entry point.
 - [x] Review populated Medicines and Today states with long-name data on the simulator.
-- [ ] Review empty, error, archived, varied-appearance, large-text, and VoiceOver states before completing the Medicines checkpoint.
+- [x] Reuse the code-native starter organizer as the empty-state illustration through the shared `EmptyState` component.
+- [x] Keep one primary Add action in the true empty state while retaining the compact header action for populated lists.
+- [x] Represent initial loading, failed loading with retry, and failed refresh with retained data as distinct states.
+- [x] Separate archived medicines from the active list and keep archived identity available without competing with active medicine status.
+- [x] Add focused query and state-rendering tests; review populated and empty layouts at the default device size.
+- [x] Review round, oval, and split-color capsule cues plus the largest standard iOS text size on the simulator.
+- [ ] Review VoiceOver order during release QA; intentionally excluded from the current Medicines pass.
 
 Today action-timing checkpoint completed on 2026-08-10:
 
@@ -169,7 +180,7 @@ Edit Medicine implementation checkpoint completed on 2026-08-10:
 - [x] Share the native form shell, live-window width, margins, and bottom safe-area clearance with Add Medicine.
 - [x] Disable Done while the form is pristine, invalid, or saving; surface validation and save failures near the form.
 - [x] Compare semantic draft values so reverting an edit disables Done and removes the discard warning.
-- [x] Confirm before discarding dirty changes through back, swipe, or other navigation actions.
+- [x] Confirm before discarding dirty changes through back, swipe, or other navigation actions using the same SDK 57 removal guard as Add Medicine.
 - [x] Save medicine details, supply, appearance, and schedule in one repository transaction.
 - [x] Preserve current schedule rows when the schedule did not actually change; version changed schedules from tomorrow.
 - [x] Treat reminder reconciliation as best-effort after the local medicine save succeeds.
@@ -177,6 +188,36 @@ Edit Medicine implementation checkpoint completed on 2026-08-10:
 - [x] Review default and long-content composition, scrolled navigation spacing, dirty navigation, and save persistence on the simulator.
 
 Release QA remains intentionally separate from this completed implementation checkpoint: software-keyboard overlap at accessibility text sizes, VoiceOver order, and physical-device reminder behavior.
+
+Medicine form navigation checkpoint completed on 2026-08-11:
+
+- [x] Replace raw `beforeRemove` listeners with SDK 57's supported `usePreventRemove` guard on Add and Edit Medicine.
+- [x] Disable the native back-button history menu while the shared medicine form header owns guarded navigation.
+- [x] Replay the exact intercepted Back or swipe action after draft/discard confirmation instead of creating a second navigation action.
+- [x] Clear the guard on a render boundary before navigating after a successful Add or Edit mutation.
+- [x] Complete code review, TypeScript, ESLint, formatting, and the full Jest suite with no blocking findings.
+
+Local route-cleanup checkpoint completed on 2026-08-11:
+
+- [x] Remove empty legacy directories left by the Today, Medicines, Add Medicine, and settings/provider migrations.
+- [x] Remove the empty `.github/workflows` shell; no workflow files existed.
+- [x] Confirm there are no obsolete Medicines wrappers, backup files, rejected patches, zero-byte files, or `.DS_Store` files under `app/`, `src/`, or `docs/`.
+- [x] Keep the remaining `src/screens/` files because current route files still import them.
+- [x] Transfer Week composition into `app/(tabs)/week.tsx`, then remove `src/screens/week/`.
+- [ ] Transfer Profile/settings, Pilly Plus, Welcome, Start Small, and Dose History one route at a time; remove each wrapper only after its imports are gone.
+
+Week architecture and design checkpoint completed on 2026-08-11:
+
+- [x] Own the page composition in `app/(tabs)/week.tsx` and remove the legacy Week screen wrapper.
+- [x] Treat Week as a read-only seven-day outlook; Today remains the focused place for recording and corrections, while Dose History owns retrospective review.
+- [x] Use a local date route parameter so Today and the Week calendar select the same day without relying on a fragile numeric index.
+- [x] Centralize empty, upcoming, due, taken, and skipped day-state derivation so Today and Week use the same semantics.
+- [x] Make the adaptive seven-day calendar the signature visual and keep color tied to selection or medicine state.
+- [x] Group dense schedules by exact time inside one agenda surface with saved medicine silhouettes, quiet separators, and read-only statuses.
+- [x] Distinguish a selected rest day from a completely empty outlook; keep the reusable Pilly companion in `src/design/illustrations/` and reserve it for the full empty state.
+- [x] Add focused state and agenda tests; complete live default-size and largest-standard-text reviews without clipping or broken containers.
+- [x] Keep active-only Today/Week medicine data on a distinct cache key from the Medicines screen's include-archived list while retaining prefix invalidation after mutations.
+- [ ] Review VoiceOver order and physical-device behavior during release QA.
 
 ## Profile decision
 
@@ -256,4 +297,8 @@ Before release:
 - 2026-08-10: Add/Edit schedules use one shared weekday pattern with one or more exact local times. Each time owns its reminder state; Morning, Midday, Afternoon, Evening, and Night are derived context rather than saved meal semantics. One schedule surface and quiet separators scale the form without turning each time into another card.
 - 2026-08-10: Today treats a future dose as schedule information, not an available action. An unrecorded dose shows a quiet Later today state until its exact local time; Taken and Skip appear at that time. Recorded states remain visible and correctable, and the summary separates ready doses from later doses.
 - 2026-08-10: Today is limited to medicine identity, scheduled time, and recording state. Supply estimates belong on Medicine Detail and must not increase Today-row density.
+- 2026-08-11: Guard Add/Edit removal with SDK 57's `usePreventRemove` state and disable the native back history menu. Confirmed exits replay the intercepted action; successful mutations clear prevention before post-save navigation. Raw `beforeRemove` interception is not valid for these native-stack screens because it can desynchronize native and JavaScript route state.
+- 2026-08-11: Medicines remains a Router-owned page and uses reusable query/state/list units rather than a screen wrapper. Its true empty state reuses the existing code-native starter organizer as the signature visual, presents one Add action, and keeps loading, retry, active, and archived states semantically distinct without introducing new decorative colors.
+- 2026-08-11: Empty directories left by completed Router migrations are removed locally. Remaining `src/screens/` files are not generic cleanup targets: they stay until Profile/settings, Pilly Plus, Welcome, Start Small, and Dose History each become Router-owned.
+- 2026-08-11: Week is a rolling seven-day outlook rather than a second recording surface. Its functional calendar is the single signature visual, Today remains the action surface, and Dose History remains the retrospective surface. Dense selected-day schedules share one time-grouped agenda; the Pilly companion appears only when the complete outlook is empty.
 - 2026-08-08: Replace custom provider nesting with one `AppRuntime`; derive the stateless repository through `useRepository()` from Expo SQLite context.
