@@ -75,7 +75,7 @@ There is no cloud sync, account, or finished export/import flow yet. App deletio
 
 Recommended visual review order: Today, Medicine detail, Edit medicine, Add medicine, Medicines, Week, Profile, Pilly Plus, Welcome, Start Small, then Dose history.
 
-Next active visual checkpoint after the Pilly Plus preview pass: Welcome and Start Small. VoiceOver remains deferred to release QA.
+Next active visual checkpoint: Dose History. VoiceOver remains deferred to release QA.
 
 ### Design review checklist
 
@@ -89,7 +89,7 @@ Next active visual checkpoint after the Pilly Plus preview pass: Welcome and Sta
 | Week                    | Complete               | Release QA only: VoiceOver and physical device                         |
 | Profile                 | Complete               | Release QA only: VoiceOver, keyboard, and physical device              |
 | Pilly Plus              | Preview complete       | First paid feature, StoreKit device purchase/restore, and release copy |
-| Welcome and Start Small | Pending                | First-run composition and local-first explanation                      |
+| Welcome and Start Small | Complete               | Release QA only: VoiceOver, Reduce Motion, and physical device         |
 | Dose history            | Pending                | Correction clarity and audit readability                               |
 
 Medicine appearance is local, optional recognition data. Shape, size, and curated soft tones are stored on the medicine and drive the code-native silhouette on Medicine Detail, the Add/Edit preview, the Medicines list, and a quieter cue beside each Today dose. Capsules support independently selected colors for each half; round and oval pills use one color. Add/Edit keeps only a compact preview row in the form and opens a dedicated editor sheet for the controls. The name remains the primary identifier. A future pattern or user photo should ship only if it improves recognition, remains legible without motion, and has an explicit privacy and storage model.
@@ -255,6 +255,19 @@ The MVP has one optional local profile with a first name and optional last name.
 
 Multiple people or caregiver profiles are deferred. They require explicit ownership of medicines, dose history, notifications, export, and deletion before the UI presents them as a feature.
 
+Welcome and Start Small architecture and design checkpoint completed on 2026-08-11:
+
+- [x] Keep both onboarding pages composed directly in their Expo Router route files; do not recreate a screen-wrapper or onboarding feature folder.
+- [x] Replace the reused Week illustration and equal icon-tile row with one onboarding-specific, code-native SVG story.
+- [x] Use a one-shot staged entrance to connect medicine identity, selected days, and exact time without looping, confetti, or decorative motion.
+- [x] Respect the system Reduce Motion setting by rendering the same complete SVG state without animation.
+- [x] Keep Welcome’s hierarchy to one accessible title, one textured capsule mascot, concise product copy, a local-data promise, and one primary action. Do not invent an in-page wordmark before Pilly has an approved logo; launch branding belongs to the native splash.
+- [x] Let the native stack own Back on Start Small; keep the primary continuation and quiet opt-out inside the illustration-and-copy composition instead of docking actions to the bottom edge or creating an oversized native header item.
+- [x] Persist onboarding locally before either destination, disable duplicate actions while pending, and show a visible local retry state if persistence fails.
+- [x] Add focused route and illustration tests and review both default-size compositions in the iOS simulator.
+- [x] Review the shared actions and both onboarding compositions at the largest standard Dynamic Type size, then stress-check the accessibility extreme without clipped controls.
+- [ ] Review VoiceOver order, Reduce Motion on-device behavior, and physical-device motion during release QA.
+
 ## Pilly Plus boundary
 
 Free:
@@ -356,4 +369,5 @@ Before release:
 - 2026-08-11: Native-header routes opt out of automatic ScrollView top-inset adjustment when the stack already owns that space. Profile presents local identity, privacy context, and its quiet Edit action as one compact text-first composition, removing the large empty header gap, duplicate privacy block, and non-semantic route tint. Profile keeps Back visible even when opened without stack history and falls back to Today instead of leaving the user stranded.
 - 2026-08-11: Pilly Plus uses a custom, Router-owned one-time-purchase presentation. RevenueCat remains the entitlement and offering source, the current lifetime package supplies the localized price, and an explicit launch gate prevents checkout before a real paid feature and physical-device purchase pass exist. Development can preview free or active UI states, but production always follows the store entitlement. Core medicine tracking and basic personal-data export remain free.
 - 2026-08-11: Today progress leads with what matters now instead of repeating a sentence about every bucket. It presents ready-now, later, or complete status and keeps completion counts secondary; recording remains in the medicine dose rows rather than adding a duplicate summary CTA. Profile omits empty management destinations and reveals Archived medicines only when archived content exists.
+- 2026-08-11: Onboarding uses one shared code-native SVG story to explain Pilly rather than borrowing a functional Week control or presenting three equal setup tiles. The scenes use layered gradients, highlights, and restrained pattern texture instead of a stick-figure treatment. Motion is a short, one-shot entrance with a complete reduced-motion fallback; Router pages retain navigation and local completion ownership, and Start Small never navigates before its setting write succeeds. The primary action belongs to the story composition rather than a persistent bottom dock. Three.js is intentionally excluded: one onboarding illustration does not justify a GL render loop, extra native dependencies, or a second accessibility fallback.
 - 2026-08-08: Replace custom provider nesting with one `AppProviders`; derive the stateless repository through `useRepository()` from Expo SQLite context.

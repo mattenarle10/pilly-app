@@ -60,6 +60,7 @@ export function PillyButton({
           ) : null}
           <PillyText
             role="label"
+            maxFontSizeMultiplier={1.6}
             style={[
               styles.label,
               variant === 'primary'
@@ -85,13 +86,12 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   content: {
-    width: '100%',
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: spacing.sm,
   },
-  label: { flex: 1, textAlign: 'center' },
+  label: { textAlign: 'center' },
   fullWidth: { width: '100%' },
   primaryLabel: { color: colors.surface },
   brandLabel: { color: colors.brand },

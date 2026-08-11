@@ -1,11 +1,11 @@
 import { StyleSheet, View } from 'react-native';
-import { useRouter } from 'expo-router';
+import { Stack, useRouter } from 'expo-router';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 
-import { PillyButton, PillyIconTile, PillyText, Screen } from '@/ui/components';
-import type { PillyIconName } from '@/ui/icons';
-import { spacing } from '@/ui/tokens';
-import { useRepository } from '@/hooks';
+import { PillyBanner, PillyButton, PillyText, Screen } from '@/ui/components';
+import { useRepository } from '@/hooks/use-repository';
+import { OnboardingJourney } from '@/ui/illustrations';
+import { colors, spacing } from '@/ui/tokens';
 
 export default function StartSmallRoute() {
   const router = useRouter();
@@ -18,63 +18,75 @@ export default function StartSmallRoute() {
   });
 
   const finish = async (addMedicine: boolean) => {
-    await complete.mutateAsync();
-    router.replace(addMedicine ? '/medicine/new' : '/(tabs)/today');
+    complete.reset();
+    try {
+      await complete.mutateAsync();
+      router.replace(addMedicine ? '/medicine/new' : '/(tabs)/today');
+    } catch {
+      // The mutation error is rendered beside the actions so the user can retry.
+    }
   };
 
   return (
-    <Screen scroll={false} contentStyle={styles.content}>
-      <View style={styles.center}>
-        <View style={styles.steps}>
-          <SetupItem icon="medicine" label="Name" />
-          <SetupItem icon="calendar" label="Days" />
-          <SetupItem icon="time" label="Time" />
+    <>
+      <Stack.Screen
+        options={{
+          headerShown: true,
+          headerBackButtonDisplayMode: 'minimal',
+          headerBackButtonMenuEnabled: false,
+          headerShadowVisible: false,
+          headerStyle: { backgroundColor: colors.background },
+          headerTintColor: colors.textPrimary,
+          headerRight: () => null,
+          title: '',
+        }}
+      />
+      <Screen
+        safeAreaEdges={['bottom']}
+        contentInsetAdjustmentBehavior="never"
+        contentStyle={styles.content}
+      >
+        <View style={styles.hero}>
+          <OnboardingJourney stage="setup" />
+          <View style={styles.copy}>
+            <PillyText role="large-title" accessibilityRole="header" maxFontSizeMultiplier={2}>
+              Start with one medicine
+            </PillyText>
+            <PillyText muted maxFontSizeMultiplier={2} style={styles.body}>
+              Add its name, days, and time. You can change everything later.
+            </PillyText>
+          </View>
+          <View style={styles.actions}>
+            <PillyButton
+              label="Add first medicine"
+              icon="add"
+              size="medium"
+              loading={complete.isPending}
+              onPress={() => finish(true)}
+              style={styles.primaryAction}
+            />
+            <PillyButton
+              label="Not now"
+              variant="quiet"
+              size="compact"
+              disabled={complete.isPending}
+              onPress={() => finish(false)}
+            />
+            {complete.isError ? (
+              <PillyBanner compact kind="error" message="Couldn’t finish setup. Try again." />
+            ) : null}
+          </View>
         </View>
-        <View style={styles.copy}>
-          <PillyText role="large-title" accessibilityRole="header">
-            Start with one medicine
-          </PillyText>
-          <PillyText muted>Name, days, and time. That’s it.</PillyText>
-        </View>
-      </View>
-      <View style={styles.actions}>
-        <PillyButton
-          label="Add medicine"
-          icon="add"
-          fullWidth
-          disabled={complete.isPending}
-          onPress={() => finish(true)}
-        />
-        <PillyButton
-          label="Skip"
-          variant="quiet"
-          disabled={complete.isPending}
-          onPress={() => finish(false)}
-        />
-      </View>
-    </Screen>
-  );
-}
-
-function SetupItem({ icon, label }: { icon: PillyIconName; label: string }) {
-  return (
-    <View style={styles.step}>
-      <PillyIconTile icon={icon} />
-      <PillyText role="caption">{label}</PillyText>
-    </View>
+      </Screen>
+    </>
   );
 }
 
 const styles = StyleSheet.create({
-  content: { justifyContent: 'space-between' },
-  center: { flex: 1, justifyContent: 'center' },
-  copy: { gap: spacing.md },
-  steps: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    gap: spacing.xxl,
-    marginBottom: spacing.xxxl,
-  },
-  step: { alignItems: 'center', gap: spacing.sm },
-  actions: { gap: spacing.sm },
+  content: { minHeight: '100%' },
+  hero: { flex: 1, justifyContent: 'center', gap: spacing.xxl, paddingVertical: spacing.xl },
+  copy: { alignItems: 'center', gap: spacing.md },
+  body: { maxWidth: 330, textAlign: 'center' },
+  actions: { width: '100%', alignItems: 'center', gap: spacing.md },
+  primaryAction: { width: 260, maxWidth: '100%' },
 });
