@@ -40,6 +40,7 @@ export function MedicineFormShell({
         options={{
           headerShown: true,
           headerBackButtonDisplayMode: 'minimal',
+          headerBackButtonMenuEnabled: false,
           headerShadowVisible: false,
           headerStyle: { backgroundColor: colors.background },
           headerTintColor: colors.textPrimary,

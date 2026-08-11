@@ -1,5 +1,6 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { router, useLocalSearchParams, useNavigation } from 'expo-router';
+import { usePreventRemove } from 'expo-router/react-navigation';
 import { useForm, useStore } from '@tanstack/react-form';
 
 import type { MedicationDetail } from '@/data/repositories';
@@ -48,7 +49,7 @@ function EditMedicineForm({
 }) {
   const navigation = useNavigation();
   const schedule = detail.schedules[0];
-  const allowLeave = useRef(false);
+  const [saved, setSaved] = useState(false);
   const [pendingNavigation, setPendingNavigation] = useState<(() => void) | null>(null);
   const initialDraft = useMemo(
     () =>
@@ -69,10 +70,7 @@ function EditMedicineForm({
     defaultValues: initialDraft,
     onSubmit: ({ value }) => {
       saveMutation.mutate(value, {
-        onSuccess: () => {
-          allowLeave.current = true;
-          router.back();
-        },
+        onSuccess: () => setSaved(true),
       });
     },
   });
@@ -81,15 +79,13 @@ function EditMedicineForm({
   const issue = validateMedicationDraft(values);
   const scheduleChanged = !schedulesMatch(detail.schedules, scheduleConfigurationFromDraft(values));
 
-  useEffect(
-    () =>
-      navigation.addListener('beforeRemove', (event) => {
-        if (!isDirty || allowLeave.current) return;
-        event.preventDefault();
-        setPendingNavigation(() => () => navigation.dispatch(event.data.action));
-      }),
-    [isDirty, navigation],
-  );
+  usePreventRemove(isDirty && !saved, ({ data }) => {
+    setPendingNavigation(() => () => navigation.dispatch(data.action));
+  });
+
+  useEffect(() => {
+    if (saved) router.back();
+  }, [saved]);
 
   const setFieldValue = <Field extends keyof MedicationDraft>(
     field: Field,
@@ -115,9 +111,9 @@ function EditMedicineForm({
           destructive
           onConfirm={() => {
             if (!pendingNavigation) return;
-            allowLeave.current = true;
+            const leave = pendingNavigation;
             setPendingNavigation(null);
-            pendingNavigation();
+            leave();
           }}
           onClose={() => setPendingNavigation(null)}
         />

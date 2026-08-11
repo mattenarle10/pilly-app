@@ -3,6 +3,7 @@ import { ScrollView } from 'react-native';
 import { useForm, useStore } from '@tanstack/react-form';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { router, useNavigation } from 'expo-router';
+import { usePreventRemove } from 'expo-router/react-navigation';
 import Storage from 'expo-sqlite/kv-store';
 
 import { PillyBanner, PillyModal } from '@/design/components';
@@ -32,7 +33,7 @@ export default function NewMedicationRoute() {
   const queryClient = useQueryClient();
   const validation = useMedicationValidation();
   const formScroll = useRef<ScrollView>(null);
-  const allowLeave = useRef(false);
+  const [created, setCreated] = useState(false);
   const [pendingNavigation, setPendingNavigation] = useState<(() => void) | null>(null);
   const [draftWarning, setDraftWarning] = useState<string | null>(null);
   const [showExit, setShowExit] = useState(false);
@@ -69,8 +70,7 @@ export default function NewMedicationRoute() {
         reminderStatus === 'denied' ? 'denied' : reminderStatus === 'failed' ? 'failed' : 'none',
       );
       await queryClient.invalidateQueries();
-      allowLeave.current = true;
-      router.replace('/(tabs)/today');
+      setCreated(true);
     },
   });
   const values = useStore(form.store, (state) => state.values);
@@ -89,16 +89,14 @@ export default function NewMedicationRoute() {
       .catch(() => setDraftWarning(draftMessages.reset));
   }, [form]);
 
-  useEffect(
-    () =>
-      navigation.addListener('beforeRemove', (event) => {
-        if (allowLeave.current) return;
-        event.preventDefault();
-        setPendingNavigation(() => () => navigation.dispatch(event.data.action));
-        setShowExit(true);
-      }),
-    [navigation],
-  );
+  usePreventRemove(!created, ({ data }) => {
+    setPendingNavigation(() => () => navigation.dispatch(data.action));
+    setShowExit(true);
+  });
+
+  useEffect(() => {
+    if (created) router.replace('/(tabs)/today');
+  }, [created]);
 
   const saveDraft = async (value: MedicationDraft) => {
     try {
@@ -136,9 +134,9 @@ export default function NewMedicationRoute() {
           confirmLabel="Leave"
           cancelLabel="Keep editing"
           onConfirm={() => {
-            const leave = pendingNavigation ?? (() => router.back());
+            if (!pendingNavigation) return;
+            const leave = pendingNavigation;
             void saveDraft(form.state.values).finally(() => {
-              allowLeave.current = true;
               setShowExit(false);
               setPendingNavigation(null);
               leave();
