@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { router } from 'expo-router';
 import Animated, { FadeInRight, FadeOutRight, ReduceMotion } from 'react-native-reanimated';
@@ -14,7 +14,7 @@ import {
   WeekStatusStrip,
 } from '@/design/components';
 import { colors, radii, spacing } from '@/design/tokens';
-import { useDoseActions } from '@/hooks';
+import { useCurrentMinute, useDoseActions } from '@/hooks';
 import {
   buildOrganizerDays,
   DoseStatusSheet,
@@ -104,7 +104,10 @@ export default function Today() {
           days={organizerDays}
           variant="compact"
           onDayPress={(index) =>
-            router.push({ pathname: '/(tabs)/week', params: { day: `${index}` } })
+            router.push({
+              pathname: '/(tabs)/week',
+              params: { date: organizerDays[index]?.key ?? organizerDays[0]?.key },
+            })
           }
         />
       </View>
@@ -206,23 +209,3 @@ const styles = StyleSheet.create({
   restDay: { minHeight: 76, flexDirection: 'row', alignItems: 'center', gap: spacing.md },
   restCopy: { flex: 1, gap: spacing.xs },
 });
-
-function useCurrentMinute(): Date {
-  const [now, setNow] = useState(() => new Date());
-
-  useEffect(() => {
-    let timeout: ReturnType<typeof setTimeout>;
-    const scheduleRefresh = () => {
-      const milliseconds = Date.now();
-      const untilNextMinute = 60_000 - (milliseconds % 60_000) + 25;
-      timeout = setTimeout(() => {
-        setNow(new Date());
-        scheduleRefresh();
-      }, untilNextMinute);
-    };
-    scheduleRefresh();
-    return () => clearTimeout(timeout);
-  }, []);
-
-  return now;
-}

@@ -3,7 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 
 import { profileSettingKeys, resolveProfileName } from '@/domain/profile';
 import { toLocalDate, weekStartingToday } from '@/domain/schedule';
-import { useRepository } from '@/hooks';
+import { activeMedicinesQueryKey, useRepository } from '@/hooks';
 
 export function useTodayData() {
   const repository = useRepository();
@@ -20,7 +20,7 @@ export function useTodayData() {
     networkMode: 'always',
   });
   const medicines = useQuery({
-    queryKey: ['medications'],
+    queryKey: activeMedicinesQueryKey,
     queryFn: () => repository.listMedications(),
     networkMode: 'always',
   });

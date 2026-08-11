@@ -1,6 +1,7 @@
 import type { ScheduledDose } from '@/data/repositories';
 import type { OrganizerDay } from '@/design/illustrations';
-import { formatTime, toLocalDate } from '@/domain/schedule';
+import { formatTime } from '@/domain/schedule';
+import { buildWeekDays } from '@/week/week-state';
 
 export type TodayOrganizerDay = OrganizerDay & { dateNumber: number };
 export type TodayDoseGroup = { key: string; time: string; doses: ScheduledDose[] };
@@ -25,23 +26,7 @@ export function buildOrganizerDays(
   dates: Date[],
   dosesByDay: ScheduledDose[][] | undefined,
 ): TodayOrganizerDay[] {
-  return dates.map((date, index) => {
-    const doses = dosesByDay?.[index] ?? [];
-    const state =
-      doses.length === 0
-        ? 'empty'
-        : doses.every((dose) => dose.status === 'taken')
-          ? 'taken'
-          : doses.some((dose) => dose.status === 'skipped')
-            ? 'skipped'
-            : 'notRecorded';
-    return {
-      key: toLocalDate(date),
-      label: new Intl.DateTimeFormat(undefined, { weekday: 'short' }).format(date),
-      dateNumber: date.getDate(),
-      state,
-    };
-  });
+  return buildWeekDays(dates, dosesByDay, new Date());
 }
 
 export function groupTodayDoses(doses: ScheduledDose[] | undefined): TodayDoseGroup[] {

@@ -17,7 +17,7 @@ const stateIcon = {
 
 const stateLabel = {
   empty: 'no medicines',
-  scheduled: 'scheduled',
+  scheduled: 'upcoming',
   notRecorded: 'not recorded',
   taken: 'taken',
   skipped: 'skipped',
@@ -47,7 +47,7 @@ export function WeekStatusStrip({
             ? colors.brandStrong
             : day.state === 'skipped'
               ? colors.warning
-              : selected
+              : day.state === 'notRecorded' || selected
                 ? colors.brand
                 : colors.textSecondary;
         return (
@@ -66,14 +66,14 @@ export function WeekStatusStrip({
           >
             <View style={styles.dateCopy}>
               <PillyText role="caption" muted={!selected} style={styles.weekday}>
-                {day.label.slice(0, compact ? 2 : 1)}
+                {day.label.slice(0, 2)}
               </PillyText>
               <PillyText role="headline" style={selected ? styles.selectedText : undefined}>
                 {day.dateNumber}
               </PillyText>
             </View>
             <View style={styles.statusSlot}>
-              {compact && (day.state === 'empty' || day.state === 'notRecorded') ? (
+              {day.state === 'empty' || (compact && day.state === 'scheduled') ? (
                 <View
                   style={[
                     styles.statusDot,
@@ -95,7 +95,7 @@ export function WeekStatusStrip({
 
 const styles = StyleSheet.create({
   strip: {
-    minHeight: 82,
+    minHeight: 94,
     flexDirection: 'row',
     alignItems: 'stretch',
     gap: 2,
@@ -107,16 +107,16 @@ const styles = StyleSheet.create({
   day: {
     flex: 1,
     minWidth: 0,
-    minHeight: 74,
+    minHeight: 86,
     borderRadius: radii.md,
     alignItems: 'center',
     justifyContent: 'center',
-    gap: spacing.xs,
+    gap: spacing.sm,
     paddingVertical: spacing.xs,
   },
   compactDay: { minHeight: 64, paddingVertical: 3 },
   dateCopy: { alignItems: 'center', gap: 1 },
-  weekday: { fontWeight: '500' },
+  weekday: { fontWeight: '600' },
   statusSlot: { width: 18, height: 18, alignItems: 'center', justifyContent: 'center' },
   statusDot: { width: 8, height: 8, borderRadius: 4, borderWidth: 1.5 },
   selected: { backgroundColor: colors.brandSoft },
