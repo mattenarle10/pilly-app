@@ -7,6 +7,8 @@ import { focusManager, QueryClient, QueryClientProvider } from '@tanstack/react-
 import { migrateDatabase } from '@/data/database';
 import { colors } from '@/design/tokens';
 
+import { PlusEntitlementBridge } from './plus-entitlement-bridge';
+
 export function AppRuntime({ children }: PropsWithChildren) {
   const [queryClient] = useState(
     () => new QueryClient({ defaultOptions: { queries: { retry: false } } }),
@@ -28,7 +30,10 @@ export function AppRuntime({ children }: PropsWithChildren) {
       }
     >
       <SQLiteProvider databaseName="pilly.db" onInit={migrateDatabase} useSuspense>
-        <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
+        <QueryClientProvider client={queryClient}>
+          <PlusEntitlementBridge />
+          {children}
+        </QueryClientProvider>
       </SQLiteProvider>
     </Suspense>
   );
