@@ -22,12 +22,12 @@ Pilly records what a person enters. It does not recommend doses, diagnose condit
 | `src/design/`   | Shared controls, icons, illustrations, type, spacing, color, radius, and motion rules.            |
 | `src/domain/`   | Deterministic business rules and Zod schemas. No React Native or persistence imports.             |
 | `src/data/`     | SQLite schema, migrations, and repository operations.                                             |
-| `src/platform/` | Native capabilities such as local notifications, purchases, and profile-photo file access.        |
+| `src/platform/` | Native capabilities such as local notifications and purchases.                                    |
 | `src/config/`   | Parsed environment configuration.                                                                 |
 
 The route may coordinate a use case, but it should not know SQLite queries, file paths, native picker details, RevenueCat calls, or notification scheduling internals.
 
-Legacy wrapper cleanup is route-by-route. Today, Week, Medicine Detail, Add Medicine, Edit Medicine, and Medicines are Router-owned. The remaining wrappers are still live dependencies of Profile/settings, Pilly Plus, Welcome, Start Small, and Dose History; remove each only when its route composition moves into `app/`.
+Legacy wrapper cleanup is route-by-route. Today, Week, Medicine Detail, Add Medicine, Edit Medicine, Medicines, and Profile are Router-owned. The remaining wrappers are still live dependencies of Pilly Plus, Welcome, Start Small, and Dose History; remove each only when its route composition moves into `app/`.
 
 ## Local data storage
 
@@ -40,15 +40,13 @@ Medication data is stored in an on-device SQLite database through Expo SQLite an
 | `dose_records`  | Current Taken or Skipped state for a stable scheduled occurrence, plus scheduled and recorded times. Absence means Not recorded. |
 | `dose_events`   | Audit trail of dose corrections and undo operations.                                                                             |
 | `supply_events` | Manual counts and supply changes caused by dose records or corrections.                                                          |
-| `settings`      | Small local preferences such as onboarding, reminder notices, profile name/photo URI, and cached Plus entitlement.               |
+| `settings`      | Small local preferences such as onboarding, reminder notices, profile name, and cached Plus entitlement.                         |
 
 The current database schema version is 5. Migrations live in `src/data/database/migrate-database.ts`. New schema changes must increment the version and preserve existing medication history. Version 4 adds shape, size, and a primary tone. Version 5 adds a secondary capsule tone with a safe matching-color default for existing medicines.
 
-### Profile photo
+### Profile identity
 
-The selected image is copied into the app's private document directory. SQLite stores only its local URI. Replacing or removing the photo deletes the app-owned old file after the setting is safely updated. Pilly does not upload the image.
-
-Profile name validation and setting keys live in `src/domain/profile`. Native picker and file operations live in `src/platform/profile-photo`. The Profile screen only coordinates those modules.
+The current profile is a local first and optional last name. There is no account or profile-photo feature in the current product. Name validation and setting keys live in `src/domain/profile`; the Router-owned Profile page coordinates the local setting queries through `useProfile()`.
 
 ### Notifications and purchases
 
@@ -78,7 +76,7 @@ There is no cloud sync, account, or finished export/import flow yet. App deletio
 
 Recommended visual review order: Today, Medicine detail, Edit medicine, Add medicine, Medicines, Week, Profile, Pilly Plus, Welcome, Start Small, then Dose history.
 
-Next active visual checkpoint after the Week pass: Profile. VoiceOver remains deferred to release QA.
+Next active visual checkpoint after the Profile pass: Pilly Plus. VoiceOver remains deferred to release QA.
 
 ### Design review checklist
 
@@ -90,7 +88,7 @@ Next active visual checkpoint after the Week pass: Profile. VoiceOver remains de
 | Edit medicine           | Complete               | Release QA only: keyboard, VoiceOver, large text, and physical device  |
 | Medicines               | Complete               | Release QA only: VoiceOver and physical device                         |
 | Week                    | Complete               | Release QA only: VoiceOver and physical device                         |
-| Profile                 | Pending                | Identity card, local photo, privacy, and manage links                  |
+| Profile                 | Complete               | Release QA only: VoiceOver, keyboard, and physical device              |
 | Pilly Plus              | Pending                | Honest value, purchase, restore, and offline entitlement               |
 | Welcome and Start Small | Pending                | First-run composition and local-first explanation                      |
 | Dose history            | Pending                | Correction clarity and audit readability                               |
@@ -204,7 +202,8 @@ Local route-cleanup checkpoint completed on 2026-08-11:
 - [x] Confirm there are no obsolete Medicines wrappers, backup files, rejected patches, zero-byte files, or `.DS_Store` files under `app/`, `src/`, or `docs/`.
 - [x] Keep the remaining `src/screens/` files because current route files still import them.
 - [x] Transfer Week composition into `app/(tabs)/week.tsx`, then remove `src/screens/week/`.
-- [ ] Transfer Profile/settings, Pilly Plus, Welcome, Start Small, and Dose History one route at a time; remove each wrapper only after its imports are gone.
+- [x] Transfer Profile composition into `app/profile/index.tsx`, redirect `/settings`, and remove the Profile wrapper after its imports are gone.
+- [ ] Transfer Pilly Plus, Welcome, Start Small, and Dose History one route at a time; remove each wrapper only after its imports are gone.
 
 Week architecture and design checkpoint completed on 2026-08-11:
 
@@ -227,9 +226,22 @@ Native tab navigation checkpoint completed on 2026-08-11:
 - [x] Preserve the platform fallback on systems that do not support native tab-bar minimization.
 - [ ] Confirm scroll-direction behavior, Reduce Transparency, and VoiceOver on a physical device during release QA.
 
+Profile architecture and design checkpoint completed on 2026-08-11:
+
+- [x] Own the page composition in `app/profile/index.tsx` and remove the legacy Profile screen wrapper.
+- [x] Make `/settings` a compatibility redirect to the canonical Profile route instead of rendering a second Profile instance.
+- [x] Let the native stack header own Back, the compact Profile title, top safe-area spacing, and scroll-edge behavior.
+- [x] Keep profile queries, legacy-name fallback, archived count, cache updates, and normalized name saving in `useProfile()`.
+- [x] Use the saved name as the signature typographic moment and keep management links in quiet shared surfaces.
+- [x] Remove the pre-release profile-photo feature, its platform module, setting key, image-picker package, direct file-system dependency, and native permission plugin rather than leaving dormant code.
+- [x] Represent loading, retryable load failure, name-save failure, missing website configuration, and website-open failure.
+- [x] Add focused hook tests and complete TypeScript, ESLint, formatting, and Jest verification.
+- [x] Review the final default-size header spacing, identity hierarchy, management surfaces, and long-name composition on the simulator.
+- [ ] Review largest-standard text, modal keyboard behavior, and physical-device navigation before release.
+
 ## Profile decision
 
-The MVP has one optional local profile with a first name, optional last name, and optional on-device photo. The photo is free because basic identity and recognition are not premium safety features.
+The MVP has one optional local profile with a first name and optional last name. It has no account or profile photo. A future account identity or visual customization feature requires a separate privacy, storage, and product-boundary decision; the current app does not retain dormant photo infrastructure or advertise photo access as Plus value.
 
 Multiple people or caregiver profiles are deferred. They require explicit ownership of medicines, dose history, notifications, export, and deletion before the UI presents them as a feature.
 
@@ -276,7 +288,6 @@ Implemented:
 In progress:
 
 - Cross-screen visual hierarchy and shared control cleanup
-- Profile name, local photo, and medicine deletion
 - Empty, error, and destructive-action states
 - Native glass enhancement with accessible fallbacks
 
@@ -310,4 +321,6 @@ Before release:
 - 2026-08-11: Empty directories left by completed Router migrations are removed locally. Remaining `src/screens/` files are not generic cleanup targets: they stay until Profile/settings, Pilly Plus, Welcome, Start Small, and Dose History each become Router-owned.
 - 2026-08-11: Week is a rolling seven-day outlook rather than a second recording surface. Its functional calendar is the single signature visual, Today remains the action surface, and Dose History remains the retrospective surface. Dense selected-day schedules share one time-grouped agenda; the Pilly companion appears only when the complete outlook is empty.
 - 2026-08-11: The shared native tab bar minimizes on scroll down and expands on scroll up on iOS 26. It does not fully hide. All tab routes use the same shared scroll surface, whose safe-area wrapper remains non-collapsible so Expo Router can reliably discover the nested scroll view.
+- 2026-08-11: Profile is Router-owned and `/settings` redirects to it. The local name is the identity moment; management and product links use quiet shared surfaces under a native header. The pre-release profile-photo code is removed completely and can return only through a future feature with a new privacy and storage decision.
+- 2026-08-11: Native-header routes opt out of automatic ScrollView top-inset adjustment when the stack already owns that space. Profile presents local identity, privacy context, and its quiet Edit action as one compact text-first composition, removing the large empty header gap, duplicate privacy block, and non-semantic route tint.
 - 2026-08-08: Replace custom provider nesting with one `AppRuntime`; derive the stateless repository through `useRepository()` from Expo SQLite context.
