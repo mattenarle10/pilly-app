@@ -27,7 +27,7 @@ Pilly records what a person enters. It does not recommend doses, diagnose condit
 
 The route may coordinate a use case, but it should not know SQLite queries, file paths, native picker details, RevenueCat calls, or notification scheduling internals.
 
-Legacy wrapper cleanup is route-by-route. Today, Week, Medicine Detail, Add Medicine, Edit Medicine, Medicines, and Profile are Router-owned. The remaining wrappers are still live dependencies of Pilly Plus, Welcome, Start Small, and Dose History; remove each only when its route composition moves into `app/`.
+Legacy wrapper cleanup is route-by-route. Today, Week, Medicine Detail, Add Medicine, Edit Medicine, Medicines, Profile, and Pilly Plus are Router-owned. The remaining wrappers are still live dependencies of Welcome, Start Small, and Dose History; remove each only when its route composition moves into `app/`.
 
 ## Local data storage
 
@@ -76,7 +76,7 @@ There is no cloud sync, account, or finished export/import flow yet. App deletio
 
 Recommended visual review order: Today, Medicine detail, Edit medicine, Add medicine, Medicines, Week, Profile, Pilly Plus, Welcome, Start Small, then Dose history.
 
-Next active visual checkpoint after the Profile pass: Pilly Plus. VoiceOver remains deferred to release QA.
+Next active visual checkpoint after the Pilly Plus preview pass: Welcome and Start Small. VoiceOver remains deferred to release QA.
 
 ### Design review checklist
 
@@ -89,7 +89,7 @@ Next active visual checkpoint after the Profile pass: Pilly Plus. VoiceOver rema
 | Medicines               | Complete               | Release QA only: VoiceOver and physical device                         |
 | Week                    | Complete               | Release QA only: VoiceOver and physical device                         |
 | Profile                 | Complete               | Release QA only: VoiceOver, keyboard, and physical device              |
-| Pilly Plus              | Pending                | Honest value, purchase, restore, and offline entitlement               |
+| Pilly Plus              | Preview complete       | First paid feature, StoreKit device purchase/restore, and release copy |
 | Welcome and Start Small | Pending                | First-run composition and local-first explanation                      |
 | Dose history            | Pending                | Correction clarity and audit readability                               |
 
@@ -163,6 +163,7 @@ Today action-timing checkpoint completed on 2026-08-10:
 - [x] Present recorded-dose correction as a quiet, explicit Change action instead of a repeated decorative edit bubble.
 - [x] Keep supply estimates out of Today; Medicine Detail owns supply context and editing.
 - [x] Distinguish doses ready to record from doses later today in the progress summary.
+- [x] Lead the progress summary with the current action state (`ready now`, `later today`, or `all done`) and keep completion counts as quiet supporting context; dose rows remain the only recording controls.
 - [x] Add focused boundary and rendering tests for upcoming and available states.
 - [ ] Confirm background-to-foreground minute refresh and time-zone changes during physical-device release QA.
 
@@ -203,7 +204,8 @@ Local route-cleanup checkpoint completed on 2026-08-11:
 - [x] Keep the remaining `src/screens/` files because current route files still import them.
 - [x] Transfer Week composition into `app/(tabs)/week.tsx`, then remove `src/screens/week/`.
 - [x] Transfer Profile composition into `app/profile/index.tsx`, redirect `/settings`, and remove the Profile wrapper after its imports are gone.
-- [ ] Transfer Pilly Plus, Welcome, Start Small, and Dose History one route at a time; remove each wrapper only after its imports are gone.
+- [x] Transfer Pilly Plus composition into `app/plus/index.tsx` and remove its wrapper after its imports are gone.
+- [ ] Transfer Welcome, Start Small, and Dose History one route at a time; remove each wrapper only after its imports are gone.
 
 Week architecture and design checkpoint completed on 2026-08-11:
 
@@ -237,6 +239,7 @@ Profile architecture and design checkpoint completed on 2026-08-11:
 - [x] Represent loading, retryable load failure, name-save failure, missing website configuration, and website-open failure.
 - [x] Add focused hook tests and complete TypeScript, ESLint, formatting, and Jest verification.
 - [x] Review the final default-size header spacing, identity hierarchy, management surfaces, and long-name composition on the simulator.
+- [x] Hide the Manage section when there are no archived medicines; reveal the existing Archived medicines destination only when it has content.
 - [ ] Review largest-standard text, modal keyboard behavior, and physical-device navigation before release.
 
 ## Profile decision
@@ -254,7 +257,7 @@ Free:
 - Taken, Skipped, correction, undo, and dose history
 - Local reminders
 - Supply count and run-out estimate
-- Basic profile and photo
+- Basic local profile
 - A basic way to export personal data when export ships
 
 Possible Plus value:
@@ -266,6 +269,25 @@ Possible Plus value:
 - Future household organization after its privacy model is complete
 
 The current price is a product hypothesis. Do not enable purchasing until a real premium feature is available and App Store/RevenueCat configuration has been tested on a device.
+
+Pilly Plus architecture and design checkpoint completed on 2026-08-11:
+
+- [x] Own the custom paywall composition in `app/plus/index.tsx` and remove the legacy Plus wrapper.
+- [x] Keep RevenueCat access behind a typed platform adapter and route-facing `usePlus()` hook.
+- [x] Select the current offering's lifetime package explicitly and render its localized store price.
+- [x] Treat purchase cancellation as a quiet outcome rather than an error.
+- [x] Subscribe once at app runtime to entitlement changes and retain the local entitlement only as an offline fallback.
+- [x] Provide development-only free and active previews that never contact RevenueCat or grant production access.
+- [x] Keep production checkout behind an explicit launch gate and represent loading, unavailable, retry, restore, active, and offline-active states.
+- [x] Describe only planned Plus value and state clearly that medication essentials remain free.
+- [x] Remove the unused generic RevenueCat paywall UI dependency; Pilly owns the visual hierarchy while RevenueCat owns store state.
+- [x] Use one dedicated code-native Pilly companion as the paywall's signature visual without adding a decorative backdrop or bitmap asset.
+- [x] Keep one benefits surface, one quiet free-core promise, and an inline transaction area instead of stacking promotional and status cards.
+- [x] Reserve alert banners for failures and transaction feedback; preview and active states use calm inline status treatments.
+- [x] Move the entitlement listener into a focused core bridge and centralize the shared query and cached-setting keys.
+- [x] Add focused entitlement-state tests and complete static and full-suite verification.
+- [x] Review the redesigned store-unavailable state at default and largest-standard text sizes on the iPhone 17 Pro simulator without clipped copy or broken containers.
+- [ ] Build the first real paid feature, configure the App Store lifetime product, and validate purchase and restore on a physical device before enabling checkout.
 
 ## Surface and motion rules
 
@@ -318,9 +340,11 @@ Before release:
 - 2026-08-10: Today is limited to medicine identity, scheduled time, and recording state. Supply estimates belong on Medicine Detail and must not increase Today-row density.
 - 2026-08-11: Guard Add/Edit removal with SDK 57's `usePreventRemove` state and disable the native back history menu. Confirmed exits replay the intercepted action; successful mutations clear prevention before post-save navigation. Raw `beforeRemove` interception is not valid for these native-stack screens because it can desynchronize native and JavaScript route state.
 - 2026-08-11: Medicines remains a Router-owned page and uses reusable query/state/list units rather than a screen wrapper. Its true empty state reuses the existing code-native starter organizer as the signature visual, presents one Add action, and keeps loading, retry, active, and archived states semantically distinct without introducing new decorative colors.
-- 2026-08-11: Empty directories left by completed Router migrations are removed locally. Remaining `src/screens/` files are not generic cleanup targets: they stay until Profile/settings, Pilly Plus, Welcome, Start Small, and Dose History each become Router-owned.
+- 2026-08-11: Empty directories left by completed Router migrations are removed locally. Remaining `src/screens/` files are not generic cleanup targets: they stay until Welcome, Start Small, and Dose History each become Router-owned.
 - 2026-08-11: Week is a rolling seven-day outlook rather than a second recording surface. Its functional calendar is the single signature visual, Today remains the action surface, and Dose History remains the retrospective surface. Dense selected-day schedules share one time-grouped agenda; the Pilly companion appears only when the complete outlook is empty.
 - 2026-08-11: The shared native tab bar minimizes on scroll down and expands on scroll up on iOS 26. It does not fully hide. All tab routes use the same shared scroll surface, whose safe-area wrapper remains non-collapsible so Expo Router can reliably discover the nested scroll view.
 - 2026-08-11: Profile is Router-owned and `/settings` redirects to it. The local name is the identity moment; management and product links use quiet shared surfaces under a native header. The pre-release profile-photo code is removed completely and can return only through a future feature with a new privacy and storage decision.
 - 2026-08-11: Native-header routes opt out of automatic ScrollView top-inset adjustment when the stack already owns that space. Profile presents local identity, privacy context, and its quiet Edit action as one compact text-first composition, removing the large empty header gap, duplicate privacy block, and non-semantic route tint.
+- 2026-08-11: Pilly Plus uses a custom, Router-owned one-time-purchase presentation. RevenueCat remains the entitlement and offering source, the current lifetime package supplies the localized price, and an explicit launch gate prevents checkout before a real paid feature and physical-device purchase pass exist. Development can preview free or active UI states, but production always follows the store entitlement. Core medicine tracking and basic personal-data export remain free.
+- 2026-08-11: Today progress leads with what matters now instead of repeating a sentence about every bucket. It presents ready-now, later, or complete status and keeps completion counts secondary; recording remains in the medicine dose rows rather than adding a duplicate summary CTA. Profile omits empty management destinations and reveals Archived medicines only when archived content exists.
 - 2026-08-08: Replace custom provider nesting with one `AppRuntime`; derive the stateless repository through `useRepository()` from Expo SQLite context.
