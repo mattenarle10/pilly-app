@@ -219,6 +219,14 @@ Week architecture and design checkpoint completed on 2026-08-11:
 - [x] Keep active-only Today/Week medicine data on a distinct cache key from the Medicines screen's include-archived list while retaining prefix invalidation after mutations.
 - [ ] Review VoiceOver order and physical-device behavior during release QA.
 
+Native tab navigation checkpoint completed on 2026-08-11:
+
+- [x] Use Expo Router's shared native tab bar for Today, Week, and Medicines instead of route-specific navigation treatments.
+- [x] Minimize the tab bar while scrolling down and expand it when scrolling up on supported iOS versions.
+- [x] Keep the shared safe-area wrapper non-collapsible so Expo Router can reliably discover each route's nested scroll view.
+- [x] Preserve the platform fallback on systems that do not support native tab-bar minimization.
+- [ ] Confirm scroll-direction behavior, Reduce Transparency, and VoiceOver on a physical device during release QA.
+
 ## Profile decision
 
 The MVP has one optional local profile with a first name, optional last name, and optional on-device photo. The photo is free because basic identity and recognition are not premium safety features.
