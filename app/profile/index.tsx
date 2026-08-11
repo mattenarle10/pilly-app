@@ -17,10 +17,7 @@ export default function ProfileRoute() {
   const websiteUrl = process.env.EXPO_PUBLIC_WEBSITE_URL?.startsWith('https://')
     ? process.env.EXPO_PUBLIC_WEBSITE_URL
     : null;
-  const archivedMessage =
-    profile.archivedCount === 0
-      ? 'Nothing archived'
-      : `${profile.archivedCount} ${profile.archivedCount === 1 ? 'medicine' : 'medicines'}`;
+  const archivedMessage = `${profile.archivedCount} ${profile.archivedCount === 1 ? 'medicine' : 'medicines'}`;
 
   const openNameEditor = () => {
     setFirstNameDraft(profile.name.firstName);
@@ -103,14 +100,16 @@ export default function ProfileRoute() {
           />
         ) : null}
 
-        <ProfileSection title="Manage">
-          <ProfileRow
-            icon="archive"
-            title="Archived medicines"
-            message={archivedMessage}
-            onPress={() => router.push('/(tabs)/medicines')}
-          />
-        </ProfileSection>
+        {profile.archivedCount > 0 ? (
+          <ProfileSection title="Manage">
+            <ProfileRow
+              icon="archive"
+              title="Archived medicines"
+              message={archivedMessage}
+              onPress={() => router.push('/(tabs)/medicines')}
+            />
+          </ProfileSection>
+        ) : null}
 
         <ProfileSection title="Pilly">
           <ProfileRow

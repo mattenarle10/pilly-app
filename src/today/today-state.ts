@@ -62,13 +62,18 @@ export function todayProgress(doses: ScheduledDose[] | undefined, now: Date): To
   };
 }
 
-export function todayProgressMessage(progress: TodayProgress): string {
-  if (progress.recorded === progress.total) return 'Everything is recorded for today.';
-  if (progress.available > 0 && progress.upcoming > 0) {
-    return `${doseCount(progress.available)} ready to record · ${doseCount(progress.upcoming)} later today.`;
-  }
-  if (progress.available > 0) return `${doseCount(progress.available)} ready to record.`;
-  return `${doseCount(progress.upcoming)} later today.`;
+export function todayProgressHeadline(progress: TodayProgress): string {
+  if (progress.recorded === progress.total) return 'All done today';
+  if (progress.available > 0) return `${progress.available} ready now`;
+  return `${progress.upcoming} later today`;
+}
+
+export function todayProgressDetail(progress: TodayProgress): string {
+  if (progress.recorded === progress.total) return `${doseCount(progress.total)} recorded`;
+  const completed = `${progress.recorded} of ${progress.total} done`;
+  return progress.available > 0 && progress.upcoming > 0
+    ? `${completed} · ${progress.upcoming} later`
+    : completed;
 }
 
 function doseCount(count: number): string {

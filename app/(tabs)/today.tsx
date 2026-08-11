@@ -24,7 +24,8 @@ import {
   TodayDoseList,
   TodayStarter,
   todayProgress,
-  todayProgressMessage,
+  todayProgressDetail,
+  todayProgressHeadline,
   useTodayData,
 } from '@/today';
 
@@ -89,11 +90,9 @@ export default function Today() {
         <View style={styles.summary}>
           <TodayCompanion recorded={progress.recorded} total={progress.total} size="compact" />
           <View style={styles.summaryCopy}>
-            <PillyText role="headline">
-              {progress.recorded} of {progress.total} recorded
-            </PillyText>
+            <PillyText role="title">{todayProgressHeadline(progress)}</PillyText>
             <PillyText role="caption" muted>
-              {todayProgressMessage(progress)}
+              {todayProgressDetail(progress)}
             </PillyText>
           </View>
         </View>
@@ -195,7 +194,7 @@ const styles = StyleSheet.create({
   titleCopy: { flex: 1, gap: spacing.xs },
   greeting: { color: colors.brand, fontWeight: '600' },
   summary: {
-    minHeight: 72,
+    minHeight: 80,
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.md,

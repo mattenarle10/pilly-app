@@ -1,5 +1,10 @@
 import type { ScheduledDose } from '@/data/repositories';
-import { isDoseAvailable, todayProgress, todayProgressMessage } from './today-state';
+import {
+  isDoseAvailable,
+  todayProgress,
+  todayProgressDetail,
+  todayProgressHeadline,
+} from './today-state';
 
 const scheduledAt = new Date('2026-08-10T13:00:00.000Z');
 
@@ -59,6 +64,22 @@ describe('Today dose availability', () => {
     );
 
     expect(progress).toEqual({ recorded: 1, total: 3, available: 1, upcoming: 1 });
-    expect(todayProgressMessage(progress)).toBe('1 dose ready to record · 1 dose later today.');
+    expect(todayProgressHeadline(progress)).toBe('1 ready now');
+    expect(todayProgressDetail(progress)).toBe('1 of 3 done · 1 later');
+  });
+
+  test('keeps each progress state concise', () => {
+    expect([
+      todayProgressHeadline({ recorded: 3, total: 3, available: 0, upcoming: 0 }),
+      todayProgressDetail({ recorded: 3, total: 3, available: 0, upcoming: 0 }),
+    ]).toEqual(['All done today', '3 doses recorded']);
+    expect([
+      todayProgressHeadline({ recorded: 1, total: 3, available: 2, upcoming: 0 }),
+      todayProgressDetail({ recorded: 1, total: 3, available: 2, upcoming: 0 }),
+    ]).toEqual(['2 ready now', '1 of 3 done']);
+    expect([
+      todayProgressHeadline({ recorded: 1, total: 3, available: 0, upcoming: 2 }),
+      todayProgressDetail({ recorded: 1, total: 3, available: 0, upcoming: 2 }),
+    ]).toEqual(['2 later today', '1 of 3 done']);
   });
 });
