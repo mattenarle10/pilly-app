@@ -13,11 +13,11 @@ import {
   PillyText,
   PillyToggle,
   Screen,
-} from '@/design/components';
-import { PillyIcon } from '@/design/icons';
-import { colors, spacing } from '@/design/tokens';
-import { formatTime } from '@/domain/schedule';
-import { estimateSupply } from '@/domain/supply';
+} from '@/ui/components';
+import { PillyIcon } from '@/ui/icons';
+import { colors, spacing } from '@/ui/tokens';
+import { formatTime } from '@/models/schedule';
+import { estimateSupply } from '@/models/supply';
 import { useMedicineDetail } from '@/hooks';
 
 const dayNames = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];

@@ -8,7 +8,7 @@ import {
   restorePlus,
   type PlusActionResult,
   type PlusOffer,
-} from '@/platform/purchases';
+} from '@/services/purchases';
 
 import { useRepository } from './use-repository';
 

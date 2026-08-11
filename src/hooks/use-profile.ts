@@ -6,7 +6,7 @@ import {
   profileSettingKeys,
   resolveProfileName,
   type ProfileName,
-} from '@/domain/profile';
+} from '@/models/profile';
 
 import { useMedicines } from './use-medicines';
 import { useRepository } from './use-repository';

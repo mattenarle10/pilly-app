@@ -8,19 +8,18 @@ import {
   PillyText,
   Screen,
   WeekStatusStrip,
-} from '@/design/components';
-import { WeekEmptyCompanion } from '@/design/illustrations';
-import { colors, radii, spacing } from '@/design/tokens';
-import { useCurrentMinute } from '@/hooks';
+} from '@/ui/components';
+import { WeekEmptyCompanion } from '@/ui/illustrations';
+import { colors, radii, spacing } from '@/ui/tokens';
+import { useCurrentMinute, useWeekData } from '@/hooks';
 import {
   buildWeekDays,
   groupWeekDoses,
   resolveWeekSelection,
-  useWeekData,
   WeekAgenda,
   weekProgress,
   weekProgressMessage,
-} from '@/week';
+} from '@/features/week';
 
 export default function WeekRoute() {
   const { date } = useLocalSearchParams<{ date?: string }>();

@@ -6,8 +6,8 @@ import { router, useNavigation } from 'expo-router';
 import { usePreventRemove } from 'expo-router/react-navigation';
 import Storage from 'expo-sqlite/kv-store';
 
-import { PillyBanner, PillyModal } from '@/design/components';
-import { useRepository } from '@/hooks';
+import { PillyBanner, PillyModal } from '@/ui/components';
+import { useMedicationValidation, useRepository } from '@/hooks';
 import {
   AppearanceStep,
   assertMedicationDraft,
@@ -23,9 +23,8 @@ import {
   scheduleConfigurationFromDraft,
   supplyValue,
   type MedicationDraft,
-  useMedicationValidation,
-} from '@/medicine-form';
-import { scheduleLocalReminders } from '@/platform/notifications';
+} from '@/features/medicine-form';
+import { scheduleLocalReminders } from '@/services/notifications';
 
 export default function NewMedicationRoute() {
   const navigation = useNavigation();

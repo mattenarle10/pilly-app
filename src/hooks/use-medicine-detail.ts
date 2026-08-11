@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { router } from 'expo-router';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
-import { scheduleLocalReminders } from '@/platform/notifications';
+import { scheduleLocalReminders } from '@/services/notifications';
 import { useRepository } from './use-repository';
 
 export function useMedicineDetail(medicationId: string) {

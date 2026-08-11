@@ -3,9 +3,9 @@ import { router, useLocalSearchParams, useNavigation } from 'expo-router';
 import { usePreventRemove } from 'expo-router/react-navigation';
 import { useForm, useStore } from '@tanstack/react-form';
 
-import type { MedicationDetail } from '@/data/repositories';
-import { EmptyState, PillyBanner, PillyModal, Screen } from '@/design/components';
-import { schedulesMatch } from '@/domain/schedule';
+import type { MedicationDetail } from '@/models/medication';
+import { EmptyState, PillyBanner, PillyModal, Screen } from '@/ui/components';
+import { schedulesMatch } from '@/models/schedule';
 import { useEditMedicine } from '@/hooks';
 import {
   AppearanceStep,
@@ -20,7 +20,7 @@ import {
   selectedDaysFromMask,
   validateMedicationDraft,
   type MedicationDraft,
-} from '@/medicine-form';
+} from '@/features/medicine-form';
 
 export default function EditMedicineRoute() {
   const { id } = useLocalSearchParams<{ id: string }>();

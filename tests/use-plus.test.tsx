@@ -1,0 +1,153 @@
+import type { PropsWithChildren } from 'react';
+import { act, cleanup, renderHook, waitFor } from '@testing-library/react-native';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+
+import type { PillyRepository } from '@/storage/repository';
+import {
+  arePlusPurchasesEnabled,
+  getPlusPreviewMode,
+  loadPlusStoreSnapshot,
+  purchasePlus,
+  restorePlus,
+} from '@/services/purchases';
+
+import { usePlus } from '@/hooks/use-plus';
+import { useRepository } from '@/hooks/use-repository';
+
+jest.mock('@/hooks/use-repository');
+jest.mock('@/services/purchases');
+
+const mockedUseRepository = jest.mocked(useRepository);
+const mockedPreviewMode = jest.mocked(getPlusPreviewMode);
+const mockedPurchasesEnabled = jest.mocked(arePlusPurchasesEnabled);
+const mockedLoadSnapshot = jest.mocked(loadPlusStoreSnapshot);
+const mockedPurchase = jest.mocked(purchasePlus);
+const mockedRestore = jest.mocked(restorePlus);
+const queryClients = new Set<QueryClient>();
+
+async function setup(cachedEntitlement: string | null = null) {
+  const repository = {
+    getSetting: jest.fn().mockResolvedValue(cachedEntitlement),
+    setSetting: jest.fn().mockResolvedValue(undefined),
+  };
+  mockedUseRepository.mockReturnValue(repository as unknown as PillyRepository);
+  const queryClient = new QueryClient({
+    defaultOptions: {
+      queries: { retry: false, gcTime: 0 },
+      mutations: { retry: false, gcTime: 0 },
+    },
+  });
+  queryClients.add(queryClient);
+  const wrapper = ({ children }: PropsWithChildren) => (
+    <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
+  );
+
+  return { repository, queryClient, ...(await renderHook(() => usePlus(), { wrapper })) };
+}
+
+describe('usePlus', () => {
+  beforeEach(() => {
+    mockedPreviewMode.mockReturnValue('store');
+    mockedPurchasesEnabled.mockReturnValue(false);
+    mockedLoadSnapshot.mockResolvedValue({ kind: 'unconfigured' });
+  });
+
+  afterEach(async () => {
+    await cleanup();
+    queryClients.forEach((queryClient) => queryClient.clear());
+    queryClients.clear();
+    jest.clearAllMocks();
+  });
+
+  test('keeps the paid preview local to development state', async () => {
+    mockedPreviewMode.mockReturnValue('active');
+    const { result } = await setup();
+
+    expect(result.current.state).toEqual({ kind: 'preview', active: true, canRestore: false });
+    expect(mockedLoadSnapshot).not.toHaveBeenCalled();
+  });
+
+  test('uses the localized lifetime offer only when checkout is enabled', async () => {
+    mockedPurchasesEnabled.mockReturnValue(true);
+    mockedLoadSnapshot.mockResolvedValue({
+      kind: 'ready',
+      active: false,
+      offer: {
+        packageIdentifier: '$rc_lifetime',
+        productIdentifier: 'pilly_plus_lifetime',
+        localizedPrice: '₱299.00',
+      },
+    });
+    const { result } = await setup();
+
+    await waitFor(() => expect(result.current.state.kind).toBe('available'));
+    expect(result.current.state).toMatchObject({
+      kind: 'available',
+      offer: { localizedPrice: '₱299.00' },
+    });
+  });
+
+  test('keeps saved access when the store cannot refresh', async () => {
+    mockedLoadSnapshot.mockRejectedValue(new Error('offline'));
+    const { result } = await setup('true');
+
+    await waitFor(() => expect(result.current.state.kind).toBe('active'));
+    expect(result.current.state).toEqual({
+      kind: 'active',
+      active: true,
+      canRestore: true,
+      offline: true,
+    });
+  });
+
+  test('keeps saved access when store configuration is unavailable', async () => {
+    mockedLoadSnapshot.mockResolvedValue({ kind: 'unconfigured' });
+    const { result } = await setup('true');
+
+    await waitFor(() => expect(result.current.state.kind).toBe('active'));
+    expect(result.current.state).toEqual({
+      kind: 'active',
+      active: true,
+      canRestore: false,
+      offline: true,
+    });
+  });
+
+  test('does not turn a cancelled checkout into an error or entitlement', async () => {
+    mockedPurchasesEnabled.mockReturnValue(true);
+    mockedLoadSnapshot.mockResolvedValue({
+      kind: 'ready',
+      active: false,
+      offer: {
+        packageIdentifier: '$rc_lifetime',
+        productIdentifier: 'pilly_plus_lifetime',
+        localizedPrice: '$4.99',
+      },
+    });
+    mockedPurchase.mockResolvedValue({ kind: 'cancelled' });
+    const { repository, result } = await setup();
+
+    await waitFor(() => expect(result.current.state.kind).toBe('available'));
+    repository.setSetting.mockClear();
+    let outcome;
+    await act(async () => {
+      outcome = await result.current.purchase.mutateAsync();
+    });
+
+    expect(outcome).toEqual({ kind: 'cancelled' });
+    expect(repository.setSetting).not.toHaveBeenCalled();
+    expect(mockedRestore).not.toHaveBeenCalled();
+  });
+
+  test('keeps a failed restore retryable without changing cached access', async () => {
+    mockedLoadSnapshot.mockResolvedValue({ kind: 'ready', active: false, offer: null });
+    mockedRestore.mockRejectedValue(new Error('restore unavailable'));
+    const { repository, result } = await setup();
+
+    await waitFor(() => expect(result.current.state.kind).toBe('unavailable'));
+    repository.setSetting.mockClear();
+
+    await expect(result.current.restore.mutateAsync()).rejects.toThrow('restore unavailable');
+    expect(repository.setSetting).not.toHaveBeenCalled();
+  });
+});

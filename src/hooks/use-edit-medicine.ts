@@ -5,8 +5,8 @@ import {
   scheduleConfigurationFromDraft,
   supplyValue,
   type MedicationDraft,
-} from '@/medicine-form/medication-form';
-import { scheduleLocalReminders } from '@/platform/notifications';
+} from '@/features/medicine-form/medication-form';
+import { scheduleLocalReminders } from '@/services/notifications';
 import { useRepository } from './use-repository';
 
 export function useEditMedicine(medicationId: string) {

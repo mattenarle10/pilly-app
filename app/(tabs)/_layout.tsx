@@ -1,7 +1,7 @@
 import { NativeTabs } from 'expo-router/unstable-native-tabs';
 
-import { nativeTabIcons } from '@/design/icons';
-import { colors } from '@/design/tokens';
+import { nativeTabIcons } from '@/ui/icons';
+import { colors } from '@/ui/tokens';
 
 export default function TabsLayout() {
   return (

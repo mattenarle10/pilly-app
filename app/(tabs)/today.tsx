@@ -3,7 +3,7 @@ import { StyleSheet, View } from 'react-native';
 import { router } from 'expo-router';
 import Animated, { FadeInRight, FadeOutRight, ReduceMotion } from 'react-native-reanimated';
 
-import type { ScheduledDose } from '@/data/repositories';
+import type { ScheduledDose } from '@/models/dose';
 import {
   PillyBanner,
   PillyCard,
@@ -12,9 +12,9 @@ import {
   PillyToast,
   Screen,
   WeekStatusStrip,
-} from '@/design/components';
-import { colors, radii, spacing } from '@/design/tokens';
-import { useCurrentMinute, useDoseActions } from '@/hooks';
+} from '@/ui/components';
+import { colors, radii, spacing } from '@/ui/tokens';
+import { useCurrentMinute, useDoseActions, useTodayData } from '@/hooks';
 import {
   buildOrganizerDays,
   DoseStatusSheet,
@@ -26,8 +26,7 @@ import {
   todayProgress,
   todayProgressDetail,
   todayProgressHeadline,
-  useTodayData,
-} from '@/today';
+} from '@/features/today';
 
 export default function Today() {
   const { repository, today, dates, doses, weekDoses, medicines, reminderNotice, firstName } =

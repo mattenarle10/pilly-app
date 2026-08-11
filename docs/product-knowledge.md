@@ -12,22 +12,21 @@ Pilly records what a person enters. It does not recommend doses, diagnose condit
 
 ## Code boundaries
 
-| Area            | Responsibility                                                                                    |
-| --------------- | ------------------------------------------------------------------------------------------------- |
-| `app/`          | Expo Router pages. Each route owns its screen UI, page composition, and navigation.               |
-| `src/<area>/`   | Larger reusable product modules only when one route has several substantial units, such as Today. |
-| `src/screens/`  | Legacy page wrappers. Remove these as each route is reviewed; do not add new screen wrappers.     |
-| `src/hooks/`    | Shared hooks and small route-facing data orchestration hooks. No screen UI.                       |
-| `src/core/`     | App runtime wiring such as SQLite and TanStack Query initialization.                              |
-| `src/design/`   | Shared controls, icons, illustrations, type, spacing, color, radius, and motion rules.            |
-| `src/domain/`   | Deterministic business rules and Zod schemas. No React Native or persistence imports.             |
-| `src/data/`     | SQLite schema, migrations, and repository operations.                                             |
-| `src/platform/` | Native capabilities such as local notifications and purchases.                                    |
-| `src/config/`   | Parsed environment configuration.                                                                 |
+| Area             | Responsibility                                                                                       |
+| ---------------- | ---------------------------------------------------------------------------------------------------- |
+| `app/`           | Expo Router pages. Each route owns its screen UI, page composition, and navigation.                  |
+| `src/features/`  | Substantial reusable product UI and state grouped by feature; never a second route or screen layer.  |
+| `src/hooks/`     | One flat set of shared and route-facing orchestration hooks. No screen UI or nested feature folders. |
+| `src/models/`    | App-facing types, deterministic product rules, and Zod validation. No persistence or UI imports.     |
+| `src/providers/` | Root provider composition and app-wide synchronization mounted by the Router layout.                 |
+| `src/services/`  | External/native integrations such as local notifications and RevenueCat purchases.                   |
+| `src/storage/`   | SQLite schema, migrations, and repository implementation.                                            |
+| `src/ui/`        | Shared components, icons, illustrations, typography, spacing, color, radius, and motion rules.       |
+| `tests/`         | One flat top-level Jest suite that imports implementation through explicit `@/` source aliases.      |
 
 The route may coordinate a use case, but it should not know SQLite queries, file paths, native picker details, RevenueCat calls, or notification scheduling internals.
 
-Legacy wrapper cleanup is route-by-route. Today, Week, Medicine Detail, Add Medicine, Edit Medicine, Medicines, Profile, and Pilly Plus are Router-owned. The remaining wrappers are still live dependencies of Welcome, Start Small, and Dose History; remove each only when its route composition moves into `app/`.
+Every page is now Router-owned, including Welcome, Start Small, and Dose History. `src/screens/` is removed and must not return. Reusable Today, Week, Medicines, and medicine-form units live under `src/features/`; route-facing hooks remain flat in `src/hooks/`.
 
 ## Local data storage
 
@@ -42,11 +41,11 @@ Medication data is stored in an on-device SQLite database through Expo SQLite an
 | `supply_events` | Manual counts and supply changes caused by dose records or corrections.                                                          |
 | `settings`      | Small local preferences such as onboarding, reminder notices, profile name, and cached Plus entitlement.                         |
 
-The current database schema version is 5. Migrations live in `src/data/database/migrate-database.ts`. New schema changes must increment the version and preserve existing medication history. Version 4 adds shape, size, and a primary tone. Version 5 adds a secondary capsule tone with a safe matching-color default for existing medicines.
+The current database schema version is 5. Migrations live in `src/storage/migrate-database.ts`. New schema changes must increment the version and preserve existing medication history. Version 4 adds shape, size, and a primary tone. Version 5 adds a secondary capsule tone with a safe matching-color default for existing medicines.
 
 ### Profile identity
 
-The current profile is a local first and optional last name. There is no account or profile-photo feature in the current product. Name validation and setting keys live in `src/domain/profile`; the Router-owned Profile page coordinates the local setting queries through `useProfile()`.
+The current profile is a local first and optional last name. There is no account or profile-photo feature in the current product. Name validation and setting keys live in `src/models/profile.ts`; the Router-owned Profile page coordinates the local setting queries through `useProfile()`.
 
 ### Notifications and purchases
 
@@ -117,7 +116,7 @@ Add Medicine architecture checkpoint completed on 2026-08-10:
 
 - [x] Own the page composition in `app/medicine/new.tsx`.
 - [x] Remove the legacy `src/screens/new-medication/` wrapper.
-- [x] Keep reusable Add/Edit fields in `src/medicine-form/`.
+- [x] Keep reusable Add/Edit fields in `src/features/medicine-form/`.
 - [x] Preserve draft restoration, validation, medicine creation, reminder reconciliation, and leave-draft behavior during the move.
 - [x] Keep Back, Add medicine, and Add in the native compact navigation header so no sticky action covers the form.
 - [x] Intercept native Back and swipe navigation with SDK 57's supported removal guard so the leave-draft decision applies consistently without desynchronizing native and JS navigation state.
@@ -173,7 +172,7 @@ Edit Medicine implementation checkpoint completed on 2026-08-10:
 - [x] Put shape, size, and curated color choices in a dedicated sheet.
 - [x] Persist independent capsule-half colors while keeping round and oval pills single-color.
 - [x] Own the page composition in `app/medicine/[id]/edit.tsx`; remove the legacy Edit screen wrapper.
-- [x] Share reusable Add/Edit fields from `src/medicine-form/` without putting route UI back in `src/screens/`.
+- [x] Share reusable Add/Edit fields from `src/features/medicine-form/` without creating another route UI layer.
 - [x] Put Back, Edit medicine, and Done in the native compact navigation header instead of covering the form with a sticky footer.
 - [x] Show the editable medicine name once, in the Name field; Medicine Detail owns the entity-name hero title.
 - [x] Share the native form shell, live-window width, margins, and bottom safe-area clearance with Add Medicine.
@@ -201,11 +200,19 @@ Local route-cleanup checkpoint completed on 2026-08-11:
 - [x] Remove empty legacy directories left by the Today, Medicines, Add Medicine, and settings/provider migrations.
 - [x] Remove the empty `.github/workflows` shell; no workflow files existed.
 - [x] Confirm there are no obsolete Medicines wrappers, backup files, rejected patches, zero-byte files, or `.DS_Store` files under `app/`, `src/`, or `docs/`.
-- [x] Keep the remaining `src/screens/` files because current route files still import them.
+- [x] Keep the remaining legacy wrappers only until their importing routes own the composition.
 - [x] Transfer Week composition into `app/(tabs)/week.tsx`, then remove `src/screens/week/`.
 - [x] Transfer Profile composition into `app/profile/index.tsx`, redirect `/settings`, and remove the Profile wrapper after its imports are gone.
 - [x] Transfer Pilly Plus composition into `app/plus/index.tsx` and remove its wrapper after its imports are gone.
-- [ ] Transfer Welcome, Start Small, and Dose History one route at a time; remove each wrapper only after its imports are gone.
+- [x] Transfer Welcome, Start Small, and Dose History into their Router files and remove `src/screens/` after all imports are gone.
+- [x] Group reusable Today, Week, Medicines, and medicine-form units under `src/features/` instead of scattering product modules across the source root.
+- [x] Keep all app-owned React hooks as flat files in one `src/hooks/` directory while the set remains small.
+- [x] Keep RevenueCat environment parsing private inside its purchase service and remove the one-file `src/config/` root.
+- [x] Rename the remaining architecture roots to plain ownership names: `models`, `providers`, `services`, `storage`, and `ui`.
+- [x] Flatten the small models, services, and storage folders while retaining subfolders only for substantial feature and UI groups.
+- [x] Move app-facing dose and medicine-detail types out of the repository so routes, features, and UI do not depend on storage contracts.
+- [x] Move Today, Week, and medicine-validation hooks into the shared flat hooks folder and keep feature modules free of hook-folder dependencies.
+- [x] Move the 17 unit and component suites into one flat top-level `tests/` folder and restrict Jest discovery to that root.
 
 Week architecture and design checkpoint completed on 2026-08-11:
 
@@ -215,7 +222,7 @@ Week architecture and design checkpoint completed on 2026-08-11:
 - [x] Centralize empty, upcoming, due, taken, and skipped day-state derivation so Today and Week use the same semantics.
 - [x] Make the adaptive seven-day calendar the signature visual and keep color tied to selection or medicine state.
 - [x] Group dense schedules by exact time inside one agenda surface with saved medicine silhouettes, quiet separators, and read-only statuses.
-- [x] Distinguish a selected rest day from a completely empty outlook; keep the reusable Pilly companion in `src/design/illustrations/` and reserve it for the full empty state.
+- [x] Distinguish a selected rest day from a completely empty outlook; keep the reusable Pilly companion in `src/ui/illustrations/` and reserve it for the full empty state.
 - [x] Add focused state and agenda tests; complete live default-size and largest-standard-text reviews without clipping or broken containers.
 - [x] Keep active-only Today/Week medicine data on a distinct cache key from the Medicines screen's include-archived list while retaining prefix invalidation after mutations.
 - [ ] Review VoiceOver order and physical-device behavior during release QA.
@@ -328,7 +335,7 @@ Before release:
 - 2026-08-08: A basic local profile photo is free. Multiple profiles are deferred.
 - 2026-08-08: Liquid glass is progressive enhancement and never carries safety-critical readability alone.
 - 2026-08-09: Route files are the actual screens. Keep route-only UI in `app/`, route-facing data hooks in `src/hooks/`, and remove duplicate `src/screens/` wrappers one page at a time. Create a product-area module only when several substantial reusable units justify it, as Today currently does.
-- 2026-08-10: Add Medicine page composition now lives in `app/medicine/new.tsx`; reusable Add/Edit fields remain in `src/medicine-form/`. Do not reintroduce a `src/screens/` page wrapper for this route.
+- 2026-08-10: Add Medicine page composition now lives in `app/medicine/new.tsx`; reusable Add/Edit fields remain in `src/features/medicine-form/`. Do not reintroduce a page-wrapper layer for this route.
 - 2026-08-10: Detail screens use a calm, text-first hierarchy. Medicine Detail uses the medicine name as its single signature typographic moment, groups Schedule and Supply in one Overview surface, keeps setup presets in Add/Edit, and auto-saves reversible supply changes with visible failure recovery.
 - 2026-08-10: Visual richness comes from hierarchy, composition, typography, material, and interaction before color. New color meanings require an explicit design-direction and decision-log update; polish passes do not invent route-specific tint mappings.
 - 2026-08-10: Medicine appearance is recognition data, not decoration. A saved shape, size, and person-selected soft tone drive one code-native silhouette on Detail, a focused preview in Add/Edit, a compact Medicines-list cue, and a quieter Today cue. Existing medicines migrate to a medium rose capsule.
@@ -340,11 +347,13 @@ Before release:
 - 2026-08-10: Today is limited to medicine identity, scheduled time, and recording state. Supply estimates belong on Medicine Detail and must not increase Today-row density.
 - 2026-08-11: Guard Add/Edit removal with SDK 57's `usePreventRemove` state and disable the native back history menu. Confirmed exits replay the intercepted action; successful mutations clear prevention before post-save navigation. Raw `beforeRemove` interception is not valid for these native-stack screens because it can desynchronize native and JavaScript route state.
 - 2026-08-11: Medicines remains a Router-owned page and uses reusable query/state/list units rather than a screen wrapper. Its true empty state reuses the existing code-native starter organizer as the signature visual, presents one Add action, and keeps loading, retry, active, and archived states semantically distinct without introducing new decorative colors.
-- 2026-08-11: Empty directories left by completed Router migrations are removed locally. Remaining `src/screens/` files are not generic cleanup targets: they stay until Welcome, Start Small, and Dose History each become Router-owned.
+- 2026-08-11: Welcome, Start Small, and Dose History now own their page composition in `app/`; the last `src/screens/` wrappers are removed. Reusable product modules are consolidated under `src/features/`, hooks remain one flat source folder, and purchase environment parsing stays private inside the service that owns it.
+- 2026-08-11: Source boundaries use plain ownership names: `models` for app-facing types and rules, `providers` for root composition and synchronization, `services` for external/native integrations, `storage` for SQLite implementation, and `ui` for shared visual infrastructure. Small boundaries stay flat; only substantial feature and UI groups add subfolders. UI-facing models do not originate from the repository.
+- 2026-08-11: Tests live outside implementation in one flat top-level `tests/` folder while the suite remains small. Tests use explicit source aliases instead of location-dependent relative imports, and Jest discovery is restricted to the test root.
 - 2026-08-11: Week is a rolling seven-day outlook rather than a second recording surface. Its functional calendar is the single signature visual, Today remains the action surface, and Dose History remains the retrospective surface. Dense selected-day schedules share one time-grouped agenda; the Pilly companion appears only when the complete outlook is empty.
 - 2026-08-11: The shared native tab bar minimizes on scroll down and expands on scroll up on iOS 26. It does not fully hide. All tab routes use the same shared scroll surface, whose safe-area wrapper remains non-collapsible so Expo Router can reliably discover the nested scroll view.
 - 2026-08-11: Profile is Router-owned and `/settings` redirects to it. The local name is the identity moment; management and product links use quiet shared surfaces under a native header. The pre-release profile-photo code is removed completely and can return only through a future feature with a new privacy and storage decision.
 - 2026-08-11: Native-header routes opt out of automatic ScrollView top-inset adjustment when the stack already owns that space. Profile presents local identity, privacy context, and its quiet Edit action as one compact text-first composition, removing the large empty header gap, duplicate privacy block, and non-semantic route tint. Profile keeps Back visible even when opened without stack history and falls back to Today instead of leaving the user stranded.
 - 2026-08-11: Pilly Plus uses a custom, Router-owned one-time-purchase presentation. RevenueCat remains the entitlement and offering source, the current lifetime package supplies the localized price, and an explicit launch gate prevents checkout before a real paid feature and physical-device purchase pass exist. Development can preview free or active UI states, but production always follows the store entitlement. Core medicine tracking and basic personal-data export remain free.
 - 2026-08-11: Today progress leads with what matters now instead of repeating a sentence about every bucket. It presents ready-now, later, or complete status and keeps completion counts secondary; recording remains in the medicine dose rows rather than adding a duplicate summary CTA. Profile omits empty management destinations and reveals Archived medicines only when archived content exists.
-- 2026-08-08: Replace custom provider nesting with one `AppRuntime`; derive the stateless repository through `useRepository()` from Expo SQLite context.
+- 2026-08-08: Replace custom provider nesting with one `AppProviders`; derive the stateless repository through `useRepository()` from Expo SQLite context.

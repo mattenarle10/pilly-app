@@ -3,13 +3,12 @@ import { AccessibilityInfo } from 'react-native';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import * as Haptics from 'expo-haptics';
 
-import type { ScheduledDose } from '@/data/repositories';
+import type { DoseStatus, ScheduledDose } from '@/models/dose';
 import { useRepository } from './use-repository';
 
-export type DoseActionStatus = 'taken' | 'skipped' | 'notRecorded';
 export type RecentDoseAction = {
   dose: ScheduledDose;
-  status: Exclude<DoseActionStatus, 'notRecorded'>;
+  status: Exclude<DoseStatus, 'notRecorded'>;
 };
 
 const toastDurationMs = 4000;
@@ -41,7 +40,7 @@ export function useDoseActions() {
 
   const mutation = useMutation({
     networkMode: 'always',
-    mutationFn: ({ dose, status }: { dose: ScheduledDose; status: DoseActionStatus }) =>
+    mutationFn: ({ dose, status }: { dose: ScheduledDose; status: DoseStatus }) =>
       status === 'notRecorded' ? repository.undoDose(dose) : repository.recordDose(dose, status),
     onSuccess: (_, variables) => {
       const feedback =
@@ -62,8 +61,7 @@ export function useDoseActions() {
   return {
     mutation,
     recentAction,
-    recordDose: (dose: ScheduledDose, status: DoseActionStatus) =>
-      mutation.mutate({ dose, status }),
+    recordDose: (dose: ScheduledDose, status: DoseStatus) => mutation.mutate({ dose, status }),
     undoRecent: () => {
       if (recentAction) mutation.mutate({ dose: recentAction.dose, status: 'notRecorded' });
     },

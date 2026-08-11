@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 import { useSQLiteContext } from 'expo-sqlite';
 
-import { PillyRepository } from '@/data/repositories';
+import { PillyRepository } from '@/storage/repository';
 
 export function useRepository(): PillyRepository {
   const database = useSQLiteContext();

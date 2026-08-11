@@ -10,9 +10,9 @@ import {
   PillyModal,
   PillyText,
   Screen,
-} from '@/design/components';
-import { PillyIcon, type PillyIconName } from '@/design/icons';
-import { colors, radii, shadows, spacing } from '@/design/tokens';
+} from '@/ui/components';
+import { PillyIcon, type PillyIconName } from '@/ui/icons';
+import { colors, radii, shadows, spacing } from '@/ui/tokens';
 import { useProfile } from '@/hooks';
 
 export default function ProfileRoute() {
