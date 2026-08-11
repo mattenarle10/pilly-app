@@ -3,7 +3,14 @@ import { ActivityIndicator, Linking, Pressable, StyleSheet, View } from 'react-n
 import Constants from 'expo-constants';
 import { router, Stack } from 'expo-router';
 
-import { PillyBanner, PillyField, PillyModal, PillyText, Screen } from '@/design/components';
+import {
+  PillyBanner,
+  PillyField,
+  PillyIconButton,
+  PillyModal,
+  PillyText,
+  Screen,
+} from '@/design/components';
 import { PillyIcon, type PillyIconName } from '@/design/icons';
 import { colors, radii, shadows, spacing } from '@/design/tokens';
 import { useProfile } from '@/hooks';
@@ -34,12 +41,21 @@ export default function ProfileRoute() {
       setWebsiteError(true);
     }
   };
+  const leaveProfile = () => {
+    if (router.canGoBack()) {
+      router.back();
+      return;
+    }
+
+    router.replace('/(tabs)/today');
+  };
 
   return (
     <>
       <Stack.Screen
         options={{
           headerShown: true,
+          headerBackVisible: false,
           headerBackButtonDisplayMode: 'minimal',
           headerBackButtonMenuEnabled: false,
           headerShadowVisible: false,
@@ -47,6 +63,14 @@ export default function ProfileRoute() {
           headerTintColor: colors.textPrimary,
           headerTitleAlign: 'center',
           headerTitleStyle: { color: colors.textPrimary, fontWeight: '600' },
+          headerLeft: () => (
+            <PillyIconButton
+              icon="back"
+              label="Back"
+              onPress={leaveProfile}
+              style={styles.headerBack}
+            />
+          ),
           title: 'Profile',
         }}
       />
@@ -230,6 +254,7 @@ function ProfileRow({
 }
 
 const styles = StyleSheet.create({
+  headerBack: { width: 44, height: 44 },
   screen: { gap: spacing.lg, paddingTop: spacing.lg, paddingBottom: spacing.xxxl },
   identity: {
     gap: spacing.xs,
