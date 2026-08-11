@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react';
 import { StyleSheet, View } from 'react-native';
 
 import { PillyButton } from './pilly-button';
@@ -7,28 +8,50 @@ import { PillyIcon, type PillyIconName } from '@/design/icons';
 import { colors, radii, spacing } from '@/design/tokens';
 
 type Props = {
-  icon: PillyIconName;
+  icon?: PillyIconName;
+  illustration?: ReactNode;
   title: string;
   message?: string;
   actionLabel?: string;
+  actionIcon?: PillyIconName;
   onAction?: () => void;
 };
-export function EmptyState({ icon, title, message, actionLabel, onAction }: Props) {
+export function EmptyState({
+  icon,
+  illustration,
+  title,
+  message,
+  actionLabel,
+  actionIcon = 'add',
+  onAction,
+}: Props) {
   return (
     <PillyCard style={styles.card}>
-      <View style={styles.icon}>
-        <PillyIcon name={icon} size={26} color={colors.brand} />
-      </View>
-      <PillyText role="headline">{title}</PillyText>
-      {message ? <PillyText muted>{message}</PillyText> : null}
+      {illustration ? (
+        <View style={styles.illustration}>{illustration}</View>
+      ) : icon ? (
+        <View style={styles.icon}>
+          <PillyIcon name={icon} size={26} color={colors.brand} />
+        </View>
+      ) : null}
+      <PillyText role="headline" style={styles.centeredCopy}>
+        {title}
+      </PillyText>
+      {message ? (
+        <PillyText muted style={styles.centeredCopy}>
+          {message}
+        </PillyText>
+      ) : null}
       {actionLabel && onAction ? (
-        <PillyButton label={actionLabel} icon="add" onPress={onAction} fullWidth />
+        <PillyButton label={actionLabel} icon={actionIcon} onPress={onAction} fullWidth />
       ) : null}
     </PillyCard>
   );
 }
 const styles = StyleSheet.create({
   card: { alignItems: 'center', gap: spacing.md },
+  illustration: { width: '100%' },
+  centeredCopy: { textAlign: 'center' },
   icon: {
     width: 52,
     height: 52,
