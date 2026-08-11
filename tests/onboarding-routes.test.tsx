@@ -7,11 +7,13 @@ import type { PillyRepository } from '@/storage/repository';
 import { useRepository } from '@/hooks/use-repository';
 
 import WelcomeRoute from '../app/(onboarding)/welcome';
+import OnboardingNameRoute from '../app/(onboarding)/name';
 import StartSmallRoute from '../app/(onboarding)/start-small';
 
 const mockPush = jest.fn();
 const mockReplace = jest.fn();
 const mockBack = jest.fn();
+const mockUseProfileName = jest.fn();
 
 jest.mock('expo-router', () => ({
   Stack: { Screen: () => null },
@@ -19,6 +21,7 @@ jest.mock('expo-router', () => ({
 }));
 
 jest.mock('@/hooks/use-repository');
+jest.mock('@/hooks', () => ({ useProfileName: () => mockUseProfileName() }));
 
 jest.mock('@/ui/illustrations', () => {
   const React = jest.requireActual<typeof import('react')>('react');
@@ -71,6 +74,23 @@ function wrapper() {
 }
 
 describe('onboarding routes', () => {
+  beforeEach(() => {
+    mockUseProfileName.mockReturnValue({
+      displayName: '',
+      isLoading: false,
+      isError: false,
+      retry: jest.fn(),
+      saveName: {
+        isPending: false,
+        isError: false,
+        reset: jest.fn(),
+        mutate: jest.fn((_draft: unknown, options?: { onSuccess?: () => void }) =>
+          options?.onSuccess?.(),
+        ),
+      },
+    });
+  });
+
   afterEach(async () => {
     await cleanup();
     queryClients.forEach((queryClient) => queryClient.clear());
@@ -78,13 +98,57 @@ describe('onboarding routes', () => {
     jest.clearAllMocks();
   });
 
-  test('continues from Welcome to Start Small', async () => {
+  test('continues from Welcome to the optional name step', async () => {
     const screen = await render(<WelcomeRoute />, { wrapper: SafeAreaTestProvider });
 
     expect(screen.getByTestId('onboarding-welcome')).toBeOnTheScreen();
     fireEvent.press(screen.getByText('Continue'));
 
-    expect(mockPush).toHaveBeenCalledWith('/(onboarding)/start-small');
+    expect(mockPush).toHaveBeenCalledWith('/(onboarding)/name');
+  });
+
+  test('offers Pilly Plus as an optional branch from Welcome', async () => {
+    const screen = await render(<WelcomeRoute />, { wrapper: SafeAreaTestProvider });
+
+    fireEvent.press(screen.getByText('See Pilly Plus'));
+
+    expect(mockPush).toHaveBeenCalledWith('/plus?source=onboarding');
+  });
+
+  test('saves a first name before continuing to Start Small', async () => {
+    const screen = await render(<OnboardingNameRoute />, { wrapper: wrapper() });
+
+    await act(async () => {
+      fireEvent.changeText(await screen.findByLabelText('First name'), '  Ada  ');
+    });
+    fireEvent.press(screen.getByText('Continue'));
+
+    expect(mockUseProfileName().saveName.mutate).toHaveBeenCalledWith(
+      { firstName: '  Ada  ', lastName: '' },
+      expect.objectContaining({ onSuccess: expect.any(Function) }),
+    );
+    expect(mockReplace).toHaveBeenCalledWith('/(onboarding)/start-small');
+  });
+
+  test('can skip the optional name and continue with an empty profile', async () => {
+    const screen = await render(<OnboardingNameRoute />, { wrapper: wrapper() });
+
+    fireEvent.press(await screen.findByText('Skip for now'));
+
+    expect(mockReplace).toHaveBeenCalledWith('/(onboarding)/start-small');
+  });
+
+  test('does not ask for a name that already exists', async () => {
+    mockUseProfileName.mockReturnValue({
+      displayName: 'Ada',
+      isLoading: false,
+      isError: false,
+      retry: jest.fn(),
+      saveName: { isPending: false, isError: false, reset: jest.fn(), mutate: jest.fn() },
+    });
+    await render(<OnboardingNameRoute />, { wrapper: wrapper() });
+
+    await waitFor(() => expect(mockReplace).toHaveBeenCalledWith('/(onboarding)/start-small'));
   });
 
   test('persists onboarding before opening the first medicine form', async () => {

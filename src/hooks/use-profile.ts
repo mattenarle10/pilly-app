@@ -13,7 +13,7 @@ import { useRepository } from './use-repository';
 
 const settingQueryKey = (key: string) => ['settings', key] as const;
 
-export function useProfile() {
+export function useProfileName() {
   const repository = useRepository();
   const queryClient = useQueryClient();
   const legacyName = useQuery({
@@ -31,7 +31,6 @@ export function useProfile() {
     queryFn: () => repository.getSetting(profileSettingKeys.lastName),
     networkMode: 'always',
   });
-  const medicines = useMedicines();
   const name = resolveProfileName({
     firstName: firstName.data,
     lastName: lastName.data,
@@ -57,15 +56,27 @@ export function useProfile() {
       );
     },
   });
-  const queries = [legacyName, firstName, lastName, medicines];
+  const queries = [legacyName, firstName, lastName];
 
   return {
     name,
     displayName: profileDisplayName(name),
-    archivedCount: medicines.data?.filter((medicine) => medicine.archivedAt !== null).length ?? 0,
     isLoading: queries.some((query) => query.isPending),
     isError: queries.some((query) => query.isError),
     retry: () => Promise.all(queries.map((query) => query.refetch())),
     saveName,
+  };
+}
+
+export function useProfile() {
+  const profileName = useProfileName();
+  const medicines = useMedicines();
+
+  return {
+    ...profileName,
+    archivedCount: medicines.data?.filter((medicine) => medicine.archivedAt !== null).length ?? 0,
+    isLoading: profileName.isLoading || medicines.isPending,
+    isError: profileName.isError || medicines.isError,
+    retry: () => Promise.all([profileName.retry(), medicines.refetch()]),
   };
 }

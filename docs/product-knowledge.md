@@ -255,9 +255,9 @@ The MVP has one optional local profile with a first name and optional last name.
 
 Multiple people or caregiver profiles are deferred. They require explicit ownership of medicines, dose history, notifications, export, and deletion before the UI presents them as a feature.
 
-Welcome and Start Small architecture and design checkpoint completed on 2026-08-11:
+Welcome, Name, and Start Small architecture and design checkpoint completed on 2026-08-11:
 
-- [x] Keep both onboarding pages composed directly in their Expo Router route files; do not recreate a screen-wrapper or onboarding feature folder.
+- [x] Keep onboarding pages composed directly in their Expo Router route files; do not recreate a screen-wrapper or onboarding feature folder.
 - [x] Replace the reused Week illustration and equal icon-tile row with one onboarding-specific, code-native SVG story.
 - [x] Use a one-shot staged entrance to connect medicine identity, selected days, and exact time without looping, confetti, or decorative motion.
 - [x] Respect the system Reduce Motion setting by rendering the same complete SVG state without animation.
@@ -266,6 +266,12 @@ Welcome and Start Small architecture and design checkpoint completed on 2026-08-
 - [x] Persist onboarding locally before either destination, disable duplicate actions while pending, and show a visible local retry state if persistence fails.
 - [x] Add focused route and illustration tests and review both default-size compositions in the iOS simulator.
 - [x] Review the shared actions and both onboarding compositions at the largest standard Dynamic Type size, then stress-check the accessibility extreme without clipped controls.
+- [x] Hand the native launch screen directly to Welcome; do not invent a second in-app splash or temporary wordmark route.
+- [x] Offer Pilly Plus as a quiet, optional branch from Welcome without blocking the free onboarding path or marking onboarding complete.
+- [x] Ask for a first name only when the local profile is empty, allow the step to be skipped, and reuse the same normalized profile settings as Profile.
+- [x] Anchor the Name composition from the top and keep its focused field above the keyboard so focus and dismissal cannot leave the entire page at a different vertical offset; use one small medicine appearance as its only visual cue.
+- [x] End onboarding at Start Small with two explicit outcomes: add the first medicine or enter the app with an empty medicine list.
+- [ ] Review the Welcome → optional Plus → Name → Start Small → empty/Add flow in the simulator after a precise Pilly-only data reset.
 - [ ] Review VoiceOver order, Reduce Motion on-device behavior, and physical-device motion during release QA.
 
 ## Pilly Plus boundary
@@ -370,4 +376,5 @@ Before release:
 - 2026-08-11: Pilly Plus uses a custom, Router-owned one-time-purchase presentation. RevenueCat remains the entitlement and offering source, the current lifetime package supplies the localized price, and an explicit launch gate prevents checkout before a real paid feature and physical-device purchase pass exist. Development can preview free or active UI states, but production always follows the store entitlement. Core medicine tracking and basic personal-data export remain free.
 - 2026-08-11: Today progress leads with what matters now instead of repeating a sentence about every bucket. It presents ready-now, later, or complete status and keeps completion counts secondary; recording remains in the medicine dose rows rather than adding a duplicate summary CTA. Profile omits empty management destinations and reveals Archived medicines only when archived content exists.
 - 2026-08-11: Onboarding uses one shared code-native SVG story to explain Pilly rather than borrowing a functional Week control or presenting three equal setup tiles. The scenes use layered gradients, highlights, and restrained pattern texture instead of a stick-figure treatment. Motion is a short, one-shot entrance with a complete reduced-motion fallback; Router pages retain navigation and local completion ownership, and Start Small never navigates before its setting write succeeds. The primary action belongs to the story composition rather than a persistent bottom dock. Three.js is intentionally excluded: one onboarding illustration does not justify a GL render loop, extra native dependencies, or a second accessibility fallback.
+- 2026-08-11: First run is a Router-owned decision path, not a carousel: native launch screen → Welcome, with an optional Pilly Plus branch → conditional local first-name prompt → Start Small. Plus never completes or blocks onboarding. Name is optional and uses the same profile settings as Profile. Start Small is the only completion boundary and lets the user add a medicine or begin with a true empty state.
 - 2026-08-08: Replace custom provider nesting with one `AppProviders`; derive the stateless repository through `useRepository()` from Expo SQLite context.

@@ -31,8 +31,17 @@ export default function WelcomeRoute() {
           label="Continue"
           icon="next"
           size="medium"
-          onPress={() => router.push('/(onboarding)/start-small')}
+          onPress={() => router.push('/(onboarding)/name')}
           style={styles.primaryAction}
+        />
+        <PillyButton
+          label="See Pilly Plus"
+          icon="favorite"
+          variant="quiet"
+          size="compact"
+          tone="brand"
+          onPress={() => router.push('/plus?source=onboarding')}
+          style={styles.plusAction}
         />
       </View>
     </Screen>
@@ -52,4 +61,5 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
   },
   primaryAction: { width: 210, alignSelf: 'center', marginTop: spacing.sm },
+  plusAction: { alignSelf: 'center', marginTop: -spacing.md },
 });
