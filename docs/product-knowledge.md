@@ -1,6 +1,6 @@
 # Pilly product knowledge
 
-Last updated: 2026-08-11
+Last updated: 2026-08-12
 
 This is the versioned product and architecture reference for the current Expo app. `AGENTS.md` remains the binding instruction file. The earlier Swift prototype and its local planning files are archived context, not the implementation source of truth.
 
@@ -271,8 +271,18 @@ Welcome, Name, and Start Small architecture and design checkpoint completed on 2
 - [x] Ask for a first name only when the local profile is empty, allow the step to be skipped, and reuse the same normalized profile settings as Profile.
 - [x] Anchor the Name composition from the top and keep its focused field above the keyboard so focus and dismissal cannot leave the entire page at a different vertical offset; use one small medicine appearance as its only visual cue.
 - [x] End onboarding at Start Small with two explicit outcomes: add the first medicine or enter the app with an empty medicine list.
-- [ ] Review the Welcome → optional Plus → Name → Start Small → empty/Add flow in the simulator after a precise Pilly-only data reset.
+- [x] Complete a post-push code review: prevent the existing-name guard from issuing a second route replacement after a successful save, remove unused onboarding route state, and replace negative-margin spacing with explicit action and intro groups.
+- [x] Verify a precise Pilly-only reset recreates zero settings, medicines, schedules, and dose records and renders Welcome and the conditional Name state.
+- [ ] Complete a manual tap-through of Welcome → optional Plus return → Name → Start Small → both empty/Add outcomes.
 - [ ] Review VoiceOver order, Reduce Motion on-device behavior, and physical-device motion during release QA.
+
+Native splash and app identity are the next onboarding checkpoint:
+
+- [x] Approve the dot-free frosted capsule as the production app identity: warm peach above deep berry, joined by one translucent seam. Do not reuse an onboarding illustration or add a check, wordmark, mascot, or decorative dose dot to the icon.
+- [x] Export and configure distinct production assets: 1024-pixel iOS light and dark icons, an isolated native splash mark, Android adaptive foreground and warm background, Android themed monochrome artwork, and the web favicon.
+- [x] Configure the `expo-splash-screen` SDK 57 config plugin with the approved isolated mark, Pilly background colors, contained 220-point image width, and deliberate dark-mode treatment. Do not add an in-app splash route or hold the native splash without a real resource gate.
+- [x] Rebuild, install, and review the native splash handoff and Home Screen icon in an iOS Release simulator build; Expo Go and development builds do not reproduce the final native splash faithfully.
+- [ ] Rebuild and review the native splash and adaptive icon in an Android release build.
 
 ## Pilly Plus boundary
 
