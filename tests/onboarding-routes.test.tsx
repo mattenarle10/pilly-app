@@ -14,6 +14,13 @@ const mockPush = jest.fn();
 const mockReplace = jest.fn();
 const mockBack = jest.fn();
 const mockUseProfileName = jest.fn();
+let mockSaveName: {
+  isIdle: boolean;
+  isPending: boolean;
+  isError: boolean;
+  reset: jest.Mock;
+  mutate: jest.Mock;
+};
 
 jest.mock('expo-router', () => ({
   Stack: { Screen: () => null },
@@ -75,19 +82,21 @@ function wrapper() {
 
 describe('onboarding routes', () => {
   beforeEach(() => {
+    mockSaveName = {
+      isIdle: true,
+      isPending: false,
+      isError: false,
+      reset: jest.fn(),
+      mutate: jest.fn((_draft: unknown, options?: { onSuccess?: () => void }) =>
+        options?.onSuccess?.(),
+      ),
+    };
     mockUseProfileName.mockReturnValue({
       displayName: '',
       isLoading: false,
       isError: false,
       retry: jest.fn(),
-      saveName: {
-        isPending: false,
-        isError: false,
-        reset: jest.fn(),
-        mutate: jest.fn((_draft: unknown, options?: { onSuccess?: () => void }) =>
-          options?.onSuccess?.(),
-        ),
-      },
+      saveName: mockSaveName,
     });
   });
 
@@ -112,7 +121,7 @@ describe('onboarding routes', () => {
 
     fireEvent.press(screen.getByText('See Pilly Plus'));
 
-    expect(mockPush).toHaveBeenCalledWith('/plus?source=onboarding');
+    expect(mockPush).toHaveBeenCalledWith('/plus');
   });
 
   test('saves a first name before continuing to Start Small', async () => {
@@ -123,11 +132,12 @@ describe('onboarding routes', () => {
     });
     fireEvent.press(screen.getByText('Continue'));
 
-    expect(mockUseProfileName().saveName.mutate).toHaveBeenCalledWith(
+    expect(mockSaveName.mutate).toHaveBeenCalledWith(
       { firstName: '  Ada  ', lastName: '' },
       expect.objectContaining({ onSuccess: expect.any(Function) }),
     );
     expect(mockReplace).toHaveBeenCalledWith('/(onboarding)/start-small');
+    expect(mockReplace).toHaveBeenCalledTimes(1);
   });
 
   test('can skip the optional name and continue with an empty profile', async () => {
@@ -144,11 +154,24 @@ describe('onboarding routes', () => {
       isLoading: false,
       isError: false,
       retry: jest.fn(),
-      saveName: { isPending: false, isError: false, reset: jest.fn(), mutate: jest.fn() },
+      saveName: mockSaveName,
     });
     await render(<OnboardingNameRoute />, { wrapper: wrapper() });
 
     await waitFor(() => expect(mockReplace).toHaveBeenCalledWith('/(onboarding)/start-small'));
+  });
+
+  test('does not run the existing-name redirect while a save is active', async () => {
+    mockUseProfileName.mockReturnValue({
+      displayName: 'Ada',
+      isLoading: false,
+      isError: false,
+      retry: jest.fn(),
+      saveName: { ...mockSaveName, isIdle: false, isPending: true },
+    });
+    await render(<OnboardingNameRoute />, { wrapper: wrapper() });
+
+    expect(mockReplace).not.toHaveBeenCalled();
   });
 
   test('persists onboarding before opening the first medicine form', async () => {

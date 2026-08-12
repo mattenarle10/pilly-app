@@ -27,22 +27,23 @@ export default function WelcomeRoute() {
             </PillyText>
           </View>
         </View>
-        <PillyButton
-          label="Continue"
-          icon="next"
-          size="medium"
-          onPress={() => router.push('/(onboarding)/name')}
-          style={styles.primaryAction}
-        />
-        <PillyButton
-          label="See Pilly Plus"
-          icon="favorite"
-          variant="quiet"
-          size="compact"
-          tone="brand"
-          onPress={() => router.push('/plus?source=onboarding')}
-          style={styles.plusAction}
-        />
+        <View style={styles.actions}>
+          <PillyButton
+            label="Continue"
+            icon="next"
+            size="medium"
+            onPress={() => router.push('/(onboarding)/name')}
+            style={styles.primaryAction}
+          />
+          <PillyButton
+            label="See Pilly Plus"
+            icon="favorite"
+            variant="quiet"
+            size="compact"
+            tone="brand"
+            onPress={() => router.push('/plus')}
+          />
+        </View>
       </View>
     </Screen>
   );
@@ -60,6 +61,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: spacing.sm,
   },
-  primaryAction: { width: 210, alignSelf: 'center', marginTop: spacing.sm },
-  plusAction: { alignSelf: 'center', marginTop: -spacing.md },
+  actions: { alignItems: 'center', gap: spacing.sm },
+  primaryAction: { width: 210 },
 });

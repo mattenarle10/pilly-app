@@ -19,10 +19,10 @@ export default function OnboardingNameRoute() {
   const [firstName, setFirstName] = useState('');
 
   useEffect(() => {
-    if (!profile.isLoading && profile.displayName) {
+    if (!profile.isLoading && profile.displayName && profile.saveName.isIdle) {
       router.replace('/(onboarding)/start-small');
     }
-  }, [profile.displayName, profile.isLoading, router]);
+  }, [profile.displayName, profile.isLoading, profile.saveName.isIdle, router]);
 
   const continueWithoutName = () => router.replace('/(onboarding)/start-small');
   const saveAndContinue = () => {
@@ -57,21 +57,23 @@ export default function OnboardingNameRoute() {
           </View>
         ) : (
           <View style={styles.composition}>
-            <View style={styles.medicineMark}>
-              <MedicationAppearance
-                shape="capsule"
-                size="large"
-                tone="rose"
-                secondaryTone="peach"
-              />
-            </View>
-            <View style={styles.copy}>
-              <PillyText role="large-title" accessibilityRole="header" maxFontSizeMultiplier={2}>
-                What should Pilly call you?
-              </PillyText>
-              <PillyText muted maxFontSizeMultiplier={2} style={styles.body}>
-                Your first name makes Today feel personal. It stays on this iPhone.
-              </PillyText>
+            <View style={styles.intro}>
+              <View style={styles.medicineMark}>
+                <MedicationAppearance
+                  shape="capsule"
+                  size="large"
+                  tone="rose"
+                  secondaryTone="peach"
+                />
+              </View>
+              <View style={styles.copy}>
+                <PillyText role="large-title" accessibilityRole="header" maxFontSizeMultiplier={2}>
+                  What should Pilly call you?
+                </PillyText>
+                <PillyText muted maxFontSizeMultiplier={2} style={styles.body}>
+                  Your first name makes Today feel personal. It stays on this iPhone.
+                </PillyText>
+              </View>
             </View>
 
             <PillyField
@@ -134,7 +136,8 @@ const styles = StyleSheet.create({
     paddingTop: spacing.xxl,
     paddingBottom: spacing.xxxl,
   },
-  medicineMark: { alignItems: 'flex-start', marginBottom: -spacing.sm },
+  intro: { gap: spacing.lg },
+  medicineMark: { alignItems: 'flex-start' },
   copy: { gap: spacing.md },
   body: { maxWidth: 340 },
   actions: { alignItems: 'center', gap: spacing.md },
