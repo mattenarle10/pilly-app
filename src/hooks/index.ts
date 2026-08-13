@@ -2,6 +2,7 @@ export * from './use-dose-actions';
 export * from './use-current-minute';
 export * from './use-dose-history';
 export * from './use-edit-medicine';
+export * from './use-export-data';
 export * from './use-medicine-detail';
 export * from './use-medicines';
 export * from './use-medication-validation';

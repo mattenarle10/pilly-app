@@ -32,7 +32,7 @@ export function resolveProfileName({
 }): ProfileName {
   const legacyParts = (legacyDisplayName ?? '').trim().split(/\s+/).filter(Boolean);
   return {
-    firstName: firstName ?? legacyParts[0] ?? '',
-    lastName: lastName ?? legacyParts.slice(1).join(' '),
+    firstName: firstName?.trim() ?? legacyParts[0] ?? '',
+    lastName: lastName?.trim() ?? legacyParts.slice(1).join(' '),
   };
 }

@@ -14,9 +14,11 @@ import {
 import { PillyIcon, type PillyIconName } from '@/ui/icons';
 import { colors, radii, shadows, spacing } from '@/ui/tokens';
 import { useProfile } from '@/hooks';
+import { isPlusPurchasesSupported } from '@/services/purchases';
 
 export default function ProfileRoute() {
   const profile = useProfile();
+  const plusSupported = isPlusPurchasesSupported();
   const [nameModalOpen, setNameModalOpen] = useState(false);
   const [firstNameDraft, setFirstNameDraft] = useState('');
   const [lastNameDraft, setLastNameDraft] = useState('');
@@ -135,14 +137,27 @@ export default function ProfileRoute() {
           </ProfileSection>
         ) : null}
 
-        <ProfileSection title="Pilly">
+        <ProfileSection title="Your data">
           <ProfileRow
-            icon="favorite"
-            title="Pilly Plus"
-            message="Themes, print, and export"
-            onPress={() => router.push('/plus')}
+            icon="document"
+            title="Export data"
+            message="Download or share a private copy"
+            onPress={() => router.push('/profile/export')}
           />
-          <View style={styles.separator} />
+        </ProfileSection>
+
+        <ProfileSection title="Pilly">
+          {plusSupported ? (
+            <>
+              <ProfileRow
+                icon="favorite"
+                title="Pilly Plus"
+                message="PDF plans and spreadsheet exports"
+                onPress={() => router.push('/plus')}
+              />
+              <View style={styles.separator} />
+            </>
+          ) : null}
           <ProfileRow
             icon="website"
             title="About Pilly"

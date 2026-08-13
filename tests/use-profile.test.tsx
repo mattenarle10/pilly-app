@@ -71,6 +71,17 @@ describe('useProfile', () => {
     expect(repository.listMedications).toHaveBeenCalledWith({ includeArchived: true });
   });
 
+  test('trims existing split-name settings before displaying them', async () => {
+    const { result } = await setup({
+      profileFirstName: '  Ada ',
+      profileLastName: ' Doe  ',
+    });
+
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+    expect(result.current.name).toEqual({ firstName: 'Ada', lastName: 'Doe' });
+    expect(result.current.displayName).toBe('Ada Doe');
+  });
+
   test('normalizes a saved name and updates every shared setting cache', async () => {
     const { queryClient, repository, result } = await setup({
       profileFirstName: 'Matthew',

@@ -30,6 +30,12 @@ import {
   toLocalDate,
 } from '@/models/schedule';
 import type { DoseHistoryEntry, DoseStatus, ScheduledDose } from '@/models/dose';
+import type {
+  ExportDoseEvent,
+  ExportDoseRecord,
+  ExportSchedule,
+  ExportSupplyEvent,
+} from '@/models/export';
 import { supplyAdjustment } from '@/models/supply';
 
 export type CreatedMedication = {
@@ -268,6 +274,53 @@ export class PillyRepository {
         nextStatus: event.nextStatus,
         occurredAt: new Date(event.occurredAt),
       }));
+  }
+
+  async listExportDoseRecords(): Promise<ExportDoseRecord[]> {
+    return this.db
+      .select({ record: doseRecords, schedule: schedules, medication: medications })
+      .from(doseRecords)
+      .innerJoin(schedules, eq(doseRecords.scheduleId, schedules.id))
+      .innerJoin(medications, eq(schedules.medicationId, medications.id))
+      .orderBy(desc(doseRecords.scheduledAt))
+      .all()
+      .map(({ record, medication }) => ({
+        occurrenceId: record.occurrenceId,
+        scheduleId: record.scheduleId,
+        medicineId: medication.id,
+        medicineName: medication.name,
+        scheduledAt: record.scheduledAt,
+        status: record.status,
+        recordedAt: record.recordedAt,
+        updatedAt: record.updatedAt,
+      }));
+  }
+
+  async listExportSchedules(): Promise<ExportSchedule[]> {
+    return this.db
+      .select()
+      .from(schedules)
+      .orderBy(asc(schedules.createdAt), asc(schedules.sortOrder))
+      .all()
+      .map((schedule) => ({
+        ...scheduleSchema.parse(schedule),
+        startsOn: schedule.startsOn,
+        endsOn: schedule.endsOn,
+        createdAt: schedule.createdAt,
+      }));
+  }
+
+  async listExportDoseEvents(): Promise<ExportDoseEvent[]> {
+    return this.db.select().from(doseEvents).orderBy(asc(doseEvents.occurredAt)).all();
+  }
+
+  async listExportSupplyEvents(): Promise<ExportSupplyEvent[]> {
+    return this.db
+      .select()
+      .from(supplyEvents)
+      .orderBy(asc(supplyEvents.occurredAt))
+      .all()
+      .map(({ medicationId, ...event }) => ({ ...event, medicineId: medicationId }));
   }
 
   async listScheduledDoses(date: Date): Promise<ScheduledDose[]> {
