@@ -63,6 +63,10 @@ export function arePlusPurchasesEnabled(): boolean {
   return purchaseEnvironment.EXPO_PUBLIC_PLUS_PURCHASES_ENABLED === 'true';
 }
 
+export function isPlusPurchasesSupported(): boolean {
+  return Platform.OS === 'ios';
+}
+
 export async function loadPlusStoreSnapshot(): Promise<PlusStoreSnapshot> {
   const purchases = await purchasesModule();
   if (!purchases) return { kind: 'unconfigured' };

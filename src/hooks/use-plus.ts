@@ -3,6 +3,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   arePlusPurchasesEnabled,
   getPlusPreviewMode,
+  isPlusPurchasesSupported,
   loadPlusStoreSnapshot,
   purchasePlus,
   restorePlus,
@@ -56,12 +57,16 @@ export function usePlus() {
   };
   const purchase = useMutation({ mutationFn: async () => acceptResult(await purchasePlus()) });
   const restore = useMutation({ mutationFn: async () => acceptResult(await restorePlus()) });
-  const cachedActive = cachedEntitlement.data === 'true';
+  const cachedActive = isPlusPurchasesSupported() && cachedEntitlement.data === 'true';
 
   let state: PlusState;
   if (previewMode !== 'store') {
     state = { kind: 'preview', active: previewMode === 'active', canRestore: false };
-  } else if (cachedEntitlement.isPending || store.isPending) {
+  } else if (cachedEntitlement.isPending) {
+    state = { kind: 'loading', active: false, canRestore: false };
+  } else if (store.isPending && cachedActive) {
+    state = { kind: 'active', active: true, canRestore: false, offline: true };
+  } else if (store.isPending) {
     state = { kind: 'loading', active: false, canRestore: false };
   } else if (store.isError) {
     state = cachedActive

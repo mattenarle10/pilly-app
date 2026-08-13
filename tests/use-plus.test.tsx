@@ -6,6 +6,7 @@ import type { PillyRepository } from '@/storage/repository';
 import {
   arePlusPurchasesEnabled,
   getPlusPreviewMode,
+  isPlusPurchasesSupported,
   loadPlusStoreSnapshot,
   purchasePlus,
   restorePlus,
@@ -20,6 +21,7 @@ jest.mock('@/services/purchases');
 const mockedUseRepository = jest.mocked(useRepository);
 const mockedPreviewMode = jest.mocked(getPlusPreviewMode);
 const mockedPurchasesEnabled = jest.mocked(arePlusPurchasesEnabled);
+const mockedPurchasesSupported = jest.mocked(isPlusPurchasesSupported);
 const mockedLoadSnapshot = jest.mocked(loadPlusStoreSnapshot);
 const mockedPurchase = jest.mocked(purchasePlus);
 const mockedRestore = jest.mocked(restorePlus);
@@ -49,6 +51,7 @@ describe('usePlus', () => {
   beforeEach(() => {
     mockedPreviewMode.mockReturnValue('store');
     mockedPurchasesEnabled.mockReturnValue(false);
+    mockedPurchasesSupported.mockReturnValue(true);
     mockedLoadSnapshot.mockResolvedValue({ kind: 'unconfigured' });
   });
 
@@ -87,6 +90,27 @@ describe('usePlus', () => {
     });
   });
 
+  test('keeps a real lifetime offer visible but gated before device purchase QA', async () => {
+    mockedLoadSnapshot.mockResolvedValue({
+      kind: 'ready',
+      active: false,
+      offer: {
+        packageIdentifier: '$rc_lifetime',
+        productIdentifier: 'pilly_plus_lifetime',
+        localizedPrice: '₱299.00',
+      },
+    });
+    const { result } = await setup();
+
+    await waitFor(() => expect(result.current.state.kind).toBe('unavailable'));
+    expect(result.current.state).toEqual({
+      kind: 'unavailable',
+      active: false,
+      canRestore: true,
+      reason: 'gate',
+    });
+  });
+
   test('keeps saved access when the store cannot refresh', async () => {
     mockedLoadSnapshot.mockRejectedValue(new Error('offline'));
     const { result } = await setup('true');
@@ -96,6 +120,19 @@ describe('usePlus', () => {
       kind: 'active',
       active: true,
       canRestore: true,
+      offline: true,
+    });
+  });
+
+  test('keeps cached Plus unlocked while the store refreshes', async () => {
+    mockedLoadSnapshot.mockReturnValue(new Promise(() => undefined));
+    const { result } = await setup('true');
+
+    await waitFor(() => expect(result.current.state.kind).toBe('active'));
+    expect(result.current.state).toEqual({
+      kind: 'active',
+      active: true,
+      canRestore: false,
       offline: true,
     });
   });
@@ -111,6 +148,15 @@ describe('usePlus', () => {
       canRestore: false,
       offline: true,
     });
+  });
+
+  test('does not grant cached iOS access on an unsupported platform', async () => {
+    mockedPurchasesSupported.mockReturnValue(false);
+    mockedLoadSnapshot.mockResolvedValue({ kind: 'unconfigured' });
+    const { result } = await setup('true');
+
+    await waitFor(() => expect(result.current.state.kind).toBe('unavailable'));
+    expect(result.current.state.active).toBe(false);
   });
 
   test('does not turn a cancelled checkout into an error or entitlement', async () => {

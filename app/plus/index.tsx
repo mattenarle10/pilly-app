@@ -78,40 +78,37 @@ export default function PlusRoute() {
             </View>
           ) : null}
           <PillyText role="large-title" accessibilityRole="header" style={styles.heroTitle}>
-            {active ? 'You’re with Plus.' : 'A little more from Pilly.'}
+            {active ? 'Pilly Plus is yours.' : 'Clear records, ready to share.'}
           </PillyText>
           <PillyText muted style={styles.heroCopy}>
             {active
-              ? 'Lifetime access is active. The essentials stay free.'
-              : 'One optional purchase. No subscription.'}
+              ? 'Your advanced export tools are unlocked for life.'
+              : 'Turn your medicine plan and dose history into useful files.'}
           </PillyText>
         </View>
 
         <View style={styles.benefitsSection}>
-          <PillyText role="headline">Planned for Plus</PillyText>
+          <PillyText role="headline">Included with Plus</PillyText>
           <View style={styles.benefits}>
-            <Benefit icon="palette" title="Personal themes" message="Make Pilly feel like yours." />
-            <View style={styles.separator} />
             <Benefit
               icon="print"
-              title="Print-ready plans"
-              message="Clear plans for home or travel."
+              title="Medicine plan PDF"
+              message="A clean plan for home, travel, or appointments."
             />
             <View style={styles.separator} />
             <Benefit
-              icon="document"
-              title="Advanced exports"
-              message="More ways to organize records."
+              icon="calendar"
+              title="Dose history spreadsheet"
+              message="A CSV you can sort, filter, and keep."
             />
           </View>
         </View>
 
         <View style={styles.freePromise}>
-          <PillyIcon name="favorite" size={19} color={colors.brand} />
           <View style={styles.freePromiseCopy}>
             <PillyText role="label">The essentials stay free</PillyText>
             <PillyText role="caption" muted>
-              Tracking, reminders, history, supply, and basic export.
+              Tracking, reminders, history, and a complete data export.
             </PillyText>
           </View>
         </View>
@@ -150,7 +147,7 @@ export default function PlusRoute() {
                 fullWidth
               />
               <PillyText role="caption" muted style={styles.purchaseNote}>
-                One purchase. No subscription.
+                Lifetime access. No subscription.
               </PillyText>
             </>
           ) : plus.state.kind === 'error' ? (
@@ -168,10 +165,14 @@ export default function PlusRoute() {
                   ? 'Checkout is off in preview mode'
                   : plus.state.kind === 'unavailable' && plus.state.reason === 'gate'
                     ? 'Plus is not for sale in this build yet'
-                    : 'Plus is still being prepared for the store'}
+                    : 'Plus is not available yet'}
               </PillyText>
               <PillyText role="caption" muted style={styles.centeredCopy}>
-                Checkout opens after feature and device testing.
+                {preview
+                  ? 'Use store mode to test a real RevenueCat offering.'
+                  : plus.state.kind === 'unavailable' && plus.state.reason === 'gate'
+                    ? 'The export tools are ready. Checkout opens after device purchase testing.'
+                    : 'You can keep using every essential Pilly feature for free.'}
               </PillyText>
             </View>
           )}
@@ -252,9 +253,6 @@ const styles = StyleSheet.create({
   benefitCopy: { flex: 1, gap: spacing.xs },
   separator: { height: StyleSheet.hairlineWidth, marginLeft: 60, backgroundColor: colors.border },
   freePromise: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: spacing.md,
     paddingHorizontal: spacing.xs,
   },
   freePromiseCopy: { flex: 1, gap: spacing.xs },

@@ -5,6 +5,7 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import type { PillyRepository } from '@/storage/repository';
 import { useRepository } from '@/hooks/use-repository';
+import { isPlusPurchasesSupported } from '@/services/purchases';
 
 import WelcomeRoute from '../app/(onboarding)/welcome';
 import OnboardingNameRoute from '../app/(onboarding)/name';
@@ -29,6 +30,7 @@ jest.mock('expo-router', () => ({
 
 jest.mock('@/hooks/use-repository');
 jest.mock('@/hooks', () => ({ useProfileName: () => mockUseProfileName() }));
+jest.mock('@/services/purchases');
 
 jest.mock('@/ui/illustrations', () => {
   const React = jest.requireActual<typeof import('react')>('react');
@@ -52,6 +54,7 @@ jest.mock('react-native-reanimated', () => {
 });
 
 const mockedUseRepository = jest.mocked(useRepository);
+const mockedPlusSupported = jest.mocked(isPlusPurchasesSupported);
 const queryClients = new Set<QueryClient>();
 const initialMetrics = {
   frame: { x: 0, y: 0, width: 390, height: 844 },
@@ -82,6 +85,7 @@ function wrapper() {
 
 describe('onboarding routes', () => {
   beforeEach(() => {
+    mockedPlusSupported.mockReturnValue(true);
     mockSaveName = {
       isIdle: true,
       isPending: false,
@@ -122,6 +126,13 @@ describe('onboarding routes', () => {
     fireEvent.press(screen.getByText('See Pilly Plus'));
 
     expect(mockPush).toHaveBeenCalledWith('/plus');
+  });
+
+  test('hides the Apple-only Plus branch on unsupported platforms', async () => {
+    mockedPlusSupported.mockReturnValue(false);
+    const screen = await render(<WelcomeRoute />, { wrapper: SafeAreaTestProvider });
+
+    expect(screen.queryByText('See Pilly Plus')).toBeNull();
   });
 
   test('saves a first name before continuing to Start Small', async () => {

@@ -5,9 +5,11 @@ import { PillyButton, PillyText, Screen } from '@/ui/components';
 import { PillyIcon } from '@/ui/icons';
 import { OnboardingJourney } from '@/ui/illustrations';
 import { colors, spacing } from '@/ui/tokens';
+import { isPlusPurchasesSupported } from '@/services/purchases';
 
 export default function WelcomeRoute() {
   const router = useRouter();
+  const plusSupported = isPlusPurchasesSupported();
 
   return (
     <Screen contentStyle={styles.content}>
@@ -35,14 +37,16 @@ export default function WelcomeRoute() {
             onPress={() => router.push('/(onboarding)/name')}
             style={styles.primaryAction}
           />
-          <PillyButton
-            label="See Pilly Plus"
-            icon="favorite"
-            variant="quiet"
-            size="compact"
-            tone="brand"
-            onPress={() => router.push('/plus')}
-          />
+          {plusSupported ? (
+            <PillyButton
+              label="See Pilly Plus"
+              icon="favorite"
+              variant="quiet"
+              size="compact"
+              tone="brand"
+              onPress={() => router.push('/plus')}
+            />
+          ) : null}
         </View>
       </View>
     </Screen>
