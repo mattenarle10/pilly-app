@@ -1,6 +1,6 @@
 # Pilly product knowledge
 
-Last updated: 2026-08-12
+Last updated: 2026-08-13
 
 This is the versioned product and architecture reference for the current Expo app. `AGENTS.md` remains the binding instruction file. The earlier Swift prototype and its local planning files are archived context, not the implementation source of truth.
 
@@ -15,7 +15,6 @@ Pilly records what a person enters. It does not recommend doses, diagnose condit
 | Area             | Responsibility                                                                                       |
 | ---------------- | ---------------------------------------------------------------------------------------------------- |
 | `app/`           | Expo Router pages. Each route owns its screen UI, page composition, and navigation.                  |
-| `src/features/`  | Substantial reusable product UI and state grouped by feature; never a second route or screen layer.  |
 | `src/hooks/`     | One flat set of shared and route-facing orchestration hooks. No screen UI or nested feature folders. |
 | `src/models/`    | App-facing types, deterministic product rules, and Zod validation. No persistence or UI imports.     |
 | `src/providers/` | Root provider composition and app-wide synchronization mounted by the Router layout.                 |
@@ -26,7 +25,7 @@ Pilly records what a person enters. It does not recommend doses, diagnose condit
 
 The route may coordinate a use case, but it should not know SQLite queries, file paths, native picker details, RevenueCat calls, or notification scheduling internals.
 
-Every page is now Router-owned, including Welcome, Start Small, and Dose History. `src/screens/` is removed and must not return. Reusable Today, Week, Medicines, and medicine-form units live under `src/features/`; route-facing hooks remain flat in `src/hooks/`.
+Every page is Router-owned, including Welcome, Start Small, and Dose History. `src/screens/` and `src/features/` are removed and must not return. Reusable rendered controls live under `src/ui/`, deterministic product rules live under `src/models/`, and route-facing orchestration hooks remain flat in `src/hooks/`.
 
 ## Local data storage
 
@@ -55,7 +54,7 @@ RevenueCat stores purchase and entitlement records outside the medication databa
 
 ### Backup status
 
-There is no cloud sync, account, or finished export/import flow yet. App deletion can therefore remove local data. A user-controlled export is part of the roadmap and must not require a subscription for basic data access.
+There is no cloud sync, account, or import flow yet. App deletion can therefore remove local data. A complete readable JSON export is free; Plus adds presentation formats without restricting access to the underlying records.
 
 ## Screen inventory
 
@@ -70,10 +69,11 @@ There is no cloud sync, account, or finished export/import flow yet. App deletio
 9. Dose history
 10. Profile
 11. Pilly Plus
+12. Export data
 
 `/settings` is a compatibility route to Profile, not a separate screen.
 
-Recommended visual review order: Today, Medicine detail, Edit medicine, Add medicine, Medicines, Week, Profile, Pilly Plus, Welcome, Start Small, then Dose history.
+Recommended visual review order: Today, Medicine detail, Edit medicine, Add medicine, Medicines, Week, Profile, Export data, Pilly Plus, Welcome, Start Small, then Dose history.
 
 Next active visual checkpoint: Dose History. VoiceOver remains deferred to release QA.
 
@@ -88,7 +88,8 @@ Next active visual checkpoint: Dose History. VoiceOver remains deferred to relea
 | Medicines               | Complete               | Release QA only: VoiceOver and physical device                         |
 | Week                    | Complete               | Release QA only: VoiceOver and physical device                         |
 | Profile                 | Complete               | Release QA only: VoiceOver, keyboard, and physical device              |
-| Pilly Plus              | Preview complete       | First paid feature, StoreKit device purchase/restore, and release copy |
+| Export data             | Complete               | Release QA only: real-file share destinations and accessibility        |
+| Pilly Plus              | Feature complete       | Store products, device purchase/restore, and release copy              |
 | Welcome and Start Small | Complete               | Release QA only: VoiceOver, Reduce Motion, and physical device         |
 | Dose history            | Pending                | Correction clarity and audit readability                               |
 
@@ -116,7 +117,7 @@ Add Medicine architecture checkpoint completed on 2026-08-10:
 
 - [x] Own the page composition in `app/medicine/new.tsx`.
 - [x] Remove the legacy `src/screens/new-medication/` wrapper.
-- [x] Keep reusable Add/Edit fields in `src/features/medicine-form/`.
+- [x] Keep reusable Add/Edit fields in `src/ui/components/` and deterministic form rules in `src/models/`.
 - [x] Preserve draft restoration, validation, medicine creation, reminder reconciliation, and leave-draft behavior during the move.
 - [x] Keep Back, Add medicine, and Add in the native compact navigation header so no sticky action covers the form.
 - [x] Intercept native Back and swipe navigation with SDK 57's supported removal guard so the leave-draft decision applies consistently without desynchronizing native and JS navigation state.
@@ -144,7 +145,7 @@ Medicines recognition checkpoint completed on 2026-08-11:
 - [x] Use one list surface with separators instead of a separate card for every medicine.
 - [x] Keep long names to two list lines while preserving the full name on Medicine Detail.
 - [x] Reuse a smaller version of the same silhouette beside the medicine name on Today.
-- [x] Remove the duplicate Pilly Plus promotion from Medicines; Profile remains the Plus entry point.
+- [x] Remove the duplicate Pilly Plus promotion from Medicines; Profile remains the in-app Plus entry point on iOS.
 - [x] Review populated Medicines and Today states with long-name data on the simulator.
 - [x] Reuse the code-native starter organizer as the empty-state illustration through the shared `EmptyState` component.
 - [x] Keep one primary Add action in the true empty state while retaining the compact header action for populated lists.
@@ -172,7 +173,7 @@ Edit Medicine implementation checkpoint completed on 2026-08-10:
 - [x] Put shape, size, and curated color choices in a dedicated sheet.
 - [x] Persist independent capsule-half colors while keeping round and oval pills single-color.
 - [x] Own the page composition in `app/medicine/[id]/edit.tsx`; remove the legacy Edit screen wrapper.
-- [x] Share reusable Add/Edit fields from `src/features/medicine-form/` without creating another route UI layer.
+- [x] Share reusable Add/Edit fields from `src/ui/components/` without creating another route UI layer.
 - [x] Put Back, Edit medicine, and Done in the native compact navigation header instead of covering the form with a sticky footer.
 - [x] Show the editable medicine name once, in the Name field; Medicine Detail owns the entity-name hero title.
 - [x] Share the native form shell, live-window width, margins, and bottom safe-area clearance with Add Medicine.
@@ -205,13 +206,13 @@ Local route-cleanup checkpoint completed on 2026-08-11:
 - [x] Transfer Profile composition into `app/profile/index.tsx`, redirect `/settings`, and remove the Profile wrapper after its imports are gone.
 - [x] Transfer Pilly Plus composition into `app/plus/index.tsx` and remove its wrapper after its imports are gone.
 - [x] Transfer Welcome, Start Small, and Dose History into their Router files and remove `src/screens/` after all imports are gone.
-- [x] Group reusable Today, Week, Medicines, and medicine-form units under `src/features/` instead of scattering product modules across the source root.
+- [x] Remove the residual `src/features/` catch-all: route composition stays in `app/`, reusable rendered controls and illustrations live in `src/ui/`, and reusable product rules live in `src/models/`.
 - [x] Keep all app-owned React hooks as flat files in one `src/hooks/` directory while the set remains small.
 - [x] Keep RevenueCat environment parsing private inside its purchase service and remove the one-file `src/config/` root.
 - [x] Rename the remaining architecture roots to plain ownership names: `models`, `providers`, `services`, `storage`, and `ui`.
 - [x] Flatten the small models, services, and storage folders while retaining subfolders only for substantial feature and UI groups.
-- [x] Move app-facing dose and medicine-detail types out of the repository so routes, features, and UI do not depend on storage contracts.
-- [x] Move Today, Week, and medicine-validation hooks into the shared flat hooks folder and keep feature modules free of hook-folder dependencies.
+- [x] Move app-facing dose and medicine-detail types out of the repository so routes, models, and UI do not depend on storage contracts.
+- [x] Move Today, Week, and medicine-validation hooks into the shared flat hooks folder and keep UI modules free of hook-folder dependencies.
 - [x] Move the 17 unit and component suites into one flat top-level `tests/` folder and restrict Jest discovery to that root.
 
 Week architecture and design checkpoint completed on 2026-08-11:
@@ -267,7 +268,7 @@ Welcome, Name, and Start Small architecture and design checkpoint completed on 2
 - [x] Add focused route and illustration tests and review both default-size compositions in the iOS simulator.
 - [x] Review the shared actions and both onboarding compositions at the largest standard Dynamic Type size, then stress-check the accessibility extreme without clipped controls.
 - [x] Hand the native launch screen directly to Welcome; do not invent a second in-app splash or temporary wordmark route.
-- [x] Offer Pilly Plus as a quiet, optional branch from Welcome without blocking the free onboarding path or marking onboarding complete.
+- [x] Offer Pilly Plus as a quiet, optional iOS branch from Welcome without blocking the free onboarding path or marking onboarding complete.
 - [x] Ask for a first name only when the local profile is empty, allow the step to be skipped, and reuse the same normalized profile settings as Profile.
 - [x] Anchor the Name composition from the top and keep its focused field above the keyboard so focus and dismissal cannot leave the entire page at a different vertical offset; use one small medicine appearance as its only visual cue.
 - [x] End onboarding at Start Small with two explicit outcomes: add the first medicine or enter the app with an empty medicine list.
@@ -276,7 +277,7 @@ Welcome, Name, and Start Small architecture and design checkpoint completed on 2
 - [ ] Complete a manual tap-through of Welcome → optional Plus return → Name → Start Small → both empty/Add outcomes.
 - [ ] Review VoiceOver order, Reduce Motion on-device behavior, and physical-device motion during release QA.
 
-Native splash and app identity are the next onboarding checkpoint:
+Native splash and app identity checkpoint completed on iOS on 2026-08-12:
 
 - [x] Approve the dot-free frosted capsule as the production app identity: warm peach above deep berry, joined by one translucent seam. Do not reuse an onboarding illustration or add a check, wordmark, mascot, or decorative dose dot to the icon.
 - [x] Export and configure distinct production assets: 1024-pixel iOS light and dark icons, an isolated native splash mark, Android adaptive foreground and warm background, Android themed monochrome artwork, and the web favicon.
@@ -294,17 +295,22 @@ Free:
 - Local reminders
 - Supply count and run-out estimate
 - Basic local profile
-- A basic way to export personal data when export ships
+- A complete readable JSON export of personal data
 
-Possible Plus value:
+Current Plus value:
+
+- Print-ready medicine-plan PDF
+- Dose-history CSV for sorting and analysis
+
+Possible future Plus value:
 
 - Themes and alternate app icons
 - Additional widgets
-- Print layouts and advanced export formats
+- Additional print layouts and export presentation formats
 - Optional visual profile frames
 - Future household organization after its privacy model is complete
 
-The current price is a product hypothesis. Do not enable purchasing until a real premium feature is available and App Store/RevenueCat configuration has been tested on a device.
+The current price remains a product hypothesis. The first premium export formats now exist, but purchasing must stay disabled until App Store and RevenueCat configuration has been tested on a physical iPhone. Android purchasing is intentionally deferred.
 
 Pilly Plus architecture and design checkpoint completed on 2026-08-11:
 
@@ -315,7 +321,7 @@ Pilly Plus architecture and design checkpoint completed on 2026-08-11:
 - [x] Subscribe once at app runtime to entitlement changes and retain the local entitlement only as an offline fallback.
 - [x] Provide development-only free and active previews that never contact RevenueCat or grant production access.
 - [x] Keep production checkout behind an explicit launch gate and represent loading, unavailable, retry, restore, active, and offline-active states.
-- [x] Describe only planned Plus value and state clearly that medication essentials remain free.
+- [x] Describe only implemented Plus value and state clearly that medication essentials and full JSON data access remain free.
 - [x] Remove the unused generic RevenueCat paywall UI dependency; Pilly owns the visual hierarchy while RevenueCat owns store state.
 - [x] Use one dedicated code-native Pilly companion as the paywall's signature visual without adding a decorative backdrop or bitmap asset.
 - [x] Keep one benefits surface, one quiet free-core promise, and an inline transaction area instead of stacking promotional and status cards.
@@ -323,7 +329,17 @@ Pilly Plus architecture and design checkpoint completed on 2026-08-11:
 - [x] Move the entitlement listener into a focused core bridge and centralize the shared query and cached-setting keys.
 - [x] Add focused entitlement-state tests and complete static and full-suite verification.
 - [x] Review the redesigned store-unavailable state at default and largest-standard text sizes on the iPhone 17 Pro simulator without clipped copy or broken containers.
-- [ ] Build the first real paid feature, configure the App Store lifetime product, and validate purchase and restore on a physical device before enabling checkout.
+- [x] Build the first real Plus value: a print-ready medicine-plan PDF and dose-history CSV, while keeping a complete readable JSON export free.
+- [x] Use the public iOS RevenueCat key, the `plus` entitlement, the current lifetime package, and the App Store-localized price.
+- [x] Review the real-feature paywall and free/locked export composition at default size on the iPhone 17 Pro simulator.
+- [x] Reduce the paywall to two concrete benefits, remove duplicate heart/support messaging, and keep unavailable-store copy user-facing rather than exposing RevenueCat setup instructions.
+- [x] Keep RevenueCat purchases intentionally iOS-only for this release and ignore cached iOS entitlement on unsupported platforms.
+- [x] Hide optional Plus entry points on unsupported platforms and prevent locked export rows from opening an Apple-only paywall.
+- [x] Keep cached lifetime access unlocked while the App Store refreshes, including temporary offline and unconfigured states.
+- [x] Delete temporary JSON, CSV, and PDF files after the iOS share sheet closes or fails, without replacing the original share result when cache cleanup itself fails.
+- [x] Keep export assembly and organizer state models independent of `src/ui/`; illustrations consume model types rather than defining product contracts.
+- [x] Cover complete export aggregation, spreadsheet/HTML sanitization, native file cleanup, entitlement gating, and cached-access refresh with focused tests.
+- [ ] Configure the App Store lifetime product, then validate purchase and restore on a physical iPhone before enabling checkout.
 
 ## Surface and motion rules
 
@@ -341,21 +357,23 @@ Implemented:
 - Local reminders with private copy
 - Manual supply count and approximate run-out estimate
 - Archive and restore
+- Router-owned first-run onboarding with an optional local name and a true empty start
+- Production iOS app icon and native splash identity
 - RevenueCat adapter and offline entitlement cache
+- Free JSON export plus Plus PDF and CSV export tools
 
-In progress:
+Next implementation pass:
 
-- Cross-screen visual hierarchy and shared control cleanup
-- Empty, error, and destructive-action states
-- Native glass enhancement with accessible fallbacks
+- [x] Add a free, user-controlled data export destination from Profile with a versioned readable JSON file, device share sheet, loading/error states, and sensitive-data guidance.
+- [x] Verify both Start Small outcomes route correctly and only after onboarding persistence; the empty Today destination is also reviewed live in the iOS simulator.
+- [ ] Review the Android adaptive icon and native splash in an Android release build.
 
 Before release:
 
-- Finish an honest Pilly Plus feature and purchase/restore configuration
-- Add user-controlled backup/export
-- Test reminders and purchases on a physical device
-- Test default and accessibility text sizes with VoiceOver
-- Confirm privacy copy, license, store assets, demo video, and current Shipaton rules
+- [ ] Configure the real App Store lifetime product and validate RevenueCat purchase/restore on a physical iPhone before enabling checkout.
+- [ ] Test reminders, time-zone/background refresh, native tab behavior, and purchases on a physical device.
+- [ ] Test the complete app at default and accessibility text sizes with VoiceOver, Reduce Motion, and Reduce Transparency.
+- [ ] Confirm privacy copy, license, store assets, screenshots or demo video, and current submission rules.
 
 ## Decision log
 
@@ -363,8 +381,8 @@ Before release:
 - 2026-08-08: The MVP remains local-first with no required account or cloud medication storage.
 - 2026-08-08: A basic local profile photo is free. Multiple profiles are deferred.
 - 2026-08-08: Liquid glass is progressive enhancement and never carries safety-critical readability alone.
-- 2026-08-09: Route files are the actual screens. Keep route-only UI in `app/`, route-facing data hooks in `src/hooks/`, and remove duplicate `src/screens/` wrappers one page at a time. Create a product-area module only when several substantial reusable units justify it, as Today currently does.
-- 2026-08-10: Add Medicine page composition now lives in `app/medicine/new.tsx`; reusable Add/Edit fields remain in `src/features/medicine-form/`. Do not reintroduce a page-wrapper layer for this route.
+- 2026-08-09: Route files are the actual screens. Keep route-only composition in `app/`, route-facing data hooks in `src/hooks/`, reusable rendered controls in `src/ui/`, and product rules in `src/models/`; do not recreate screen wrappers or a generic feature catch-all.
+- 2026-08-10: Add Medicine page composition now lives in `app/medicine/new.tsx`; reusable Add/Edit controls live in `src/ui/components/` and form rules live in `src/models/`. Do not reintroduce a page-wrapper layer for this route.
 - 2026-08-10: Detail screens use a calm, text-first hierarchy. Medicine Detail uses the medicine name as its single signature typographic moment, groups Schedule and Supply in one Overview surface, keeps setup presets in Add/Edit, and auto-saves reversible supply changes with visible failure recovery.
 - 2026-08-10: Visual richness comes from hierarchy, composition, typography, material, and interaction before color. New color meanings require an explicit design-direction and decision-log update; polish passes do not invent route-specific tint mappings.
 - 2026-08-10: Medicine appearance is recognition data, not decoration. A saved shape, size, and person-selected soft tone drive one code-native silhouette on Detail, a focused preview in Add/Edit, a compact Medicines-list cue, and a quieter Today cue. Existing medicines migrate to a medium rose capsule.
@@ -376,7 +394,7 @@ Before release:
 - 2026-08-10: Today is limited to medicine identity, scheduled time, and recording state. Supply estimates belong on Medicine Detail and must not increase Today-row density.
 - 2026-08-11: Guard Add/Edit removal with SDK 57's `usePreventRemove` state and disable the native back history menu. Confirmed exits replay the intercepted action; successful mutations clear prevention before post-save navigation. Raw `beforeRemove` interception is not valid for these native-stack screens because it can desynchronize native and JavaScript route state.
 - 2026-08-11: Medicines remains a Router-owned page and uses reusable query/state/list units rather than a screen wrapper. Its true empty state reuses the existing code-native starter organizer as the signature visual, presents one Add action, and keeps loading, retry, active, and archived states semantically distinct without introducing new decorative colors.
-- 2026-08-11: Welcome, Start Small, and Dose History now own their page composition in `app/`; the last `src/screens/` wrappers are removed. Reusable product modules are consolidated under `src/features/`, hooks remain one flat source folder, and purchase environment parsing stays private inside the service that owns it.
+- 2026-08-11: Welcome, Start Small, and Dose History now own their page composition in `app/`; the last `src/screens/` wrappers are removed. Hooks remain one flat source folder, and purchase environment parsing stays private inside the service that owns it.
 - 2026-08-11: Source boundaries use plain ownership names: `models` for app-facing types and rules, `providers` for root composition and synchronization, `services` for external/native integrations, `storage` for SQLite implementation, and `ui` for shared visual infrastructure. Small boundaries stay flat; only substantial feature and UI groups add subfolders. UI-facing models do not originate from the repository.
 - 2026-08-11: Tests live outside implementation in one flat top-level `tests/` folder while the suite remains small. Tests use explicit source aliases instead of location-dependent relative imports, and Jest discovery is restricted to the test root.
 - 2026-08-11: Week is a rolling seven-day outlook rather than a second recording surface. Its functional calendar is the single signature visual, Today remains the action surface, and Dose History remains the retrospective surface. Dense selected-day schedules share one time-grouped agenda; the Pilly companion appears only when the complete outlook is empty.
@@ -386,5 +404,9 @@ Before release:
 - 2026-08-11: Pilly Plus uses a custom, Router-owned one-time-purchase presentation. RevenueCat remains the entitlement and offering source, the current lifetime package supplies the localized price, and an explicit launch gate prevents checkout before a real paid feature and physical-device purchase pass exist. Development can preview free or active UI states, but production always follows the store entitlement. Core medicine tracking and basic personal-data export remain free.
 - 2026-08-11: Today progress leads with what matters now instead of repeating a sentence about every bucket. It presents ready-now, later, or complete status and keeps completion counts secondary; recording remains in the medicine dose rows rather than adding a duplicate summary CTA. Profile omits empty management destinations and reveals Archived medicines only when archived content exists.
 - 2026-08-11: Onboarding uses one shared code-native SVG story to explain Pilly rather than borrowing a functional Week control or presenting three equal setup tiles. The scenes use layered gradients, highlights, and restrained pattern texture instead of a stick-figure treatment. Motion is a short, one-shot entrance with a complete reduced-motion fallback; Router pages retain navigation and local completion ownership, and Start Small never navigates before its setting write succeeds. The primary action belongs to the story composition rather than a persistent bottom dock. Three.js is intentionally excluded: one onboarding illustration does not justify a GL render loop, extra native dependencies, or a second accessibility fallback.
-- 2026-08-11: First run is a Router-owned decision path, not a carousel: native launch screen → Welcome, with an optional Pilly Plus branch → conditional local first-name prompt → Start Small. Plus never completes or blocks onboarding. Name is optional and uses the same profile settings as Profile. Start Small is the only completion boundary and lets the user add a medicine or begin with a true empty state.
+- 2026-08-11: First run is a Router-owned decision path, not a carousel: native launch screen → Welcome, with an optional iOS Pilly Plus branch → conditional local first-name prompt → Start Small. Plus never completes or blocks onboarding. Name is optional and uses the same profile settings as Profile. Start Small is the only completion boundary and lets the user add a medicine or begin with a true empty state.
+- 2026-08-12: Pilly's production identity is the dot-free frosted capsule: warm peach above deep berry with one translucent seam. The native splash uses only that isolated mark on the app background and hands directly to Router-owned onboarding or Today. The iOS Release build and installed Home Screen icon are verified; Android release rendering remains a separate checkpoint.
+- 2026-08-13: The next product screen is a free local data-export destination reached from Profile. Export is a user-ownership feature, not a paywall hook; Plus may later add richer formats only after the basic readable export exists.
+- 2026-08-13: Export now provides a complete versioned JSON file to every user. Plus adds two real local tools—dose-history CSV and a print-ready medicine-plan PDF—so the RevenueCat paywall describes shipped value rather than planned promises. Checkout remains gated until the iOS lifetime product, `plus` entitlement, and physical-iPhone purchase/restore pass are complete; Android purchasing is deferred.
+- 2026-08-13: Export files are ephemeral cache artifacts: create them only for an explicit share action and remove them after the share sheet resolves or fails. Export assembly stays in hooks/models, native file work stays in services, and product models never import UI-owned types.
 - 2026-08-08: Replace custom provider nesting with one `AppProviders`; derive the stateless repository through `useRepository()` from Expo SQLite context.

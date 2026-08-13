@@ -16,9 +16,9 @@ The core tracker works without an account or network connection. Medication deta
 - Reconciled local reminders with private notification copy
 - Audited manual supply corrections with an explicitly approximate estimate
 - Local privacy and data controls
-- RevenueCat-ready Pilly Plus preview with an intentionally gated one-time purchase
+- Free private JSON export plus RevenueCat-backed Plus PDF and CSV tools
 
-Pilly Plus is planned for themes, alternate icons, printable plans, and advanced exports. Today, Week, dose history, reminders, supply estimates, and basic personal-data export remain free.
+Pilly Plus currently adds a print-ready medicine-plan PDF and dose-history CSV. Today, Week, dose history, reminders, supply estimates, and a complete JSON data export remain free.
 
 The current product decisions, code boundaries, data map, screen inventory, and release roadmap are maintained in [`docs/product-knowledge.md`](docs/product-knowledge.md).
 
@@ -67,7 +67,7 @@ EXPO_PUBLIC_PLUS_PURCHASES_ENABLED=false
 EXPO_PUBLIC_PLUS_PREVIEW_MODE=store
 ```
 
-Create a one-time iOS product in App Store Connect, attach it as the lifetime package in the current RevenueCat offering, and map the purchase to a `plus` entitlement. The app uses RevenueCat's localized price and does not select an arbitrary package.
+Create a one-time product in App Store Connect, attach it as the lifetime package in the current RevenueCat offering, and map the purchase to a `plus` entitlement. The app uses RevenueCat's localized price and does not select an arbitrary package. Android purchasing is intentionally deferred.
 
 Checkout stays disabled unless `EXPO_PUBLIC_PLUS_PURCHASES_ENABLED=true`. In a development build, `EXPO_PUBLIC_PLUS_PREVIEW_MODE=free` or `active` previews either entitlement state without contacting RevenueCat or changing a real purchase. Production builds always use the store state.
 
