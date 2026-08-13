@@ -1,7 +1,7 @@
 import { Pressable, StyleSheet, View } from 'react-native';
 
 import { PillyIcon } from '@/ui/icons';
-import { StarterOrganizer } from '@/ui/illustrations';
+import { StarterOrganizer } from '@/ui/illustrations/starter-organizer';
 import { colors, radii, shadows, spacing } from '@/ui/tokens';
 import { PillyText } from '@/ui/components/pilly-text';
 

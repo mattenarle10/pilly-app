@@ -2,18 +2,16 @@ import { useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import DateTimePicker from '@react-native-community/datetimepicker';
 
-import {
-  PillyBanner,
-  PillyButton,
-  PillyCard,
-  PillyField,
-  PillyIconButton,
-  MedicationAppearance,
-  PillyNumberPicker,
-  PillySheet,
-  PillyText,
-  PillyToggle,
-} from '@/ui/components';
+import { MedicationAppearance } from './medication-appearance';
+import { PillyBanner } from './pilly-banner';
+import { PillyButton } from './pilly-button';
+import { PillyCard } from './pilly-card';
+import { PillyField } from './pilly-field';
+import { PillyIconButton } from './pilly-icon-button';
+import { PillyNumberPicker } from './pilly-number-picker';
+import { PillySheet } from './pilly-sheet';
+import { PillyText } from './pilly-text';
+import { PillyToggle } from './pilly-toggle';
 import { PillyIcon } from '@/ui/icons';
 import { colors, radii, shadows, spacing } from '@/ui/tokens';
 import type {
@@ -21,7 +19,7 @@ import type {
   MedicationAppearanceSize,
   MedicationAppearanceTone,
 } from '@/models/medication';
-import { parseTime, type MedicationScheduleDraft } from './medication-form';
+import { parseTime, type MedicationScheduleDraft } from '@/models/medicine-form';
 
 const appearanceShapes: { value: MedicationAppearanceShape; label: string }[] = [
   { value: 'round', label: 'Round' },

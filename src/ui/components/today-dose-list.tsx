@@ -2,16 +2,14 @@ import { Pressable, StyleSheet, View } from 'react-native';
 import Animated, { FadeIn, FadeOut, LinearTransition, ReduceMotion } from 'react-native-reanimated';
 
 import type { DoseStatus, ScheduledDose } from '@/models/dose';
-import {
-  MedicationAppearance,
-  PillyButton,
-  PillyCard,
-  PillyIconButton,
-  PillyText,
-  StatusLabel,
-} from '@/ui/components';
+import { MedicationAppearance } from './medication-appearance';
+import { PillyButton } from './pilly-button';
+import { PillyCard } from './pilly-card';
+import { PillyIconButton } from './pilly-icon-button';
+import { PillyText } from './pilly-text';
+import { StatusLabel } from './status-label';
 import { colors, radii, spacing } from '@/ui/tokens';
-import { isDoseAvailable, type TodayDoseGroup } from '@/features/today/today-state';
+import { isDoseAvailable, type TodayDoseGroup } from '@/models/today';
 
 export function TodayDoseList({
   groups,

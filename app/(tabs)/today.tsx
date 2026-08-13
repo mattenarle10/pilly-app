@@ -7,26 +7,26 @@ import type { ScheduledDose } from '@/models/dose';
 import {
   PillyBanner,
   PillyCard,
+  DoseStatusSheet,
   PillyIconButton,
   PillyText,
   PillyToast,
   Screen,
+  TodayDoseList,
+  TodayStarter,
   WeekStatusStrip,
 } from '@/ui/components';
+import { TodayCompanion } from '@/ui/illustrations';
 import { colors, radii, spacing } from '@/ui/tokens';
 import { useCurrentMinute, useDoseActions, useTodayData } from '@/hooks';
 import {
   buildOrganizerDays,
-  DoseStatusSheet,
   groupTodayDoses,
   greetingFor,
-  TodayCompanion,
-  TodayDoseList,
-  TodayStarter,
   todayProgress,
   todayProgressDetail,
   todayProgressHeadline,
-} from '@/features/today';
+} from '@/models/today';
 
 export default function Today() {
   const { repository, today, dates, doses, weekDoses, medicines, reminderNotice, firstName } =

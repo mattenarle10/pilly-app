@@ -3,7 +3,7 @@ import { Pressable, StyleSheet, View } from 'react-native';
 import { PillyText } from './pilly-text';
 import { PillyIcon, type PillyIconName } from '@/ui/icons';
 import { colors, radii, spacing } from '@/ui/tokens';
-import type { OrganizerDayState } from '@/ui/illustrations';
+import type { OrganizerDayState } from '@/models/week';
 
 type Day = { key: string; label: string; dateNumber: number; state: OrganizerDayState };
 

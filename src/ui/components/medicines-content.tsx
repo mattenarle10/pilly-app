@@ -1,16 +1,14 @@
 import { ActivityIndicator, Pressable, StyleSheet, View } from 'react-native';
 
 import type { Medication } from '@/models/medication';
-import {
-  EmptyState,
-  MedicationAppearance,
-  PillyBanner,
-  PillyCard,
-  PillyIconButton,
-  PillyText,
-} from '@/ui/components';
+import { EmptyState } from './empty-state';
+import { MedicationAppearance } from './medication-appearance';
+import { PillyBanner } from './pilly-banner';
+import { PillyCard } from './pilly-card';
+import { PillyIconButton } from './pilly-icon-button';
+import { PillyText } from './pilly-text';
 import { PillyIcon } from '@/ui/icons';
-import { StarterOrganizer } from '@/ui/illustrations';
+import { StarterOrganizer } from '@/ui/illustrations/starter-organizer';
 import { colors, spacing } from '@/ui/tokens';
 
 type MedicinesHeaderProps = {

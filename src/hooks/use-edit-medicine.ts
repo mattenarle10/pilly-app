@@ -5,7 +5,7 @@ import {
   scheduleConfigurationFromDraft,
   supplyValue,
   type MedicationDraft,
-} from '@/features/medicine-form/medication-form';
+} from '@/models/medicine-form';
 import { scheduleLocalReminders } from '@/services/notifications';
 import { useRepository } from './use-repository';
 

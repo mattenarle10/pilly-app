@@ -1,6 +1,6 @@
 import { cleanup, fireEvent, render } from '@testing-library/react-native';
 
-import { ScheduleStep } from '@/features/medicine-form/medication-form-sections';
+import { ScheduleStep } from '@/ui/components/medicine-form-sections';
 
 jest.mock('react-native-reanimated', () => {
   const { View } = jest.requireActual<typeof import('react-native')>('react-native');

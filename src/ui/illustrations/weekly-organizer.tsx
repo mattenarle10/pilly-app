@@ -8,10 +8,10 @@ import Animated, {
   withTiming,
 } from 'react-native-reanimated';
 import Svg, { Circle, G, Path, Rect } from 'react-native-svg';
+
+import type { OrganizerDay, OrganizerDayState } from '@/models/week';
 import { colors } from '@/ui/tokens';
 
-export type OrganizerDayState = 'empty' | 'scheduled' | 'notRecorded' | 'taken' | 'skipped';
-export type OrganizerDay = { key: string; label: string; state: OrganizerDayState };
 type Props = {
   days: readonly OrganizerDay[];
   selectedIndex?: number;

@@ -1,7 +1,7 @@
 import { cleanup, fireEvent, render } from '@testing-library/react-native';
 
 import type { Medication } from '@/models/medication';
-import { MedicinesContent } from '@/features/medicines/medicines-content';
+import { MedicinesContent } from '@/ui/components/medicines-content';
 
 jest.mock('react-native-reanimated', () => {
   const { View } = jest.requireActual<typeof import('react-native')>('react-native');

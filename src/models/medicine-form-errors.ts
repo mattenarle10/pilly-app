@@ -1,5 +1,5 @@
 import { ZodError } from 'zod';
-import { InvalidMedicationDraftError } from './medication-form';
+import { InvalidMedicationDraftError } from './medicine-form';
 
 export function friendlySaveError(cause: unknown): string {
   if (cause instanceof InvalidMedicationDraftError) return cause.issue.message;

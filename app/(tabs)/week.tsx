@@ -7,6 +7,7 @@ import {
   PillyCard,
   PillyText,
   Screen,
+  WeekAgenda,
   WeekStatusStrip,
 } from '@/ui/components';
 import { WeekEmptyCompanion } from '@/ui/illustrations';
@@ -16,10 +17,9 @@ import {
   buildWeekDays,
   groupWeekDoses,
   resolveWeekSelection,
-  WeekAgenda,
   weekProgress,
   weekProgressMessage,
-} from '@/features/week';
+} from '@/models/week';
 
 export default function WeekRoute() {
   const { date } = useLocalSearchParams<{ date?: string }>();

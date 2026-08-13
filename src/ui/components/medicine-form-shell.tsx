@@ -8,7 +8,8 @@ import {
 } from 'react-native';
 import { Stack } from 'expo-router';
 
-import { PillyText, Screen } from '@/ui/components';
+import { PillyText } from './pilly-text';
+import { Screen } from './screen';
 import { colors, spacing } from '@/ui/tokens';
 
 type Props = {

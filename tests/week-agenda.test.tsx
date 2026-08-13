@@ -1,8 +1,8 @@
 import { cleanup, fireEvent, render } from '@testing-library/react-native';
 
 import type { ScheduledDose } from '@/models/dose';
-import { WeekAgenda } from '@/features/week/week-agenda';
-import { groupWeekDoses } from '@/features/week/week-state';
+import { WeekAgenda } from '@/ui/components/week-agenda';
+import { groupWeekDoses } from '@/models/week';
 
 jest.mock('react-native-reanimated', () => {
   const { View } = jest.requireActual<typeof import('react-native')>('react-native');

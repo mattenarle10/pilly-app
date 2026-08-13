@@ -1,6 +1,8 @@
-import type { ScheduledDose } from '@/models/dose';
-import type { OrganizerDayState } from '@/ui/illustrations';
-import { formatTime, toLocalDate } from '@/models/schedule';
+import type { ScheduledDose } from './dose';
+import { formatTime, toLocalDate } from './schedule';
+
+export type OrganizerDayState = 'empty' | 'scheduled' | 'notRecorded' | 'taken' | 'skipped';
+export type OrganizerDay = { key: string; label: string; state: OrganizerDayState };
 
 export type WeekDaySummary = {
   key: string;

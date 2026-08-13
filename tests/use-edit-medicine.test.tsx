@@ -3,7 +3,7 @@ import { act, cleanup, renderHook, waitFor } from '@testing-library/react-native
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
 import type { PillyRepository } from '@/storage/repository';
-import { defaults } from '@/features/medicine-form/medication-form';
+import { defaults } from '@/models/medicine-form';
 import { scheduleLocalReminders } from '@/services/notifications';
 import { useEditMedicine } from '@/hooks/use-edit-medicine';
 import { useRepository } from '@/hooks/use-repository';

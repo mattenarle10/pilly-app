@@ -4,7 +4,7 @@ import {
   todayProgress,
   todayProgressDetail,
   todayProgressHeadline,
-} from '@/features/today/today-state';
+} from '@/models/today';
 
 const scheduledAt = new Date('2026-08-10T13:00:00.000Z');
 

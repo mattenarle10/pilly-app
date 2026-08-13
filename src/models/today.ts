@@ -1,7 +1,6 @@
-import type { ScheduledDose } from '@/models/dose';
-import type { OrganizerDay } from '@/ui/illustrations';
-import { formatTime } from '@/models/schedule';
-import { buildWeekDays } from '@/features/week/week-state';
+import type { ScheduledDose } from './dose';
+import { formatTime } from './schedule';
+import { buildWeekDays, type OrganizerDay } from './week';
 
 export type TodayOrganizerDay = OrganizerDay & { dateNumber: number };
 export type TodayDoseGroup = { key: string; time: string; doses: ScheduledDose[] };
@@ -13,18 +12,14 @@ export type TodayProgress = {
 };
 
 export function greetingFor(date: Date, firstName?: string | null): string {
-  const greeting =
-    date.getHours() < 12
-      ? 'Good morning'
-      : date.getHours() < 18
-        ? 'Good afternoon'
-        : 'Good evening';
+  const hour = date.getHours();
+  const greeting = hour < 12 ? 'Good morning' : hour < 18 ? 'Good afternoon' : 'Good evening';
   return firstName?.trim() ? `${greeting}, ${firstName.trim()}` : greeting;
 }
 
 export function buildOrganizerDays(
-  dates: Date[],
-  dosesByDay: ScheduledDose[][] | undefined,
+  dates: readonly Date[],
+  dosesByDay: readonly ScheduledDose[][] | undefined,
 ): TodayOrganizerDay[] {
   return buildWeekDays(dates, dosesByDay, new Date());
 }
@@ -34,9 +29,8 @@ export function groupTodayDoses(doses: ScheduledDose[] | undefined): TodayDoseGr
   for (const dose of doses ?? []) {
     const key = `${dose.schedule.hour}:${dose.schedule.minute}`;
     const group = groups.get(key);
-    if (group) {
-      group.doses.push(dose);
-    } else {
+    if (group) group.doses.push(dose);
+    else {
       groups.set(key, {
         key,
         time: formatTime(dose.schedule.hour, dose.schedule.minute),
@@ -52,11 +46,11 @@ export function isDoseAvailable(dose: ScheduledDose, now: Date): boolean {
 }
 
 export function todayProgress(doses: ScheduledDose[] | undefined, now: Date): TodayProgress {
-  const items = doses ?? [];
-  const unrecorded = items.filter((dose) => dose.status === 'notRecorded');
+  const all = doses ?? [];
+  const unrecorded = all.filter((dose) => dose.status === 'notRecorded');
   return {
-    recorded: items.filter((dose) => dose.status !== 'notRecorded').length,
-    total: items.length,
+    recorded: all.filter((dose) => dose.status !== 'notRecorded').length,
+    total: all.length,
     available: unrecorded.filter((dose) => isDoseAvailable(dose, now)).length,
     upcoming: unrecorded.filter((dose) => !isDoseAvailable(dose, now)).length,
   };

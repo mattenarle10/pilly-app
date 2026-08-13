@@ -1,7 +1,9 @@
 import { Pressable, StyleSheet, View } from 'react-native';
 
 import type { DoseStatus, ScheduledDose } from '@/models/dose';
-import { PillySheet, PillyText, doseStatusVisuals } from '@/ui/components';
+import { PillySheet } from './pilly-sheet';
+import { PillyText } from './pilly-text';
+import { doseStatusVisuals } from './status-label';
 import { PillyIcon } from '@/ui/icons';
 import { colors, radii, spacing } from '@/ui/tokens';
 import { formatTime } from '@/models/schedule';

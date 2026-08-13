@@ -8,8 +8,8 @@ import {
   supplyValue,
   validateMedicationDraft,
   validateMedicationStep,
-} from '@/features/medicine-form/medication-form';
-import { friendlySaveError } from '@/features/medicine-form/medication-form-errors';
+} from '@/models/medicine-form';
+import { friendlySaveError } from '@/models/medicine-form-errors';
 
 describe('medicine setup validation', () => {
   test('restores older drafts with safe appearance defaults', () => {

@@ -1,8 +1,11 @@
 import { Pressable, StyleSheet, View } from 'react-native';
 
-import { MedicationAppearance, PillyCard, PillyText, StatusLabel } from '@/ui/components';
+import { MedicationAppearance } from './medication-appearance';
+import { PillyCard } from './pilly-card';
+import { PillyText } from './pilly-text';
+import { StatusLabel } from './status-label';
 import { colors, spacing } from '@/ui/tokens';
-import type { WeekDoseGroup } from './week-state';
+import type { WeekDoseGroup } from '@/models/week';
 
 export function WeekAgenda({
   groups,

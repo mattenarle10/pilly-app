@@ -1,9 +1,8 @@
 import { router } from 'expo-router';
 
-import { Screen } from '@/ui/components';
+import { MedicinesContent, MedicinesHeader, Screen } from '@/ui/components';
 import { spacing } from '@/ui/tokens';
 import { useMedicines } from '@/hooks';
-import { MedicinesContent, MedicinesHeader } from '@/features/medicines';
 
 export default function MedicinesRoute() {
   const query = useMedicines();

@@ -6,7 +6,7 @@ import {
   resolveWeekSelection,
   weekProgress,
   weekProgressMessage,
-} from '@/features/week/week-state';
+} from '@/models/week';
 
 const medication: ScheduledDose['medication'] = {
   id: 'd7bf17a4-3b0c-4c61-9155-7102fe0769f2',
