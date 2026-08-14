@@ -1,6 +1,6 @@
 # Pilly product knowledge
 
-Last updated: 2026-08-13
+Last updated: 2026-08-14
 
 This is the versioned product and architecture reference for the current Expo app. `AGENTS.md` remains the binding instruction file. The earlier Swift prototype and its local planning files are archived context, not the implementation source of truth.
 
@@ -79,19 +79,19 @@ Next active visual checkpoint: Dose History. VoiceOver remains deferred to relea
 
 ### Design review checklist
 
-| Screen                  | Status                 | Next review                                                            |
-| ----------------------- | ---------------------- | ---------------------------------------------------------------------- |
-| Today                   | 90%, checkpoint review | Large text, VoiceOver order, empty/error states, and final device pass |
-| Medicine detail         | Complete               | Release QA only: physical device and accessibility extremes            |
-| Add medicine            | Complete               | Release QA only: keyboard, VoiceOver, and physical device              |
-| Edit medicine           | Complete               | Release QA only: keyboard, VoiceOver, large text, and physical device  |
-| Medicines               | Complete               | Release QA only: VoiceOver and physical device                         |
-| Week                    | Complete               | Release QA only: VoiceOver and physical device                         |
-| Profile                 | Complete               | Release QA only: VoiceOver, keyboard, and physical device              |
-| Export data             | Complete               | Release QA only: real-file share destinations and accessibility        |
-| Pilly Plus              | Feature complete       | Store products, device purchase/restore, and release copy              |
-| Welcome and Start Small | Complete               | Release QA only: VoiceOver, Reduce Motion, and physical device         |
-| Dose history            | Pending                | Correction clarity and audit readability                               |
+| Screen                  | Status                      | Next review                                                            |
+| ----------------------- | --------------------------- | ---------------------------------------------------------------------- |
+| Today                   | 90%, checkpoint review      | Large text, VoiceOver order, empty/error states, and final device pass |
+| Medicine detail         | Complete                    | Release QA only: physical device and accessibility extremes            |
+| Add medicine            | Complete                    | Release QA only: keyboard, VoiceOver, and physical device              |
+| Edit medicine           | Complete                    | Release QA only: keyboard, VoiceOver, large text, and physical device  |
+| Medicines               | Complete                    | Release QA only: VoiceOver and physical device                         |
+| Week                    | Complete                    | Release QA only: VoiceOver and physical device                         |
+| Profile                 | Complete                    | Release QA only: VoiceOver, keyboard, and physical device              |
+| Export data             | Complete                    | Release QA only: real-file share destinations and accessibility        |
+| Pilly Plus              | Redefining product          | Specify account, secure sync, photo storage, and subscriptions         |
+| Welcome and Start Small | Complete                    | Release QA only: VoiceOver, Reduce Motion, and physical device         |
+| Dose history            | Implemented, review pending | Default, empty, error, long-history, and largest-text simulator states |
 
 Medicine appearance is local, optional recognition data. Shape, size, and curated soft tones are stored on the medicine and drive the code-native silhouette on Medicine Detail, the Add/Edit preview, the Medicines list, and a quieter cue beside each Today dose. Capsules support independently selected colors for each half; round and oval pills use one color. Add/Edit keeps only a compact preview row in the form and opens a dedicated editor sheet for the controls. The name remains the primary identifier. A future pattern or user photo should ship only if it improves recognition, remains legible without motion, and has an explicit privacy and storage model.
 
@@ -250,6 +250,17 @@ Profile architecture and design checkpoint completed on 2026-08-11:
 - [x] Hide the Manage section when there are no archived medicines; reveal the existing Archived medicines destination only when it has content.
 - [ ] Review largest-standard text, modal keyboard behavior, and physical-device navigation before release.
 
+Dose History architecture and design checkpoint implemented on 2026-08-14:
+
+- [x] Confirm the page is already Router-owned at `app/medicine/[id]/history.tsx`; no legacy `src/screens/` wrapper or file move remains.
+- [x] Let the native stack own Back, the medicine-name title, safe-area spacing, and fallback navigation instead of rebuilding navigation inside page content.
+- [x] Replace one generic card per event with one compact audit surface that groups every correction with its scheduled dose.
+- [x] Show the scheduled local date and exact dose time separately from the timestamp when each Taken, Skipped, correction, or removal was recorded.
+- [x] Derive scheduled timestamps from preserved schedule rows and stable occurrence IDs; the existing data is sufficient and no database migration is required.
+- [x] Add focused tests for every status transition and correction-chain grouping.
+- [ ] Review default, empty, retryable-error, missing-medicine, long-history, and largest-standard-text states in the simulator.
+- [ ] Review VoiceOver order and physical-device behavior during release QA.
+
 ## Profile decision
 
 The MVP has one optional local profile with a first name and optional last name. It has no account or profile photo. A future account identity or visual customization feature requires a separate privacy, storage, and product-boundary decision; the current app does not retain dormant photo infrastructure or advertise photo access as Plus value.
@@ -297,20 +308,22 @@ Free:
 - Basic local profile
 - A complete readable JSON export of personal data
 
-Current Plus value:
+Implemented premium tools, not yet sufficient as a paid launch bundle:
 
 - Print-ready medicine-plan PDF
 - Dose-history CSV for sorting and analysis
 
-Possible future Plus value:
+Planned Pilly Plus subscription value:
 
-- Themes and alternate app icons
-- Additional widgets
-- Additional print layouts and export presentation formats
-- Optional visual profile frames
-- Future household organization after its privacy model is complete
+- A Pilly account with explicit local-first migration and account deletion
+- Secure cross-device medicine sync and recovery
+- Private medicine-photo storage with clear limits and deletion controls
+- Better themes and alternate app icons
+- The existing PDF medicine plan and dose-history CSV tools
 
-The current price remains a product hypothesis. The first premium export formats now exist, but purchasing must stay disabled until App Store and RevenueCat configuration has been tested on a physical iPhone. Android purchasing is intentionally deferred.
+The paid launch is now deferred until account, sync, and medicine-photo storage provide durable recurring value. The intended first offer is a yearly subscription as the primary choice with a monthly fallback; do not add a three-month option at launch. Exact storage limits, pricing, privacy disclosures, retention, encryption, recovery, and deletion behavior must be decided before implementation or store submission. The existing lifetime IAP remains an unsubmitted draft and must not be connected to the production offering. Android purchasing remains deferred.
+
+Plus planning is deferred until the local app is complete. S3 is the intended future object store for medicine photos, but account, sync, security, retention, deletion, quota, pricing, and subscription decisions remain deliberately open. Do not add cloud dependencies or new store products during the local-product pass.
 
 Pilly Plus architecture and design checkpoint completed on 2026-08-11:
 
@@ -339,7 +352,18 @@ Pilly Plus architecture and design checkpoint completed on 2026-08-11:
 - [x] Delete temporary JSON, CSV, and PDF files after the iOS share sheet closes or fails, without replacing the original share result when cache cleanup itself fails.
 - [x] Keep export assembly and organizer state models independent of `src/ui/`; illustrations consume model types rather than defining product contracts.
 - [x] Cover complete export aggregation, spreadsheet/HTML sanitization, native file cleanup, entitlement gating, and cached-access refresh with focused tests.
-- [ ] Configure the App Store lifetime product, then validate purchase and restore on a physical iPhone before enabling checkout.
+- [x] Activate the Paid Apps Agreement and complete the Apple banking and U.S. foreign-owner tax forms.
+- [x] Create the iOS App Store record as `Pilly: Medicine Tracker` for `dev.sidequests.pilly`, with internal SKU `PILLY-IOS-001`.
+- [x] Create the `Pilly Plus Lifetime` non-consumable record with product ID `dev.sidequests.pilly.plus.lifetime`.
+- [x] Set the lifetime draft's price hypothesis to USD 4.99 with a PHP 250 Philippines override; do not submit it.
+- [x] Decide not to launch the export-only lifetime product; keep it detached from RevenueCat and out of review.
+- [ ] Finish the local app and its remaining Dose History, onboarding, device, and accessibility checkpoints before starting cloud implementation.
+- [ ] Plan Plus only after the local-product pass. Use S3 for future medicine-photo objects; decide the account and structured-sync backend separately.
+- [ ] Replace the lifetime-only assumptions in the RevenueCat adapter, Plus hook, paywall, tests, README, and environment guidance.
+- [ ] Create one Apple subscription group with monthly and yearly products after the product specification is approved.
+- [ ] Connect both subscription products to RevenueCat's existing `plus` entitlement and a current offering with monthly and annual packages.
+- [ ] Validate sign-in, entitlement transfer, purchase, restore, expiry, billing retry, offline access, sync, photo upload/deletion, and account deletion on physical devices before enabling checkout.
+- [ ] Complete DSA trader verification before release, then restore European availability for the Pilly app and every offered Plus product and confirm their storefront lists match.
 
 ## Surface and motion rules
 
@@ -366,11 +390,14 @@ Next implementation pass:
 
 - [x] Add a free, user-controlled data export destination from Profile with a versioned readable JSON file, device share sheet, loading/error states, and sensitive-data guidance.
 - [x] Verify both Start Small outcomes route correctly and only after onboarding persistence; the empty Today destination is also reviewed live in the iOS simulator.
+- [ ] Finish the remaining local-product checkpoint: Dose History design and behavior.
 - [ ] Review the Android adaptive icon and native splash in an Android release build.
 
-Before release:
+Before public release:
 
-- [ ] Configure the real App Store lifetime product and validate RevenueCat purchase/restore on a physical iPhone before enabling checkout.
+- [ ] Keep local-only builds in internal testing; do not publicly release Pilly while Plus is disabled or still represented by the rejected lifetime draft.
+- [ ] Finish the approved account, sync, photo-storage, and monthly/yearly Plus product; enable checkout only after its complete physical-device purchase and recovery pass.
+- [ ] Complete DSA trader verification and restore European availability for the Pilly app and every offered Plus product.
 - [ ] Test reminders, time-zone/background refresh, native tab behavior, and purchases on a physical device.
 - [ ] Test the complete app at default and accessibility text sizes with VoiceOver, Reduce Motion, and Reduce Transparency.
 - [ ] Confirm privacy copy, license, store assets, screenshots or demo video, and current submission rules.
@@ -408,5 +435,9 @@ Before release:
 - 2026-08-12: Pilly's production identity is the dot-free frosted capsule: warm peach above deep berry with one translucent seam. The native splash uses only that isolated mark on the app background and hands directly to Router-owned onboarding or Today. The iOS Release build and installed Home Screen icon are verified; Android release rendering remains a separate checkpoint.
 - 2026-08-13: The next product screen is a free local data-export destination reached from Profile. Export is a user-ownership feature, not a paywall hook; Plus may later add richer formats only after the basic readable export exists.
 - 2026-08-13: Export now provides a complete versioned JSON file to every user. Plus adds two real local tools—dose-history CSV and a print-ready medicine-plan PDF—so the RevenueCat paywall describes shipped value rather than planned promises. Checkout remains gated until the iOS lifetime product, `plus` entitlement, and physical-iPhone purchase/restore pass are complete; Android purchasing is deferred.
+- 2026-08-13: The export-only lifetime Plus bundle is not strong enough to launch. Keep its App Store record as an unsubmitted draft and do not attach it to RevenueCat. Pilly Plus will instead earn recurring pricing through an optional account, secure cross-device sync and recovery, private medicine-photo storage, themes, and the existing premium exports. Plan one yearly subscription as the primary offer and one monthly fallback; define privacy, retention, deletion, recovery, and storage limits before choosing a backend or implementing the new paywall.
+- 2026-08-14: Finish the local app before planning or implementing Plus. Future medicine-photo objects will use S3, while account and structured-sync architecture remain undecided. Do not add cloud dependencies, beta distribution configuration, or new subscription products during the local-product pass.
+- 2026-08-14: Local-only Pilly builds are internal testing builds, not a reduced public launch. Public release waits until the approved account, sync, photo-storage, and monthly/yearly Plus product is implemented and enabled; the rejected lifetime draft stays detached and out of review.
+- 2026-08-14: Dose History was already Router-owned, so its migration is a navigation and composition correction rather than a file move. The native header owns Back and the medicine name, while one audit surface groups correction chains by scheduled occurrence and distinguishes scheduled time from change time without a database migration.
 - 2026-08-13: Export files are ephemeral cache artifacts: create them only for an explicit share action and remove them after the share sheet resolves or fails. Export assembly stays in hooks/models, native file work stays in services, and product models never import UI-owned types.
 - 2026-08-08: Replace custom provider nesting with one `AppProviders`; derive the stateless repository through `useRepository()` from Expo SQLite context.

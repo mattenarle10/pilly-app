@@ -252,28 +252,42 @@ export class PillyRepository {
   }
 
   async listDoseHistory(medicationId: string): Promise<DoseHistoryEntry[]> {
-    const scheduleIds = new Set(
-      this.db
-        .select({ id: schedules.id })
-        .from(schedules)
-        .where(eq(schedules.medicationId, medicationId))
-        .all()
-        .map(({ id }) => id),
+    const medicationSchedules = this.db
+      .select()
+      .from(schedules)
+      .where(eq(schedules.medicationId, medicationId))
+      .all();
+    const schedulesById = new Map(
+      medicationSchedules.map((schedule) => [schedule.id, schedule] as const),
     );
     return this.db
       .select()
       .from(doseEvents)
       .orderBy(desc(doseEvents.occurredAt))
       .all()
-      .filter((event) => scheduleIds.has(event.occurrenceId.split(':')[0] ?? ''))
-      .map((event) => ({
-        id: event.id,
-        occurrenceId: event.occurrenceId,
-        scheduledOn: event.occurrenceId.split(':')[1] ?? '',
-        previousStatus: event.previousStatus,
-        nextStatus: event.nextStatus,
-        occurredAt: new Date(event.occurredAt),
-      }));
+      .flatMap((event) => {
+        const [scheduleId, scheduledOn] = event.occurrenceId.split(':');
+        const schedule = schedulesById.get(scheduleId ?? '');
+        const dateParts = scheduledOn?.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+        if (!schedule || !dateParts) return [];
+        const [, year, month, day] = dateParts;
+        return [
+          {
+            id: event.id,
+            occurrenceId: event.occurrenceId,
+            scheduledAt: new Date(
+              Number(year),
+              Number(month) - 1,
+              Number(day),
+              schedule.hour,
+              schedule.minute,
+            ),
+            previousStatus: event.previousStatus,
+            nextStatus: event.nextStatus,
+            occurredAt: new Date(event.occurredAt),
+          },
+        ];
+      });
   }
 
   async listExportDoseRecords(): Promise<ExportDoseRecord[]> {

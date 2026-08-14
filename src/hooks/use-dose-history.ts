@@ -7,7 +7,13 @@ export function useDoseHistory(medicationId: string) {
 
   return useQuery({
     queryKey: ['dose-history', medicationId],
-    queryFn: () => repository.listDoseHistory(medicationId),
+    queryFn: async () => {
+      const [detail, events] = await Promise.all([
+        repository.getMedication(medicationId),
+        repository.listDoseHistory(medicationId),
+      ]);
+      return { medication: detail?.medication ?? null, events };
+    },
     enabled: Boolean(medicationId),
     networkMode: 'always',
   });
