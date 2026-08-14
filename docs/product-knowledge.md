@@ -75,23 +75,23 @@ There is no cloud sync, account, or import flow yet. App deletion can therefore 
 
 Recommended visual review order: Today, Medicine detail, Edit medicine, Add medicine, Medicines, Week, Profile, Export data, Pilly Plus, Welcome, Start Small, then Dose history.
 
-Next active visual checkpoint: Dose History. VoiceOver remains deferred to release QA.
+Next active checkpoint: complete the first-run onboarding tap-through. VoiceOver remains deferred to release QA.
 
 ### Design review checklist
 
-| Screen                  | Status                      | Next review                                                            |
-| ----------------------- | --------------------------- | ---------------------------------------------------------------------- |
-| Today                   | 90%, checkpoint review      | Large text, VoiceOver order, empty/error states, and final device pass |
-| Medicine detail         | Complete                    | Release QA only: physical device and accessibility extremes            |
-| Add medicine            | Complete                    | Release QA only: keyboard, VoiceOver, and physical device              |
-| Edit medicine           | Complete                    | Release QA only: keyboard, VoiceOver, large text, and physical device  |
-| Medicines               | Complete                    | Release QA only: VoiceOver and physical device                         |
-| Week                    | Complete                    | Release QA only: VoiceOver and physical device                         |
-| Profile                 | Complete                    | Release QA only: VoiceOver, keyboard, and physical device              |
-| Export data             | Complete                    | Release QA only: real-file share destinations and accessibility        |
-| Pilly Plus              | Redefining product          | Specify account, secure sync, photo storage, and subscriptions         |
-| Welcome and Start Small | Complete                    | Release QA only: VoiceOver, Reduce Motion, and physical device         |
-| Dose history            | Implemented, review pending | Default, empty, error, long-history, and largest-text simulator states |
+| Screen                  | Status                 | Next review                                                              |
+| ----------------------- | ---------------------- | ------------------------------------------------------------------------ |
+| Today                   | 90%, checkpoint review | Large text, VoiceOver order, empty/error states, and final device pass   |
+| Medicine detail         | Complete               | Release QA only: physical device and accessibility extremes              |
+| Add medicine            | Complete               | Release QA only: keyboard, VoiceOver, and physical device                |
+| Edit medicine           | Complete               | Release QA only: keyboard, VoiceOver, large text, and physical device    |
+| Medicines               | Complete               | Release QA only: VoiceOver and physical device                           |
+| Week                    | Complete               | Release QA only: VoiceOver and physical device                           |
+| Profile                 | Complete               | Release QA only: VoiceOver, keyboard, and physical device                |
+| Export data             | Complete               | Release QA only: real-file share destinations and accessibility          |
+| Pilly Plus              | Redefining product     | Specify account, secure sync, photo storage, and subscriptions           |
+| Welcome and Start Small | Complete               | Release QA only: VoiceOver, Reduce Motion, and physical device           |
+| Dose history            | Complete               | Release QA only: error, long-history, accessibility, and physical device |
 
 Medicine appearance is local, optional recognition data. Shape, size, and curated soft tones are stored on the medicine and drive the code-native silhouette on Medicine Detail, the Add/Edit preview, the Medicines list, and a quieter cue beside each Today dose. Capsules support independently selected colors for each half; round and oval pills use one color. Add/Edit keeps only a compact preview row in the form and opens a dedicated editor sheet for the controls. The name remains the primary identifier. A future pattern or user photo should ship only if it improves recognition, remains legible without motion, and has an explicit privacy and storage model.
 
@@ -250,7 +250,7 @@ Profile architecture and design checkpoint completed on 2026-08-11:
 - [x] Hide the Manage section when there are no archived medicines; reveal the existing Archived medicines destination only when it has content.
 - [ ] Review largest-standard text, modal keyboard behavior, and physical-device navigation before release.
 
-Dose History architecture and design checkpoint implemented on 2026-08-14:
+Dose History architecture and design checkpoint completed on 2026-08-15:
 
 - [x] Confirm the page is already Router-owned at `app/medicine/[id]/history.tsx`; no legacy `src/screens/` wrapper or file move remains.
 - [x] Let the native stack own Back, the medicine-name title, safe-area spacing, and fallback navigation instead of rebuilding navigation inside page content.
@@ -258,8 +258,8 @@ Dose History architecture and design checkpoint implemented on 2026-08-14:
 - [x] Show the scheduled local date and exact dose time separately from the timestamp when each Taken, Skipped, correction, or removal was recorded.
 - [x] Derive scheduled timestamps from preserved schedule rows and stable occurrence IDs; the existing data is sufficient and no database migration is required.
 - [x] Add focused tests for every status transition and correction-chain grouping.
-- [ ] Review default, empty, retryable-error, missing-medicine, long-history, and largest-standard-text states in the simulator.
-- [ ] Review VoiceOver order and physical-device behavior during release QA.
+- [x] Review the default and empty simulator composition, medicine-name header, and compact transparent Back treatment.
+- [ ] Review retryable-error, missing-medicine, long-history, largest-standard-text, VoiceOver order, and physical-device behavior during release QA.
 
 ## Profile decision
 
@@ -390,7 +390,7 @@ Next implementation pass:
 
 - [x] Add a free, user-controlled data export destination from Profile with a versioned readable JSON file, device share sheet, loading/error states, and sensitive-data guidance.
 - [x] Verify both Start Small outcomes route correctly and only after onboarding persistence; the empty Today destination is also reviewed live in the iOS simulator.
-- [ ] Finish the remaining local-product checkpoint: Dose History design and behavior.
+- [x] Finish the remaining local-product checkpoint: Dose History design and behavior.
 - [ ] Review the Android adaptive icon and native splash in an Android release build.
 
 Before public release:
@@ -439,5 +439,6 @@ Before public release:
 - 2026-08-14: Finish the local app before planning or implementing Plus. Future medicine-photo objects will use S3, while account and structured-sync architecture remain undecided. Do not add cloud dependencies, beta distribution configuration, or new subscription products during the local-product pass.
 - 2026-08-14: Local-only Pilly builds are internal testing builds, not a reduced public launch. Public release waits until the approved account, sync, photo-storage, and monthly/yearly Plus product is implemented and enabled; the rejected lifetime draft stays detached and out of review.
 - 2026-08-14: Dose History was already Router-owned, so its migration is a navigation and composition correction rather than a file move. The native header owns Back and the medicine name, while one audit surface groups correction chains by scheduled occurrence and distinguishes scheduled time from change time without a database migration.
+- 2026-08-15: Dose History's iOS Back action uses Expo Router's native toolbar button with its shared glass background hidden. This preserves the native header and accessible action area without letting the Back surface overpower the medicine name or history content.
 - 2026-08-13: Export files are ephemeral cache artifacts: create them only for an explicit share action and remove them after the share sheet resolves or fails. Export assembly stays in hooks/models, native file work stays in services, and product models never import UI-owned types.
 - 2026-08-08: Replace custom provider nesting with one `AppProviders`; derive the stateless repository through `useRepository()` from Expo SQLite context.

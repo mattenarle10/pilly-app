@@ -1,4 +1,4 @@
-import { StyleSheet, View } from 'react-native';
+import { Platform, StyleSheet, View } from 'react-native';
 import { router, Stack, useLocalSearchParams } from 'expo-router';
 
 import { describeDoseHistoryChange, groupDoseHistory, type DoseStatus } from '@/models/dose';
@@ -58,10 +58,23 @@ export default function DoseHistoryRoute() {
           headerTintColor: colors.textPrimary,
           headerTitleAlign: 'center',
           headerTitleStyle: { color: colors.textPrimary, fontWeight: '600' },
-          headerLeft: () => <PillyIconButton icon="back" label="Back" onPress={leave} />,
+          headerLeft:
+            Platform.OS === 'ios'
+              ? undefined
+              : () => <PillyIconButton icon="back" label="Back" onPress={leave} />,
           title: medication?.name ?? 'Dose history',
         }}
       />
+      {Platform.OS === 'ios' ? (
+        <Stack.Toolbar placement="left">
+          <Stack.Toolbar.Button
+            accessibilityLabel="Back"
+            hidesSharedBackground
+            icon="chevron.backward"
+            onPress={leave}
+          />
+        </Stack.Toolbar>
+      ) : null}
       <Screen
         safeAreaEdges={['bottom']}
         contentInsetAdjustmentBehavior="never"
