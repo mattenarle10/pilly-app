@@ -285,7 +285,7 @@ Welcome, Name, and Start Small architecture and design checkpoint completed on 2
 - [x] End onboarding at Start Small with two explicit outcomes: add the first medicine or enter the app with an empty medicine list.
 - [x] Complete a post-push code review: prevent the existing-name guard from issuing a second route replacement after a successful save, remove unused onboarding route state, and replace negative-margin spacing with explicit action and intro groups.
 - [x] Verify a precise Pilly-only reset recreates zero settings, medicines, schedules, and dose records and renders Welcome and the conditional Name state.
-- [ ] Complete a manual tap-through of Welcome → optional Plus return → Name → Start Small → both empty/Add outcomes.
+- [x] Complete a manual tap-through of Welcome → optional Plus return → Name → Start Small → both empty/Add outcomes.
 - [ ] Review VoiceOver order, Reduce Motion on-device behavior, and physical-device motion during release QA.
 
 Native splash and app identity checkpoint completed on iOS on 2026-08-12:
