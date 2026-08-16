@@ -2,6 +2,7 @@ import { Divider, HStack, Spacer, Text, VStack, ZStack } from '@expo/ui/swift-ui
 import {
   accessibilityElement,
   accessibilityHidden,
+  accessibilityHint,
   accessibilityLabel,
   animation,
   Animation,
@@ -53,6 +54,11 @@ const NextDoseWidget = (props: NextDoseWidgetProps, environment: WidgetEnvironme
   const detail =
     !compact && props.state === 'empty' ? 'Your next dose will appear here' : props.detail;
   const destination = props.state === 'empty' ? 'pilly-app://medicine/new' : 'pilly-app://today';
+  const accessibilitySummary =
+    !compact && props.secondary
+      ? `${stateLabel}. ${title}. ${detail}. After. ${props.secondary.title}. ${props.secondary.detail}`
+      : `${stateLabel}. ${title}. ${detail}`;
+  const destinationHint = props.state === 'empty' ? 'Opens Add medicine' : 'Opens Today';
 
   const widgetBackground = fullColor ? (dark ? '#21191E' : '#FFF9F7') : 'clear';
   const primary = fullColor ? (dark ? '#FFF9F7' : '#2B2327') : 'primary';
@@ -171,6 +177,8 @@ const NextDoseWidget = (props: NextDoseWidgetProps, environment: WidgetEnvironme
           font({ size: 20, weight: 'bold', design: 'rounded' }),
           foregroundStyle(primary),
           monospacedDigit(),
+          contentTransition('numericText'),
+          animation(Animation.easeOut({ duration: 0.22 }), updateKey),
           lineLimit(1),
           minimumScaleFactor(0.75),
         ]}
@@ -198,7 +206,8 @@ const NextDoseWidget = (props: NextDoseWidgetProps, environment: WidgetEnvironme
         frame({ maxWidth: Infinity, maxHeight: Infinity, alignment: 'leading' }),
         widgetURL(destination),
         accessibilityElement('ignore'),
-        accessibilityLabel(`${stateLabel}. ${title}. ${detail}`),
+        accessibilityLabel(accessibilitySummary),
+        accessibilityHint(destinationHint),
       ]}
     >
       {compact ? (
