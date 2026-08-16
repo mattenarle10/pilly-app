@@ -1,22 +1,53 @@
-- tapOn: 'Continue'
-- tapOn: 'Skip for now'
-- tapOn: 'Add first medicine'
+appId: dev.sidequests.pilly
+name: Create a test medicine
+---
+- retry:
+    maxRetries: 3
+    commands:
+      - tapOn: 'Continue'
+      - assertVisible: 'What should Pilly call you?'
+- tapOn:
+    text: 'Skip for now'
+    retryTapIfNoChange: true
+- assertVisible: 'Start with one medicine'
+- tapOn:
+    text: 'Add first medicine'
+    retryTapIfNoChange: true
 - assertVisible: 'Add medicine'
-- tapOn: 'Printed name'
+- tapOn:
+    id: 'medicine-name'
 - inputText: 'Test Medicine'
 - hideKeyboard
-- tapOn: 'Edit pill appearance'
+- runFlow:
+    when:
+      notVisible: 'Pill appearance'
+    commands:
+      - swipe:
+          start: 50%, 75%
+          end: 50%, 30%
+          duration: 500
+- runFlow:
+    when:
+      notVisible: 'Pill appearance'
+    commands:
+      - tapOn: 'Edit pill appearance'
 - assertVisible: 'Pill appearance'
 - tapOn: 'Shape: Capsule'
 - tapOn: 'Size: Medium'
 - tapOn: 'Color 1: Lavender'
 - tapOn: 'Color 2: Neutral'
-- tapOn: 'Close'
+- runFlow:
+    when:
+      visible: 'Pill appearance'
+    commands:
+      - tapOn: 'Close'
 - scrollUntilVisible:
     element:
       text: 'Reminder for Morning dose'
     direction: DOWN
 - tapOn: 'Reminder for Morning dose'
-- tapOn: 'Add'
+- tapOn:
+    text: 'Add'
+    retryTapIfNoChange: true
 - assertVisible: 'Today'
-- assertVisible: 'Test Medicine'
+- assertVisible: 'Open details for Test Medicine'

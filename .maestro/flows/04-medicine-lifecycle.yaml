@@ -10,10 +10,11 @@ name: Edit archive restore and delete a medicine
 - tapOn: 'Open Test Medicine'
 - tapOn: 'Edit medicine'
 - assertVisible: 'Edit medicine'
-- tapOn: 'Name'
+- tapOn:
+    id: 'medicine-name'
 - eraseText
 - inputText: 'Updated Medicine'
-- hideKeyboard
+- pressKey: enter
 - tapOn: 'Done'
 - assertVisible: 'Updated Medicine'
 - tapOn: 'Archive'

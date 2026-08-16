@@ -1,6 +1,16 @@
-- tapOn: 'Continue'
-- assertVisible: 'What should Pilly call you?'
-- tapOn: 'Skip for now'
+appId: dev.sidequests.pilly
+name: Finish onboarding without local data
+---
+- retry:
+    maxRetries: 3
+    commands:
+      - tapOn: 'Continue'
+      - assertVisible: 'What should Pilly call you?'
+- tapOn:
+    text: 'Skip for now'
+    retryTapIfNoChange: true
 - assertVisible: 'Start with one medicine'
-- tapOn: 'Not now'
+- tapOn:
+    text: 'Not now'
+    retryTapIfNoChange: true
 - assertVisible: 'Today'

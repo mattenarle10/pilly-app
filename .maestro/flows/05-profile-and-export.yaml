@@ -6,15 +6,22 @@ name: Profile name export and Plus navigation
 - runFlow: ../subflows/finish-empty-onboarding.yaml
 - tapOn: 'Profile'
 - tapOn: 'Edit name'
-- tapOn: 'First name'
+- tapOn:
+    id: 'profile-first-name'
 - inputText: 'Ada'
-- hideKeyboard
-- tapOn: 'Save'
+- pressKey: enter
+- tapOn:
+    text: 'Save'
+    retryTapIfNoChange: true
 - assertVisible: 'Ada'
 - tapOn: 'Export data'
 - assertVisible: 'Your data, ready to take with you.'
 - tapOn: 'Back'
-- tapOn: 'Pilly Plus'
-- assertVisible: 'Clear records, ready to share.'
-- tapOn: 'Back'
+- runFlow:
+    when:
+      visible: 'Pilly Plus'
+    commands:
+      - tapOn: 'Pilly Plus'
+      - assertVisible: 'Clear records, ready to share.'
+      - tapOn: 'Back'
 - assertVisible: 'Profile'

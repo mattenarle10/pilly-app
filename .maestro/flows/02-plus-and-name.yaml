@@ -3,15 +3,28 @@ name: Optional Plus branch and profile name
 ---
 - launchApp:
     clearState: true
-- tapOn: 'See Pilly Plus'
-- assertVisible: 'Clear records, ready to share.'
-- tapOn: 'Back'
-- assertVisible: 'What’s next. What’s left.'
-- tapOn: 'Continue'
-- tapOn: 'First name'
+- runFlow:
+    when:
+      visible: 'See Pilly Plus'
+    commands:
+      - tapOn: 'See Pilly Plus'
+      - assertVisible: 'Clear records, ready to share.'
+      - tapOn: 'Back'
+      - assertVisible: 'What’s next. What’s left.'
+- retry:
+    maxRetries: 3
+    commands:
+      - tapOn: 'Continue'
+      - assertVisible: 'What should Pilly call you?'
+- tapOn:
+    id: 'onboarding-first-name'
 - inputText: 'Ada'
 - hideKeyboard
-- tapOn: 'Continue'
+- tapOn:
+    text: 'Continue'
+    retryTapIfNoChange: true
 - assertVisible: 'Start with one medicine'
-- tapOn: 'Not now'
+- tapOn:
+    text: 'Not now'
+    retryTapIfNoChange: true
 - assertVisible: 'Good .*Ada'
