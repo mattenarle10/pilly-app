@@ -45,3 +45,4 @@ yarn-error.*
 /.claude/
 /AGENTS.md
 /DESIGN_DIRECTION.md
+/docs/
