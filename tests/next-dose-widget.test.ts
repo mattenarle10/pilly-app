@@ -63,6 +63,22 @@ describe('next-dose widget timeline', () => {
     expect(JSON.stringify(entry?.props)).not.toContain('Private medicine name');
   });
 
+  test('gives the medium family one privacy-safe group after the primary dose', () => {
+    const next = scheduledDose(new Date(2026, 7, 15, 9, 0), 'notRecorded');
+    const after = scheduledDose(new Date(2026, 7, 15, 20, 30), 'notRecorded');
+    const [entry] = buildNextDoseWidgetTimeline({
+      medicationCount: 2,
+      doses: [next, after],
+      now,
+    });
+
+    expect(entry?.props.secondary).toEqual({
+      title: '8:30 PM',
+      detail: 'Today · 1 dose',
+    });
+    expect(JSON.stringify(entry?.props.secondary)).not.toContain('Private medicine name');
+  });
+
   test('advances from upcoming to ready at the scheduled time', () => {
     const scheduledAt = new Date(2026, 7, 15, 9, 0);
     const timeline = buildNextDoseWidgetTimeline({
@@ -116,6 +132,21 @@ describe('next-dose widget timeline', () => {
       state: 'ready',
       title: '2 doses ready',
       detail: 'Open to record',
+    });
+  });
+
+  test('keeps the next future group available while a dose is ready', () => {
+    const ready = scheduledDose(new Date(2026, 7, 15, 7, 0), 'notRecorded');
+    const after = scheduledDose(new Date(2026, 7, 16, 9, 0), 'notRecorded');
+    const [entry] = buildNextDoseWidgetTimeline({
+      medicationCount: 2,
+      doses: [ready, after],
+      now,
+    });
+
+    expect(entry?.props.secondary).toEqual({
+      title: '9:00 AM',
+      detail: 'Tomorrow · 1 dose',
     });
   });
 

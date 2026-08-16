@@ -1,4 +1,4 @@
-import { HStack, Spacer, Text, VStack, ZStack } from '@expo/ui/swift-ui';
+import { Divider, HStack, Spacer, Text, VStack, ZStack } from '@expo/ui/swift-ui';
 import {
   accessibilityElement,
   accessibilityHidden,
@@ -41,11 +41,13 @@ const NextDoseWidget = (props: NextDoseWidgetProps, environment: WidgetEnvironme
       : props.state === 'upcoming'
         ? compact
           ? 'NEXT'
-          : 'NEXT REMINDER'
+          : props.secondary
+            ? 'UP NEXT'
+            : 'NEXT REMINDER'
         : props.state === 'ready'
           ? compact
             ? 'READY'
-            : 'READY NOW'
+            : 'DUE NOW'
           : 'ALL CLEAR';
   const title = !compact && props.state === 'empty' ? 'No reminders set' : props.title;
   const detail =
@@ -58,8 +60,8 @@ const NextDoseWidget = (props: NextDoseWidgetProps, environment: WidgetEnvironme
   const accent = fullColor ? (dark ? '#D991AA' : '#8C405C') : 'primary';
   const firstHalf = fullColor ? (dark ? '#6E354B' : '#F3CCD7') : 'clear';
   const secondHalf = fullColor ? (dark ? '#7A574C' : '#FBE9DE') : 'clear';
-  const pillWidth = compact ? 44 : 74;
-  const pillHeight = compact ? 18 : 32;
+  const pillWidth = compact ? 44 : 52;
+  const pillHeight = compact ? 18 : 22;
   const pillHalf = pillWidth / 2;
 
   const pill = (
@@ -153,6 +155,41 @@ const NextDoseWidget = (props: NextDoseWidgetProps, environment: WidgetEnvironme
     </Text>
   );
 
+  const afterBlock = props.secondary ? (
+    <VStack
+      alignment="leading"
+      spacing={5}
+      modifiers={[frame({ maxWidth: Infinity, alignment: 'leading' })]}
+    >
+      <Text
+        modifiers={[font({ size: 10, weight: 'semibold' }), foregroundStyle(accent), lineLimit(1)]}
+      >
+        AFTER
+      </Text>
+      <Text
+        modifiers={[
+          font({ size: 20, weight: 'bold', design: 'rounded' }),
+          foregroundStyle(primary),
+          monospacedDigit(),
+          lineLimit(1),
+          minimumScaleFactor(0.75),
+        ]}
+      >
+        {props.secondary.title}
+      </Text>
+      <Text
+        modifiers={[
+          font({ size: 11, weight: 'medium' }),
+          foregroundStyle(secondary),
+          lineLimit(1),
+          minimumScaleFactor(0.8),
+        ]}
+      >
+        {props.secondary.detail}
+      </Text>
+    </VStack>
+  ) : null;
+
   return (
     <ZStack
       alignment="leading"
@@ -182,19 +219,24 @@ const NextDoseWidget = (props: NextDoseWidgetProps, environment: WidgetEnvironme
       ) : (
         <HStack
           alignment="center"
-          spacing={20}
+          spacing={16}
           modifiers={[frame({ maxWidth: Infinity, maxHeight: Infinity, alignment: 'leading' })]}
         >
-          {pill}
           <VStack
             alignment="leading"
             spacing={5}
             modifiers={[frame({ maxWidth: Infinity, alignment: 'leading' })]}
           >
-            {stateText}
+            <HStack alignment="center" spacing={8}>
+              {stateText}
+              <Spacer />
+              {pill}
+            </HStack>
             {titleText}
             {detailText}
           </VStack>
+          {afterBlock ? <Divider /> : null}
+          {afterBlock}
         </HStack>
       )}
     </ZStack>

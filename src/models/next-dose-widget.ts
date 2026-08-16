@@ -5,6 +5,10 @@ export type NextDoseWidgetProps = {
   state: 'empty' | 'clear' | 'upcoming' | 'ready';
   title: string;
   detail: string;
+  secondary?: {
+    title: string;
+    detail: string;
+  };
 };
 
 export type NextDoseWidgetTimelineEntry = {
@@ -65,6 +69,7 @@ function widgetPropsAt(
       state: 'ready',
       title: `${doseCount(latestDue.length)} ready`,
       detail: 'Open to record',
+      secondary: nextGroupAfter(pending, date.getTime(), date),
     };
   }
 
@@ -84,6 +89,23 @@ function widgetPropsAt(
     state: 'upcoming',
     title: formatTime(next.schedule.hour, next.schedule.minute),
     detail: `${relativeDay(next.scheduledAt, date)} · ${doseCount(countAtTime)}`,
+    secondary: nextGroupAfter(pending, next.scheduledAt.getTime(), date),
+  };
+}
+
+function nextGroupAfter(
+  pending: readonly ScheduledDose[],
+  timestamp: number,
+  relativeTo: Date,
+): NextDoseWidgetProps['secondary'] {
+  const next = pending.find((dose) => dose.scheduledAt.getTime() > timestamp);
+  if (!next) return undefined;
+
+  const nextTimestamp = next.scheduledAt.getTime();
+  const count = pending.filter((dose) => dose.scheduledAt.getTime() === nextTimestamp).length;
+  return {
+    title: formatTime(next.schedule.hour, next.schedule.minute),
+    detail: `${relativeDay(next.scheduledAt, relativeTo)} · ${doseCount(count)}`,
   };
 }
 

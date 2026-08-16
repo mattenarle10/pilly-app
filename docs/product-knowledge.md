@@ -201,7 +201,7 @@ Release QA remains intentionally separate from this completed implementation che
 
 Local automated-flow checkpoint completed on 2026-08-15:
 
-- [x] Keep the fast gate in Jest and static analysis; all 28 suites and 105 tests pass.
+- [x] Keep the fast gate in Jest and static analysis; all 28 suites and 107 tests pass.
 - [x] Add local Maestro journeys for empty onboarding, the optional Plus/name path, medicine creation with appearance and reminders, detail/history, edit/archive/restore/delete, Profile, and Export.
 - [x] Make one `bun run test:flows` command verify, build, install, clear local state, and run the iOS journeys.
 - [x] Restore Expo Router's required `.expo/types/**/*.ts` and `expo-env.d.ts` TypeScript includes.
@@ -223,6 +223,7 @@ Local notifications and iOS widget checkpoint completed in code on 2026-08-15:
 - [x] Cover notification presentation/grouping and widget empty, upcoming, ready, recorded, and privacy states in Jest.
 - [x] Add and visually review the small and medium widget families in the simulator, including the empty-state render and serialized App Group layout.
 - [x] Stress-test populated upcoming and ready states with eight same-time simulator medicines; keep the count scoped to the latest due group instead of accumulating older missed groups.
+- [x] Give the medium family one additional privacy-safe schedule group while the small family stays focused on the immediate next action.
 - [ ] Review the small and medium widget families on a physical iPhone.
 - [ ] Verify scheduled delivery while Pilly is foregrounded, backgrounded, and locked on a physical iPhone, including sound, app icon, edits/cancellation, relaunch, and time-zone changes.
 
@@ -488,6 +489,7 @@ Before public release:
 - 2026-08-15: Widget layout modules use an unsuffixed `.tsx` implementation plus explicit Android and web fallbacks. A generic `.ts` fallback can win Metro resolution on iOS and silently skip `createWidget`. After first installing or upgrading `expo-widgets`, restart Metro with a clean cache so Expo's SDK 57 Babel preset detects the package and serializes the widget function. A valid checkpoint verifies the serialized layout and timeline in the App Group and then reviews both rendered sizes; seeing the `.appex` embedded is necessary but insufficient.
 - 2026-08-16: Home Screen widgets use one quiet horizontal capsule as their signature visual. Medium is always reminder-first, including a calm `No reminders set` empty state; only the small empty family uses `Add medicine` as a setup action. Do not repeat the app name, build a mascot from geometric primitives, or squeeze onboarding copy into the widget. Native WidgetKit shapes and state text carry meaning; motion is limited to brief timeline-state transitions.
 - 2026-08-16: Populated widget stress fixtures belong only in simulator SQLite, never in production seed code or test-only routes. A ready widget describes the latest due schedule group rather than an ever-growing missed-dose backlog; Today and Dose History remain the complete record.
+- 2026-08-16: Widget families share state but not composition. Small remains a single glanceable next action. Medium uses its width for one quiet `After` group separated by a native divider; it never adds medicine names, a mini-calendar, another card, or decorative dashboard metrics.
 - 2026-08-14: Dose History was already Router-owned, so its migration is a navigation and composition correction rather than a file move. The native header owns Back and the medicine name, while one audit surface groups correction chains by scheduled occurrence and distinguishes scheduled time from change time without a database migration.
 - 2026-08-15: Dose History's iOS Back action uses Expo Router's native toolbar button with its shared glass background hidden. This preserves the native header and accessible action area without letting the Back surface overpower the medicine name or history content.
 - 2026-08-13: Export files are ephemeral cache artifacts: create them only for an explicit share action and remove them after the share sheet resolves or fails. Export assembly stays in hooks/models, native file work stays in services, and product models never import UI-owned types.
