@@ -1,7 +1,9 @@
 import { StyleSheet, View } from 'react-native';
 import { useRouter } from 'expo-router';
 
-import { PillyButton, PillyText, Screen } from '@/ui/components';
+import { PillyButton } from '@/ui/components/pilly-button';
+import { PillyText } from '@/ui/components/pilly-text';
+import { Screen } from '@/ui/components/screen';
 import { PillyIcon } from '@/ui/icons';
 import { OnboardingJourney } from '@/ui/illustrations';
 import { colors, spacing } from '@/ui/tokens';

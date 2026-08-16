@@ -7,9 +7,9 @@ import type { PillyRepository } from '@/storage/repository';
 import { useRepository } from '@/hooks/use-repository';
 import { isPlusPurchasesSupported } from '@/services/purchases';
 
-import WelcomeRoute from '../app/(onboarding)/welcome';
-import OnboardingNameRoute from '../app/(onboarding)/name';
-import StartSmallRoute from '../app/(onboarding)/start-small';
+import WelcomeRoute from '../src/app/(onboarding)/welcome';
+import OnboardingNameRoute from '../src/app/(onboarding)/name';
+import StartSmallRoute from '../src/app/(onboarding)/start-small';
 
 const mockPush = jest.fn();
 const mockReplace = jest.fn();
@@ -29,7 +29,7 @@ jest.mock('expo-router', () => ({
 }));
 
 jest.mock('@/hooks/use-repository');
-jest.mock('@/hooks', () => ({ useProfileName: () => mockUseProfileName() }));
+jest.mock('@/hooks/use-profile', () => ({ useProfileName: () => mockUseProfileName() }));
 jest.mock('@/services/purchases');
 
 jest.mock('@/ui/illustrations', () => {
@@ -115,6 +115,7 @@ describe('onboarding routes', () => {
     const screen = await render(<WelcomeRoute />, { wrapper: SafeAreaTestProvider });
 
     expect(screen.getByTestId('onboarding-welcome')).toBeOnTheScreen();
+    expect(screen.getByLabelText('Continue')).toBeOnTheScreen();
     fireEvent.press(screen.getByText('Continue'));
 
     expect(mockPush).toHaveBeenCalledWith('/(onboarding)/name');

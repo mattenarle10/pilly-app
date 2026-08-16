@@ -8,26 +8,25 @@ import {
   type ProfileName,
 } from '@/models/profile';
 
+import { queryKeys } from './query-keys';
 import { useMedicines } from './use-medicines';
 import { useRepository } from './use-repository';
-
-const settingQueryKey = (key: string) => ['settings', key] as const;
 
 export function useProfileName() {
   const repository = useRepository();
   const queryClient = useQueryClient();
   const legacyName = useQuery({
-    queryKey: settingQueryKey(profileSettingKeys.displayName),
+    queryKey: queryKeys.setting(profileSettingKeys.displayName),
     queryFn: () => repository.getSetting(profileSettingKeys.displayName),
     networkMode: 'always',
   });
   const firstName = useQuery({
-    queryKey: settingQueryKey(profileSettingKeys.firstName),
+    queryKey: queryKeys.setting(profileSettingKeys.firstName),
     queryFn: () => repository.getSetting(profileSettingKeys.firstName),
     networkMode: 'always',
   });
   const lastName = useQuery({
-    queryKey: settingQueryKey(profileSettingKeys.lastName),
+    queryKey: queryKeys.setting(profileSettingKeys.lastName),
     queryFn: () => repository.getSetting(profileSettingKeys.lastName),
     networkMode: 'always',
   });
@@ -48,10 +47,13 @@ export function useProfileName() {
     },
     networkMode: 'always',
     onSuccess: (normalized) => {
-      queryClient.setQueryData(settingQueryKey(profileSettingKeys.firstName), normalized.firstName);
-      queryClient.setQueryData(settingQueryKey(profileSettingKeys.lastName), normalized.lastName);
       queryClient.setQueryData(
-        settingQueryKey(profileSettingKeys.displayName),
+        queryKeys.setting(profileSettingKeys.firstName),
+        normalized.firstName,
+      );
+      queryClient.setQueryData(queryKeys.setting(profileSettingKeys.lastName), normalized.lastName);
+      queryClient.setQueryData(
+        queryKeys.setting(profileSettingKeys.displayName),
         profileDisplayName(normalized),
       );
     },

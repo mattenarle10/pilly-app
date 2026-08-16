@@ -6,15 +6,15 @@ import {
   supplyValue,
   type MedicationDraft,
 } from '@/models/medicine-form';
-import { nextDoseWidgetQueryKey } from '@/models/next-dose-widget';
-import { scheduleLocalReminders } from '@/services/notifications';
+import { reconcileLocalReminders } from '@/services/notifications';
+import { queryKeys } from './query-keys';
 import { useRepository } from './use-repository';
 
 export function useEditMedicine(medicationId: string) {
   const repository = useRepository();
   const queryClient = useQueryClient();
   const query = useQuery({
-    queryKey: ['medication', medicationId],
+    queryKey: queryKeys.medication(medicationId),
     queryFn: () => repository.getMedication(medicationId),
     networkMode: 'always',
   });
@@ -33,24 +33,15 @@ export function useEditMedicine(medicationId: string) {
         schedules: scheduleConfigurationFromDraft(draft),
       });
 
-      let reminderNotice: 'none' | 'denied' | 'failed' = 'failed';
-      try {
-        const status = await scheduleLocalReminders(await repository.listReminderSchedules());
-        reminderNotice = status === 'denied' ? 'denied' : 'none';
-      } catch {}
-      try {
-        await repository.setSetting('reminderNotice', reminderNotice);
-      } catch {}
+      await reconcileLocalReminders(repository);
     },
     onSuccess: async () => {
       await Promise.allSettled([
-        queryClient.invalidateQueries({ queryKey: ['medication', medicationId] }),
-        queryClient.invalidateQueries({ queryKey: ['medications'] }),
-        queryClient.invalidateQueries({ queryKey: ['scheduled-doses'] }),
-        queryClient.invalidateQueries({ queryKey: ['week'] }),
-        queryClient.invalidateQueries({ queryKey: ['organizer-week'] }),
-        queryClient.invalidateQueries({ queryKey: ['settings', 'reminderNotice'] }),
-        queryClient.invalidateQueries({ queryKey: nextDoseWidgetQueryKey }),
+        queryClient.invalidateQueries({ queryKey: queryKeys.medication(medicationId) }),
+        queryClient.invalidateQueries({ queryKey: queryKeys.medications.root }),
+        queryClient.invalidateQueries({ queryKey: queryKeys.scheduledDoses.root }),
+        queryClient.invalidateQueries({ queryKey: queryKeys.organizerWeek.root }),
+        queryClient.invalidateQueries({ queryKey: queryKeys.setting('reminderNotice') }),
       ]);
     },
   });

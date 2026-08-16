@@ -2,12 +2,13 @@ import { ActivityIndicator, StyleSheet, View } from 'react-native';
 import { Redirect } from 'expo-router';
 import { useQuery } from '@tanstack/react-query';
 import { colors } from '@/ui/tokens';
-import { useRepository } from '@/hooks';
+import { queryKeys } from '@/hooks/query-keys';
+import { useRepository } from '@/hooks/use-repository';
 
 export default function IndexRoute() {
   const repository = useRepository();
   const onboarding = useQuery({
-    queryKey: ['settings', 'onboarding'],
+    queryKey: queryKeys.setting('hasCompletedOnboarding'),
     queryFn: () => repository.getSetting('hasCompletedOnboarding'),
     networkMode: 'always',
     staleTime: Infinity,

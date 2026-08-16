@@ -16,8 +16,6 @@ export type NextDoseWidgetTimelineEntry = {
   props: NextDoseWidgetProps;
 };
 
-export const nextDoseWidgetQueryKey = ['next-dose-widget'] as const;
-
 type NextDoseWidgetInput = {
   medicationCount: number;
   doses: readonly ScheduledDose[];

@@ -16,6 +16,13 @@ type ReminderSlot = {
   scheduleIds: string[];
 };
 
+export type ReminderNotice = 'none' | 'denied' | 'failed';
+
+type ReminderStore = {
+  listReminderSchedules: () => Promise<readonly ReminderSchedule[]>;
+  setSetting: (key: string, value: string) => Promise<void>;
+};
+
 export function configureNotificationPresentation(): void {
   Notifications.setNotificationHandler({
     handleNotification: async () => ({
@@ -66,6 +73,18 @@ export async function scheduleLocalReminders(
     });
   }
   return 'scheduled';
+}
+
+export async function reconcileLocalReminders(store: ReminderStore): Promise<ReminderNotice> {
+  let notice: ReminderNotice;
+  try {
+    const status = await scheduleLocalReminders(await store.listReminderSchedules());
+    notice = status === 'denied' ? 'denied' : 'none';
+  } catch {
+    notice = 'failed';
+  }
+  await Promise.allSettled([store.setSetting('reminderNotice', notice)]);
+  return notice;
 }
 
 function reminderSlots(schedules: readonly ReminderSchedule[]): ReminderSlot[] {

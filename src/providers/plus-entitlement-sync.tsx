@@ -1,7 +1,8 @@
 import { useEffect } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 
-import { plusEntitlementQueryKey, plusEntitlementSettingKey, plusQueryKey } from '@/hooks/use-plus';
+import { queryKeys } from '@/hooks/query-keys';
+import { plusEntitlementSettingKey } from '@/hooks/use-plus';
 import { useRepository } from '@/hooks/use-repository';
 import { subscribeToPlusEntitlement } from '@/services/purchases';
 
@@ -16,8 +17,8 @@ export function PlusEntitlementSync() {
     void subscribeToPlusEntitlement((active) => {
       if (disposed) return;
       void repository.setSetting(plusEntitlementSettingKey, `${active}`);
-      queryClient.setQueryData(plusEntitlementQueryKey, `${active}`);
-      void queryClient.invalidateQueries({ queryKey: plusQueryKey });
+      queryClient.setQueryData(queryKeys.setting(plusEntitlementSettingKey), `${active}`);
+      void queryClient.invalidateQueries({ queryKey: queryKeys.plus.root });
     }).then((stop) => {
       if (disposed) stop();
       else unsubscribe = stop;

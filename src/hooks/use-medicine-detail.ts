@@ -2,8 +2,8 @@ import { useEffect, useState } from 'react';
 import { router } from 'expo-router';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
-import { nextDoseWidgetQueryKey } from '@/models/next-dose-widget';
-import { scheduleLocalReminders } from '@/services/notifications';
+import { reconcileLocalReminders } from '@/services/notifications';
+import { queryKeys } from './query-keys';
 import { useRepository } from './use-repository';
 
 export function useMedicineDetail(medicationId: string) {
@@ -13,7 +13,7 @@ export function useMedicineDetail(medicationId: string) {
   const [confirmArchive, setConfirmArchive] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const query = useQuery({
-    queryKey: ['medication', medicationId],
+    queryKey: queryKeys.medication(medicationId),
     queryFn: () => repository.getMedication(medicationId),
     networkMode: 'always',
   });
@@ -22,23 +22,14 @@ export function useMedicineDetail(medicationId: string) {
 
   const refresh = () =>
     Promise.all([
-      queryClient.invalidateQueries({ queryKey: ['medication', medicationId] }),
-      queryClient.invalidateQueries({ queryKey: ['medications'] }),
-      queryClient.invalidateQueries({ queryKey: ['scheduled-doses'] }),
-      queryClient.invalidateQueries({ queryKey: ['week'] }),
-      queryClient.invalidateQueries({ queryKey: ['organizer-week'] }),
-      queryClient.invalidateQueries({ queryKey: nextDoseWidgetQueryKey }),
+      queryClient.invalidateQueries({ queryKey: queryKeys.medication(medicationId) }),
+      queryClient.invalidateQueries({ queryKey: queryKeys.medications.root }),
+      queryClient.invalidateQueries({ queryKey: queryKeys.scheduledDoses.root }),
+      queryClient.invalidateQueries({ queryKey: queryKeys.organizerWeek.root }),
     ]);
   const syncReminders = async () => {
-    let notice: 'none' | 'denied' | 'failed' = 'failed';
-    try {
-      const status = await scheduleLocalReminders(await repository.listReminderSchedules());
-      notice = status === 'denied' ? 'denied' : 'none';
-    } catch {}
-    try {
-      await repository.setSetting('reminderNotice', notice);
-    } catch {}
-    await queryClient.invalidateQueries({ queryKey: ['settings', 'reminderNotice'] });
+    await reconcileLocalReminders(repository);
+    await queryClient.invalidateQueries({ queryKey: queryKeys.setting('reminderNotice') });
   };
   const supplyMutation = useMutation({
     mutationFn: (nextSupply: number | null) => repository.setSupplyCount(medicationId, nextSupply),
@@ -71,7 +62,7 @@ export function useMedicineDetail(medicationId: string) {
   const reminderMutation = useMutation({
     mutationFn: async ({ scheduleId, enabled }: { scheduleId: string; enabled: boolean }) => {
       await repository.setScheduleReminderEnabled(scheduleId, enabled);
-      await queryClient.invalidateQueries({ queryKey: ['medication', medicationId] });
+      await queryClient.invalidateQueries({ queryKey: queryKeys.medication(medicationId) });
       await syncReminders();
     },
     onSuccess: refresh,

@@ -4,17 +4,17 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
 import type { PillyRepository } from '@/storage/repository';
 import { defaults } from '@/models/medicine-form';
-import { scheduleLocalReminders } from '@/services/notifications';
+import { reconcileLocalReminders } from '@/services/notifications';
 import { useEditMedicine } from '@/hooks/use-edit-medicine';
 import { useRepository } from '@/hooks/use-repository';
 
 jest.mock('@/hooks/use-repository');
 jest.mock('@/services/notifications', () => ({
-  scheduleLocalReminders: jest.fn(),
+  reconcileLocalReminders: jest.fn(),
 }));
 
 const mockedUseRepository = jest.mocked(useRepository);
-const mockedScheduleLocalReminders = jest.mocked(scheduleLocalReminders);
+const mockedReconcileLocalReminders = jest.mocked(reconcileLocalReminders);
 
 async function setup() {
   const repository = {
@@ -24,7 +24,7 @@ async function setup() {
     setSetting: jest.fn().mockResolvedValue(undefined),
   };
   mockedUseRepository.mockReturnValue(repository as unknown as PillyRepository);
-  mockedScheduleLocalReminders.mockResolvedValue('scheduled');
+  mockedReconcileLocalReminders.mockResolvedValue('none');
   const queryClient = new QueryClient({
     defaultOptions: {
       queries: { retry: false, gcTime: 0 },
@@ -88,14 +88,12 @@ describe('useEditMedicine', () => {
         },
       ],
     });
-    await waitFor(() =>
-      expect(repository.setSetting).toHaveBeenCalledWith('reminderNotice', 'none'),
-    );
+    await waitFor(() => expect(mockedReconcileLocalReminders).toHaveBeenCalledWith(repository));
   });
 
   test('keeps the save successful when reminder reconciliation fails', async () => {
     const { repository, result } = await setup();
-    mockedScheduleLocalReminders.mockRejectedValueOnce(new Error('notifications unavailable'));
+    mockedReconcileLocalReminders.mockResolvedValueOnce('failed');
 
     await act(() =>
       result.current.saveMutation.mutateAsync({
@@ -105,6 +103,6 @@ describe('useEditMedicine', () => {
     );
 
     await waitFor(() => expect(result.current.saveMutation.isSuccess).toBe(true));
-    expect(repository.setSetting).toHaveBeenCalledWith('reminderNotice', 'failed');
+    expect(mockedReconcileLocalReminders).toHaveBeenCalledWith(repository);
   });
 });

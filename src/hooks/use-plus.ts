@@ -11,11 +11,10 @@ import {
   type PlusOffer,
 } from '@/services/purchases';
 
+import { queryKeys } from './query-keys';
 import { useRepository } from './use-repository';
 
-export const plusQueryKey = ['plus'] as const;
 export const plusEntitlementSettingKey = 'plusEntitled';
-export const plusEntitlementQueryKey = ['settings', plusEntitlementSettingKey] as const;
 
 export type PlusState =
   | { kind: 'loading'; active: false; canRestore: false }
@@ -30,17 +29,20 @@ export function usePlus() {
   const queryClient = useQueryClient();
   const previewMode = getPlusPreviewMode();
   const cachedEntitlement = useQuery({
-    queryKey: plusEntitlementQueryKey,
+    queryKey: queryKeys.setting(plusEntitlementSettingKey),
     queryFn: () => repository.getSetting(plusEntitlementSettingKey),
     networkMode: 'always',
   });
   const store = useQuery({
-    queryKey: [...plusQueryKey, 'store'],
+    queryKey: queryKeys.plus.store,
     queryFn: async () => {
       const snapshot = await loadPlusStoreSnapshot();
       if (snapshot.kind === 'ready') {
         await repository.setSetting(plusEntitlementSettingKey, `${snapshot.active}`);
-        queryClient.setQueryData(plusEntitlementQueryKey, `${snapshot.active}`);
+        queryClient.setQueryData(
+          queryKeys.setting(plusEntitlementSettingKey),
+          `${snapshot.active}`,
+        );
       }
       return snapshot;
     },
@@ -51,8 +53,8 @@ export function usePlus() {
   const acceptResult = async (result: PlusActionResult) => {
     if (result.kind !== 'active') return result;
     await repository.setSetting(plusEntitlementSettingKey, 'true');
-    queryClient.setQueryData(plusEntitlementQueryKey, 'true');
-    await queryClient.invalidateQueries({ queryKey: plusQueryKey });
+    queryClient.setQueryData(queryKeys.setting(plusEntitlementSettingKey), 'true');
+    await queryClient.invalidateQueries({ queryKey: queryKeys.plus.root });
     return result;
   };
   const purchase = useMutation({ mutationFn: async () => acceptResult(await purchasePlus()) });

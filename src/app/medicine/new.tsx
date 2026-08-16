@@ -6,16 +6,13 @@ import { router, useNavigation } from 'expo-router';
 import { usePreventRemove } from 'expo-router/react-navigation';
 import Storage from 'expo-sqlite/kv-store';
 
-import {
-  AppearanceStep,
-  DetailsStep,
-  MedicineFormShell,
-  NameStep,
-  PillyBanner,
-  PillyModal,
-  ScheduleStep,
-} from '@/ui/components';
-import { useMedicationValidation, useRepository } from '@/hooks';
+import { AppearanceStep } from '@/ui/components/medicine-appearance-field';
+import { DetailsStep, NameStep, ScheduleStep } from '@/ui/components/medicine-form-sections';
+import { MedicineFormShell } from '@/ui/components/medicine-form-shell';
+import { PillyBanner } from '@/ui/components/pilly-banner';
+import { PillyModal } from '@/ui/components/pilly-modal';
+import { useMedicationValidation } from '@/hooks/use-medication-validation';
+import { useRepository } from '@/hooks/use-repository';
 import {
   assertMedicationDraft,
   defaults,
@@ -26,7 +23,7 @@ import {
   type MedicationDraft,
 } from '@/models/medicine-form';
 import { draftMessages, friendlySaveError } from '@/models/medicine-form-errors';
-import { scheduleLocalReminders } from '@/services/notifications';
+import { reconcileLocalReminders } from '@/services/notifications';
 
 export default function NewMedicationRoute() {
   const navigation = useNavigation();
@@ -56,20 +53,10 @@ export default function NewMedicationRoute() {
         appearanceSecondaryColor: value.appearanceSecondaryColor,
         schedules: scheduleConfigurationFromDraft(value),
       });
-      let reminderStatus: 'notRequested' | 'denied' | 'scheduled' | 'failed' = 'notRequested';
-      try {
-        reminderStatus = await scheduleLocalReminders(await repository.listReminderSchedules());
-      } catch {
-        reminderStatus = 'failed';
-      }
-      return { reminderStatus };
+      return { reminderNotice: await reconcileLocalReminders(repository) };
     },
-    onSuccess: async ({ reminderStatus }) => {
+    onSuccess: async () => {
       await Storage.removeItem(draftKey).catch(() => undefined);
-      await repository.setSetting(
-        'reminderNotice',
-        reminderStatus === 'denied' ? 'denied' : reminderStatus === 'failed' ? 'failed' : 'none',
-      );
       await queryClient.invalidateQueries();
       setCreated(true);
     },
@@ -163,6 +150,7 @@ export default function NewMedicationRoute() {
       ) : null}
       {draftWarning ? <PillyBanner kind="warning" message={draftWarning} compact /> : null}
       <NameStep
+        nameTestID="medicine-name"
         name={values.name}
         instructions={values.instructions}
         error={fieldError?.field === 'name' ? fieldError.message : undefined}

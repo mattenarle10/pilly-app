@@ -2,6 +2,7 @@ import * as Notifications from 'expo-notifications';
 
 import {
   configureNotificationPresentation,
+  reconcileLocalReminders,
   scheduleLocalReminders,
 } from '@/services/notifications';
 
@@ -208,5 +209,30 @@ describe('local medicine reminders', () => {
 
     await expect(scheduleLocalReminders([reminder])).resolves.toBe('scheduled');
     expect(requestPermissions).not.toHaveBeenCalled();
+  });
+
+  test('persists a denied reminder notice', async () => {
+    getPermissions.mockResolvedValue({
+      granted: false,
+      status: 'denied',
+      ios: { status: Notifications.IosAuthorizationStatus.DENIED },
+    } as Notifications.NotificationPermissionsStatus);
+    const store = {
+      listReminderSchedules: jest.fn().mockResolvedValue([reminder]),
+      setSetting: jest.fn().mockResolvedValue(undefined),
+    };
+
+    await expect(reconcileLocalReminders(store)).resolves.toBe('denied');
+    expect(store.setSetting).toHaveBeenCalledWith('reminderNotice', 'denied');
+  });
+
+  test('keeps medicine changes successful when scheduling or notice persistence fails', async () => {
+    const store = {
+      listReminderSchedules: jest.fn().mockRejectedValue(new Error('notifications unavailable')),
+      setSetting: jest.fn().mockRejectedValue(new Error('settings unavailable')),
+    };
+
+    await expect(reconcileLocalReminders(store)).resolves.toBe('failed');
+    expect(store.setSetting).toHaveBeenCalledWith('reminderNotice', 'failed');
   });
 });

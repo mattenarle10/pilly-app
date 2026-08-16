@@ -2,11 +2,14 @@ import { useState } from 'react';
 import { ActivityIndicator, StyleSheet, View } from 'react-native';
 import { Stack } from 'expo-router';
 
-import { PillyBanner, PillyButton, PillyText, Screen } from '@/ui/components';
+import { PillyBanner } from '@/ui/components/pilly-banner';
+import { PillyButton } from '@/ui/components/pilly-button';
+import { PillyText } from '@/ui/components/pilly-text';
+import { Screen } from '@/ui/components/screen';
 import { PillyIcon, type PillyIconName } from '@/ui/icons';
 import { PillyPlusCompanion } from '@/ui/illustrations';
 import { colors, radii, shadows, spacing } from '@/ui/tokens';
-import { usePlus } from '@/hooks';
+import { usePlus } from '@/hooks/use-plus';
 
 type Notice = { kind: 'error' | 'info'; message: string };
 

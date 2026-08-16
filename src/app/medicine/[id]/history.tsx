@@ -2,16 +2,14 @@ import { Platform, StyleSheet, View } from 'react-native';
 import { router, Stack, useLocalSearchParams } from 'expo-router';
 
 import { describeDoseHistoryChange, groupDoseHistory, type DoseStatus } from '@/models/dose';
-import {
-  EmptyState,
-  PillyBanner,
-  PillyCard,
-  PillyIconButton,
-  PillyText,
-  Screen,
-} from '@/ui/components';
+import { EmptyState } from '@/ui/components/empty-state';
+import { PillyBanner } from '@/ui/components/pilly-banner';
+import { PillyCard } from '@/ui/components/pilly-card';
+import { PillyIconButton } from '@/ui/components/pilly-icon-button';
+import { PillyText } from '@/ui/components/pilly-text';
+import { Screen } from '@/ui/components/screen';
 import { colors, spacing } from '@/ui/tokens';
-import { useDoseHistory } from '@/hooks';
+import { useDoseHistory } from '@/hooks/use-dose-history';
 
 const scheduledDate = new Intl.DateTimeFormat(undefined, {
   weekday: 'long',

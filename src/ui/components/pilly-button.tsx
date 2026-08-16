@@ -21,12 +21,14 @@ export function PillyButton({
   loading = false,
   tone = 'default',
   disabled,
+  accessibilityLabel,
   style,
   ...props
 }: PillyButtonProps) {
   return (
     <Pressable
       accessibilityRole="button"
+      accessibilityLabel={accessibilityLabel ?? label}
       accessibilityState={{ disabled: disabled || loading, busy: loading }}
       disabled={disabled || loading}
       style={(state) => [

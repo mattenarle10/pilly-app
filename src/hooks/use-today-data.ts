@@ -3,40 +3,37 @@ import { useQuery } from '@tanstack/react-query';
 
 import { profileSettingKeys, resolveProfileName } from '@/models/profile';
 import { toLocalDate, weekStartingToday } from '@/models/schedule';
-import { activeMedicinesQueryKey } from './use-medicines';
+import { queryKeys } from './query-keys';
 import { useRepository } from './use-repository';
+import { useWeekDoses } from './use-week-doses';
 
 export function useTodayData() {
   const repository = useRepository();
   const today = useMemo(() => new Date(), []);
   const dates = useMemo(() => weekStartingToday(today), [today]);
   const doses = useQuery({
-    queryKey: ['scheduled-doses', toLocalDate(today)],
+    queryKey: queryKeys.scheduledDoses.date(toLocalDate(today)),
     queryFn: () => repository.listScheduledDoses(today),
     networkMode: 'always',
   });
-  const weekDoses = useQuery({
-    queryKey: ['organizer-week', toLocalDate(today)],
-    queryFn: () => Promise.all(dates.map((date) => repository.listScheduledDoses(date))),
-    networkMode: 'always',
-  });
+  const weekDoses = useWeekDoses(dates);
   const medicines = useQuery({
-    queryKey: activeMedicinesQueryKey,
+    queryKey: queryKeys.medications.active,
     queryFn: () => repository.listMedications(),
     networkMode: 'always',
   });
   const reminderNotice = useQuery({
-    queryKey: ['settings', 'reminderNotice'],
+    queryKey: queryKeys.setting('reminderNotice'),
     queryFn: () => repository.getSetting('reminderNotice'),
     networkMode: 'always',
   });
   const profileFirstName = useQuery({
-    queryKey: ['settings', profileSettingKeys.firstName],
+    queryKey: queryKeys.setting(profileSettingKeys.firstName),
     queryFn: () => repository.getSetting(profileSettingKeys.firstName),
     networkMode: 'always',
   });
   const legacyProfileName = useQuery({
-    queryKey: ['settings', profileSettingKeys.displayName],
+    queryKey: queryKeys.setting(profileSettingKeys.displayName),
     queryFn: () => repository.getSetting(profileSettingKeys.displayName),
     networkMode: 'always',
   });

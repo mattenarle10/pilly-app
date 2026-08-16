@@ -1,12 +1,13 @@
 import { useQuery } from '@tanstack/react-query';
 
+import { queryKeys } from './query-keys';
 import { useRepository } from './use-repository';
 
 export function useDoseHistory(medicationId: string) {
   const repository = useRepository();
 
   return useQuery({
-    queryKey: ['dose-history', medicationId],
+    queryKey: queryKeys.doseHistory(medicationId),
     queryFn: async () => {
       const [detail, events] = await Promise.all([
         repository.getMedication(medicationId),

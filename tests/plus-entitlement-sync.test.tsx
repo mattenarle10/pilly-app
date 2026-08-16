@@ -3,7 +3,8 @@ import { cleanup, render, waitFor } from '@testing-library/react-native';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
 import type { PillyRepository } from '@/storage/repository';
-import { plusEntitlementQueryKey, plusEntitlementSettingKey, plusQueryKey } from '@/hooks/use-plus';
+import { queryKeys } from '@/hooks/query-keys';
+import { plusEntitlementSettingKey } from '@/hooks/use-plus';
 import { useRepository } from '@/hooks/use-repository';
 import { subscribeToPlusEntitlement } from '@/services/purchases';
 
@@ -33,7 +34,7 @@ describe('PlusEntitlementSync', () => {
     const queryClient = new QueryClient({
       defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
     });
-    queryClient.setQueryData([...plusQueryKey, 'store'], { kind: 'unconfigured' });
+    queryClient.setQueryData(queryKeys.plus.store, { kind: 'unconfigured' });
     const wrapper = ({ children }: PropsWithChildren) => (
       <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
     );
@@ -45,9 +46,9 @@ describe('PlusEntitlementSync', () => {
     await waitFor(() =>
       expect(repository.setSetting).toHaveBeenCalledWith(plusEntitlementSettingKey, 'true'),
     );
-    expect(queryClient.getQueryData(plusEntitlementQueryKey)).toBe('true');
+    expect(queryClient.getQueryData(queryKeys.setting(plusEntitlementSettingKey))).toBe('true');
     await waitFor(() =>
-      expect(queryClient.getQueryState([...plusQueryKey, 'store'])?.isInvalidated).toBe(true),
+      expect(queryClient.getQueryState(queryKeys.plus.store)?.isInvalidated).toBe(true),
     );
 
     view.unmount();

@@ -2,7 +2,11 @@ import { StyleSheet, View } from 'react-native';
 import { Stack, useRouter } from 'expo-router';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 
-import { PillyBanner, PillyButton, PillyText, Screen } from '@/ui/components';
+import { queryKeys } from '@/hooks/query-keys';
+import { PillyBanner } from '@/ui/components/pilly-banner';
+import { PillyButton } from '@/ui/components/pilly-button';
+import { PillyText } from '@/ui/components/pilly-text';
+import { Screen } from '@/ui/components/screen';
 import { useRepository } from '@/hooks/use-repository';
 import { OnboardingJourney } from '@/ui/illustrations';
 import { colors, spacing } from '@/ui/tokens';
@@ -14,7 +18,8 @@ export default function StartSmallRoute() {
   const complete = useMutation({
     mutationFn: () => repository.setSetting('hasCompletedOnboarding', 'true'),
     networkMode: 'always',
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['settings', 'onboarding'] }),
+    onSuccess: () =>
+      queryClient.invalidateQueries({ queryKey: queryKeys.setting('hasCompletedOnboarding') }),
   });
 
   const finish = async (addMedicine: boolean) => {

@@ -2,23 +2,21 @@ import { Pressable, StyleSheet, View } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import Animated, { FadeInDown, ReduceMotion } from 'react-native-reanimated';
 
-import {
-  EmptyState,
-  MedicationAppearance,
-  PillyBanner,
-  PillyCard,
-  PillyIconButton,
-  PillyModal,
-  PillyNumberPicker,
-  PillyText,
-  PillyToggle,
-  Screen,
-} from '@/ui/components';
+import { EmptyState } from '@/ui/components/empty-state';
+import { MedicationAppearance } from '@/ui/components/medication-appearance';
+import { PillyBanner } from '@/ui/components/pilly-banner';
+import { PillyCard } from '@/ui/components/pilly-card';
+import { PillyIconButton } from '@/ui/components/pilly-icon-button';
+import { PillyModal } from '@/ui/components/pilly-modal';
+import { PillyNumberPicker } from '@/ui/components/pilly-number-picker';
+import { PillyText } from '@/ui/components/pilly-text';
+import { PillyToggle } from '@/ui/components/pilly-toggle';
+import { Screen } from '@/ui/components/screen';
 import { PillyIcon } from '@/ui/icons';
 import { colors, spacing } from '@/ui/tokens';
 import { formatTime } from '@/models/schedule';
 import { estimateSupply } from '@/models/supply';
-import { useMedicineDetail } from '@/hooks';
+import { useMedicineDetail } from '@/hooks/use-medicine-detail';
 
 const dayNames = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 const scheduleDays = (mask: number) =>
@@ -268,6 +266,7 @@ function ManageRow({
   return (
     <Pressable
       accessibilityRole="button"
+      accessibilityLabel={label}
       accessibilityHint={hint}
       accessibilityState={{ disabled }}
       disabled={disabled}

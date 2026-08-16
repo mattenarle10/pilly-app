@@ -35,6 +35,7 @@ function StepHeading({ title, message }: { title: string; message: string }) {
 
 export function NameStep({
   autoFocus = true,
+  nameTestID,
   name,
   instructions,
   error,
@@ -42,6 +43,7 @@ export function NameStep({
   onInstructionsChange,
 }: {
   autoFocus?: boolean;
+  nameTestID?: string;
   name: string;
   instructions: string;
   error?: string;
@@ -51,6 +53,7 @@ export function NameStep({
   return (
     <View style={styles.identitySection}>
       <PillyField
+        testID={nameTestID}
         label="Name"
         icon="medicine"
         autoFocus={autoFocus}

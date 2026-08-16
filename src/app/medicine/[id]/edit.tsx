@@ -4,19 +4,15 @@ import { usePreventRemove } from 'expo-router/react-navigation';
 import { useForm, useStore } from '@tanstack/react-form';
 
 import type { MedicationDetail } from '@/models/medication';
-import {
-  AppearanceStep,
-  DetailsStep,
-  EmptyState,
-  MedicineFormShell,
-  NameStep,
-  PillyBanner,
-  PillyModal,
-  ScheduleStep,
-  Screen,
-} from '@/ui/components';
+import { AppearanceStep } from '@/ui/components/medicine-appearance-field';
+import { DetailsStep, NameStep, ScheduleStep } from '@/ui/components/medicine-form-sections';
+import { MedicineFormShell } from '@/ui/components/medicine-form-shell';
+import { EmptyState } from '@/ui/components/empty-state';
+import { PillyBanner } from '@/ui/components/pilly-banner';
+import { PillyModal } from '@/ui/components/pilly-modal';
+import { Screen } from '@/ui/components/screen';
 import { schedulesMatch } from '@/models/schedule';
-import { useEditMedicine } from '@/hooks';
+import { useEditMedicine } from '@/hooks/use-edit-medicine';
 import {
   medicationDraftsMatch,
   scheduleConfigurationFromDraft,
@@ -134,6 +130,7 @@ function EditMedicineForm({
       ) : null}
       <NameStep
         autoFocus={false}
+        nameTestID="medicine-name"
         name={values.name}
         instructions={values.instructions}
         error={issue?.field === 'name' ? issue.message : undefined}

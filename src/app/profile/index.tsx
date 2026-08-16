@@ -3,17 +3,15 @@ import { ActivityIndicator, Linking, Pressable, StyleSheet, View } from 'react-n
 import Constants from 'expo-constants';
 import { router, Stack } from 'expo-router';
 
-import {
-  PillyBanner,
-  PillyField,
-  PillyIconButton,
-  PillyModal,
-  PillyText,
-  Screen,
-} from '@/ui/components';
+import { PillyBanner } from '@/ui/components/pilly-banner';
+import { PillyField } from '@/ui/components/pilly-field';
+import { PillyIconButton } from '@/ui/components/pilly-icon-button';
+import { PillyModal } from '@/ui/components/pilly-modal';
+import { PillyText } from '@/ui/components/pilly-text';
+import { Screen } from '@/ui/components/screen';
 import { PillyIcon, type PillyIconName } from '@/ui/icons';
 import { colors, radii, shadows, spacing } from '@/ui/tokens';
-import { useProfile } from '@/hooks';
+import { useProfile } from '@/hooks/use-profile';
 import { isPlusPurchasesSupported } from '@/services/purchases';
 
 export default function ProfileRoute() {
@@ -191,6 +189,7 @@ export default function ProfileRoute() {
       >
         <View style={styles.nameFields}>
           <PillyField
+            testID="profile-first-name"
             label="First name"
             value={firstNameDraft}
             onChangeText={setFirstNameDraft}

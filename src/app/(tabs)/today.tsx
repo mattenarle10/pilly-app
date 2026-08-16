@@ -4,21 +4,21 @@ import { router } from 'expo-router';
 import Animated, { FadeInRight, FadeOutRight, ReduceMotion } from 'react-native-reanimated';
 
 import type { ScheduledDose } from '@/models/dose';
-import {
-  PillyBanner,
-  PillyCard,
-  DoseStatusSheet,
-  PillyIconButton,
-  PillyText,
-  PillyToast,
-  Screen,
-  TodayDoseList,
-  TodayStarter,
-  WeekStatusStrip,
-} from '@/ui/components';
+import { DoseStatusSheet } from '@/ui/components/dose-status-sheet';
+import { PillyBanner } from '@/ui/components/pilly-banner';
+import { PillyCard } from '@/ui/components/pilly-card';
+import { PillyIconButton } from '@/ui/components/pilly-icon-button';
+import { PillyText } from '@/ui/components/pilly-text';
+import { PillyToast } from '@/ui/components/pilly-toast';
+import { Screen } from '@/ui/components/screen';
+import { TodayDoseList } from '@/ui/components/today-dose-list';
+import { TodayStarter } from '@/ui/components/today-starter';
+import { WeekStatusStrip } from '@/ui/components/week-status-strip';
 import { TodayCompanion } from '@/ui/illustrations';
 import { colors, radii, spacing } from '@/ui/tokens';
-import { useCurrentMinute, useDoseActions, useTodayData } from '@/hooks';
+import { useCurrentMinute } from '@/hooks/use-current-minute';
+import { useDoseActions } from '@/hooks/use-dose-actions';
+import { useTodayData } from '@/hooks/use-today-data';
 import {
   buildOrganizerDays,
   groupTodayDoses,

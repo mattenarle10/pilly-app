@@ -1,4 +1,4 @@
-import { and, asc, desc, eq, inArray, isNull, like, sql } from 'drizzle-orm';
+import { and, asc, desc, eq, inArray, isNull, like, or, sql } from 'drizzle-orm';
 import { drizzle } from 'drizzle-orm/expo-sqlite';
 import type { SQLiteDatabase } from 'expo-sqlite';
 import * as Crypto from 'expo-crypto';
@@ -260,9 +260,17 @@ export class PillyRepository {
     const schedulesById = new Map(
       medicationSchedules.map((schedule) => [schedule.id, schedule] as const),
     );
+    if (medicationSchedules.length === 0) return [];
     return this.db
       .select()
       .from(doseEvents)
+      .where(
+        or(
+          ...medicationSchedules.map((schedule) =>
+            like(doseEvents.occurrenceId, `${schedule.id}:%`),
+          ),
+        ),
+      )
       .orderBy(desc(doseEvents.occurredAt))
       .all()
       .flatMap((event) => {
@@ -338,6 +346,11 @@ export class PillyRepository {
   }
 
   async listScheduledDoses(date: Date): Promise<ScheduledDose[]> {
+    return (await this.listScheduledDosesForDates([date]))[0] ?? [];
+  }
+
+  async listScheduledDosesForDates(dates: readonly Date[]): Promise<ScheduledDose[][]> {
+    if (dates.length === 0) return [];
     const joined = this.db
       .select({ medication: medications, schedule: schedules })
       .from(schedules)
@@ -345,32 +358,39 @@ export class PillyRepository {
       .where(isNull(medications.archivedAt))
       .orderBy(asc(schedules.hour), asc(schedules.minute), asc(schedules.sortOrder))
       .all();
-    const localDate = toLocalDate(date);
-    const active = joined.filter(
-      ({ schedule }) =>
-        schedule.startsOn <= localDate &&
-        (schedule.endsOn === null || schedule.endsOn >= localDate) &&
-        isScheduledOn(scheduleSchema.parse(schedule), date),
+    const activeByDate = dates.map((date) => {
+      const localDate = toLocalDate(date);
+      return joined.filter(
+        ({ schedule }) =>
+          schedule.startsOn <= localDate &&
+          (schedule.endsOn === null || schedule.endsOn >= localDate) &&
+          isScheduledOn(scheduleSchema.parse(schedule), date),
+      );
+    });
+    const ids = activeByDate.flatMap((active, index) =>
+      active.map(({ schedule }) => occurrenceId(schedule.id, dates[index]!)),
     );
-    const ids = active.map(({ schedule }) => occurrenceId(schedule.id, date));
     const records =
       ids.length === 0
         ? []
         : this.db.select().from(doseRecords).where(inArray(doseRecords.occurrenceId, ids)).all();
     const byId = new Map(records.map((record) => [record.occurrenceId, record]));
 
-    return active.map(({ medication, schedule }) => {
-      const parsedSchedule = scheduleSchema.parse(schedule);
-      const id = occurrenceId(parsedSchedule.id, date);
-      const record = byId.get(id);
-      return {
-        occurrenceId: id,
-        medication: medicationSchema.parse(medication),
-        schedule: parsedSchedule,
-        scheduledAt: dateForSchedule(parsedSchedule, date),
-        status: record?.status ?? 'notRecorded',
-        recordedAt: record ? new Date(record.recordedAt) : null,
-      };
+    return activeByDate.map((active, index) => {
+      const date = dates[index]!;
+      return active.map(({ medication, schedule }) => {
+        const parsedSchedule = scheduleSchema.parse(schedule);
+        const id = occurrenceId(parsedSchedule.id, date);
+        const record = byId.get(id);
+        return {
+          occurrenceId: id,
+          medication: medicationSchema.parse(medication),
+          schedule: parsedSchedule,
+          scheduledAt: dateForSchedule(parsedSchedule, date),
+          status: record?.status ?? 'notRecorded',
+          recordedAt: record ? new Date(record.recordedAt) : null,
+        };
+      });
     });
   }
 

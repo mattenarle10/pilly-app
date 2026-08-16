@@ -2,15 +2,13 @@ import { useEffect, useState } from 'react';
 import { ActivityIndicator, StyleSheet, View } from 'react-native';
 import { Stack, useRouter } from 'expo-router';
 
-import { useProfileName } from '@/hooks';
-import {
-  MedicationAppearance,
-  PillyBanner,
-  PillyButton,
-  PillyField,
-  PillyText,
-  Screen,
-} from '@/ui/components';
+import { useProfileName } from '@/hooks/use-profile';
+import { MedicationAppearance } from '@/ui/components/medication-appearance';
+import { PillyBanner } from '@/ui/components/pilly-banner';
+import { PillyButton } from '@/ui/components/pilly-button';
+import { PillyField } from '@/ui/components/pilly-field';
+import { PillyText } from '@/ui/components/pilly-text';
+import { Screen } from '@/ui/components/screen';
 import { colors, spacing } from '@/ui/tokens';
 
 export default function OnboardingNameRoute() {
@@ -77,6 +75,7 @@ export default function OnboardingNameRoute() {
             </View>
 
             <PillyField
+              testID="onboarding-first-name"
               label="First name"
               value={firstName}
               onChangeText={setFirstName}

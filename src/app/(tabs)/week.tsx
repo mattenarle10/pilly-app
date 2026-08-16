@@ -1,18 +1,17 @@
 import { ActivityIndicator, StyleSheet, View } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 
-import {
-  EmptyState,
-  PillyBanner,
-  PillyCard,
-  PillyText,
-  Screen,
-  WeekAgenda,
-  WeekStatusStrip,
-} from '@/ui/components';
+import { EmptyState } from '@/ui/components/empty-state';
+import { PillyBanner } from '@/ui/components/pilly-banner';
+import { PillyCard } from '@/ui/components/pilly-card';
+import { PillyText } from '@/ui/components/pilly-text';
+import { Screen } from '@/ui/components/screen';
+import { WeekAgenda } from '@/ui/components/week-agenda';
+import { WeekStatusStrip } from '@/ui/components/week-status-strip';
 import { WeekEmptyCompanion } from '@/ui/illustrations';
 import { colors, radii, spacing } from '@/ui/tokens';
-import { useCurrentMinute, useWeekData } from '@/hooks';
+import { useCurrentMinute } from '@/hooks/use-current-minute';
+import { useWeekData } from '@/hooks/use-week-data';
 import {
   buildWeekDays,
   groupWeekDoses,

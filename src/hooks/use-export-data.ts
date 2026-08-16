@@ -3,15 +3,14 @@ import { useQuery } from '@tanstack/react-query';
 import { buildPillyExport } from '@/models/export';
 import { profileSettingKeys, profileDisplayName, resolveProfileName } from '@/models/profile';
 
+import { queryKeys } from './query-keys';
 import { useRepository } from './use-repository';
-
-export const exportDataQueryKey = ['export-data'] as const;
 
 export function useExportData() {
   const repository = useRepository();
 
   return useQuery({
-    queryKey: exportDataQueryKey,
+    queryKey: queryKeys.exportData,
     queryFn: async () => {
       const [
         medications,
