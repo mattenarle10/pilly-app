@@ -1,36 +1,24 @@
 import type { ScheduledDose } from '@/models/dose';
 import { buildNextDoseWidgetTimeline } from '@/models/next-dose-widget';
+import { buildScheduledDose } from './support/builders';
 
 function scheduledDose(scheduledAt: Date, status: ScheduledDose['status']): ScheduledDose {
-  return {
+  return buildScheduledDose({
     occurrenceId: `schedule:${scheduledAt.toISOString()}`,
+    scheduledAt,
+    status,
     medication: {
       id: '00000000-0000-4000-8000-000000000001',
       name: 'Private medicine name',
-      instructions: '',
       supplyCount: 10,
-      appearanceShape: 'capsule',
-      appearanceSize: 'medium',
-      appearanceColor: '#F3CCD7',
-      appearanceSecondaryColor: '#FBE9DE',
       createdAt: '2026-08-01T00:00:00.000Z',
       updatedAt: '2026-08-01T00:00:00.000Z',
-      archivedAt: null,
-      timeZoneIdentifier: 'Asia/Manila',
     },
     schedule: {
       id: '00000000-0000-4000-8000-000000000002',
-      medicationId: '00000000-0000-4000-8000-000000000001',
-      hour: scheduledAt.getHours(),
-      minute: scheduledAt.getMinutes(),
-      weekdayMask: 127,
-      sortOrder: 0,
       reminderEnabled: true,
     },
-    scheduledAt,
-    status,
-    recordedAt: status === 'notRecorded' ? null : scheduledAt,
-  };
+  });
 }
 
 describe('next-dose widget timeline', () => {

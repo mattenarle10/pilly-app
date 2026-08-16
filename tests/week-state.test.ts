@@ -7,21 +7,12 @@ import {
   weekProgress,
   weekProgressMessage,
 } from '@/models/week';
+import { buildMedication, buildScheduledDose } from './support/builders';
 
-const medication: ScheduledDose['medication'] = {
-  id: 'd7bf17a4-3b0c-4c61-9155-7102fe0769f2',
-  name: 'Morning capsule',
+const medication: ScheduledDose['medication'] = buildMedication({
   instructions: 'With breakfast',
-  supplyCount: 14,
-  appearanceShape: 'capsule',
-  appearanceSize: 'medium',
-  appearanceColor: '#F3CCD7',
   appearanceSecondaryColor: '#ECEAF7',
-  createdAt: '2026-08-09T00:00:00.000Z',
-  updatedAt: '2026-08-09T00:00:00.000Z',
-  archivedAt: null,
-  timeZoneIdentifier: 'Asia/Manila',
-};
+});
 
 function makeDose(
   occurrenceId: string,
@@ -29,22 +20,13 @@ function makeDose(
   scheduledAt: Date,
   name = medication.name,
 ): ScheduledDose {
-  return {
+  return buildScheduledDose({
     occurrenceId,
-    medication: { ...medication, name },
-    schedule: {
-      id: occurrenceId.padEnd(36, '0').slice(0, 36),
-      medicationId: medication.id,
-      hour: scheduledAt.getHours(),
-      minute: scheduledAt.getMinutes(),
-      weekdayMask: 127,
-      sortOrder: 0,
-      reminderEnabled: false,
-    },
     scheduledAt,
     status,
-    recordedAt: status === 'notRecorded' ? null : scheduledAt,
-  };
+    medication: { ...medication, name },
+    schedule: { id: occurrenceId.padEnd(36, '0').slice(0, 36) },
+  });
 }
 
 describe('Week state', () => {

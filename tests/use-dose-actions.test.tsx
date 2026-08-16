@@ -7,6 +7,7 @@ import type { ScheduledDose } from '@/models/dose';
 import type { PillyRepository } from '@/storage/repository';
 import { useDoseActions } from '@/hooks/use-dose-actions';
 import { useRepository } from '@/hooks/use-repository';
+import { buildScheduledDose } from './support/builders';
 
 jest.mock('@/hooks/use-repository');
 jest.mock('expo-haptics', () => ({
@@ -16,35 +17,11 @@ jest.mock('expo-haptics', () => ({
 }));
 
 const mockedUseRepository = jest.mocked(useRepository);
-const dose: ScheduledDose = {
+const dose: ScheduledDose = buildScheduledDose({
   occurrenceId: 'schedule-1:2026-08-09',
-  medication: {
-    id: 'd7bf17a4-3b0c-4c61-9155-7102fe0769f2',
-    name: 'Morning tablet',
-    instructions: 'One tablet',
-    supplyCount: 14,
-    appearanceShape: 'capsule',
-    appearanceSize: 'medium',
-    appearanceColor: '#F3CCD7',
-    appearanceSecondaryColor: '#F3CCD7',
-    createdAt: '2026-08-09T00:00:00.000Z',
-    updatedAt: '2026-08-09T00:00:00.000Z',
-    archivedAt: null,
-    timeZoneIdentifier: 'Asia/Manila',
-  },
-  schedule: {
-    id: '4cf5bccb-1e47-4093-b91d-428cf5eed57b',
-    medicationId: 'd7bf17a4-3b0c-4c61-9155-7102fe0769f2',
-    hour: 9,
-    minute: 0,
-    weekdayMask: 127,
-    sortOrder: 0,
-    reminderEnabled: false,
-  },
   scheduledAt: new Date('2026-08-09T01:00:00.000Z'),
-  status: 'notRecorded',
-  recordedAt: null,
-};
+  medication: { name: 'Morning tablet', instructions: 'One tablet' },
+});
 
 async function setup(screenReaderEnabled = false) {
   const repository = {

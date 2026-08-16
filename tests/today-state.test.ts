@@ -5,6 +5,7 @@ import {
   todayProgressDetail,
   todayProgressHeadline,
 } from '@/models/today';
+import { buildScheduledDose } from './support/builders';
 
 const scheduledAt = new Date('2026-08-10T13:00:00.000Z');
 
@@ -13,35 +14,12 @@ function makeDose(
   status: ScheduledDose['status'],
   time: Date,
 ): ScheduledDose {
-  return {
+  return buildScheduledDose({
     occurrenceId,
-    medication: {
-      id: 'd7bf17a4-3b0c-4c61-9155-7102fe0769f2',
-      name: 'Evening capsule',
-      instructions: '',
-      supplyCount: 14,
-      appearanceShape: 'capsule',
-      appearanceSize: 'medium',
-      appearanceColor: '#F3CCD7',
-      appearanceSecondaryColor: '#F3CCD7',
-      createdAt: '2026-08-09T00:00:00.000Z',
-      updatedAt: '2026-08-09T00:00:00.000Z',
-      archivedAt: null,
-      timeZoneIdentifier: 'Asia/Manila',
-    },
-    schedule: {
-      id: '4cf5bccb-1e47-4093-b91d-428cf5eed57b',
-      medicationId: 'd7bf17a4-3b0c-4c61-9155-7102fe0769f2',
-      hour: time.getHours(),
-      minute: time.getMinutes(),
-      weekdayMask: 127,
-      sortOrder: 0,
-      reminderEnabled: false,
-    },
     scheduledAt: time,
     status,
-    recordedAt: status === 'notRecorded' ? null : new Date(time.getTime() + 60_000),
-  };
+    medication: { name: 'Evening capsule' },
+  });
 }
 
 describe('Today dose availability', () => {

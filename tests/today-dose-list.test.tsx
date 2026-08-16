@@ -2,6 +2,7 @@ import { cleanup, fireEvent, render } from '@testing-library/react-native';
 
 import type { ScheduledDose } from '@/models/dose';
 import { TodayDoseList } from '@/ui/components/today-dose-list';
+import { buildScheduledDose } from './support/builders';
 
 jest.mock('react-native-reanimated', () => {
   const { View } = jest.requireActual<typeof import('react-native')>('react-native');
@@ -19,35 +20,11 @@ jest.mock('react-native-reanimated', () => {
   };
 });
 
-const dose: ScheduledDose = {
+const dose: ScheduledDose = buildScheduledDose({
   occurrenceId: 'evening:2026-08-10',
-  medication: {
-    id: 'd7bf17a4-3b0c-4c61-9155-7102fe0769f2',
-    name: 'Evening capsule',
-    instructions: '',
-    supplyCount: 14,
-    appearanceShape: 'capsule',
-    appearanceSize: 'medium',
-    appearanceColor: '#F3CCD7',
-    appearanceSecondaryColor: '#F3CCD7',
-    createdAt: '2026-08-09T00:00:00.000Z',
-    updatedAt: '2026-08-09T00:00:00.000Z',
-    archivedAt: null,
-    timeZoneIdentifier: 'Asia/Manila',
-  },
-  schedule: {
-    id: '4cf5bccb-1e47-4093-b91d-428cf5eed57b',
-    medicationId: 'd7bf17a4-3b0c-4c61-9155-7102fe0769f2',
-    hour: 21,
-    minute: 0,
-    weekdayMask: 127,
-    sortOrder: 0,
-    reminderEnabled: false,
-  },
   scheduledAt: new Date('2026-08-10T13:00:00.000Z'),
-  status: 'notRecorded',
-  recordedAt: null,
-};
+  medication: { name: 'Evening capsule' },
+});
 
 const groups = [{ key: '21:0', time: '9:00 PM', doses: [dose] }];
 
