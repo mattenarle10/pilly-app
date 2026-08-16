@@ -1,0 +1,17 @@
+appId: dev.sidequests.pilly
+name: Optional Plus branch and profile name
+---
+- launchApp:
+    clearState: true
+- tapOn: 'See Pilly Plus'
+- assertVisible: 'Clear records, ready to share.'
+- tapOn: 'Back'
+- assertVisible: 'What’s next. What’s left.'
+- tapOn: 'Continue'
+- tapOn: 'First name'
+- inputText: 'Ada'
+- hideKeyboard
+- tapOn: 'Continue'
+- assertVisible: 'Start with one medicine'
+- tapOn: 'Not now'
+- assertVisible: 'Good .*Ada'

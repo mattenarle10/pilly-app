@@ -62,8 +62,8 @@ export default function OnboardingNameRoute() {
                 <MedicationAppearance
                   shape="capsule"
                   size="large"
-                  tone="rose"
-                  secondaryTone="peach"
+                  color="#F3CCD7"
+                  secondaryColor="#FBE9DE"
                 />
               </View>
               <View style={styles.copy}>

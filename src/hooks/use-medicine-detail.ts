@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { router } from 'expo-router';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
+import { nextDoseWidgetQueryKey } from '@/models/next-dose-widget';
 import { scheduleLocalReminders } from '@/services/notifications';
 import { useRepository } from './use-repository';
 
@@ -26,6 +27,7 @@ export function useMedicineDetail(medicationId: string) {
       queryClient.invalidateQueries({ queryKey: ['scheduled-doses'] }),
       queryClient.invalidateQueries({ queryKey: ['week'] }),
       queryClient.invalidateQueries({ queryKey: ['organizer-week'] }),
+      queryClient.invalidateQueries({ queryKey: nextDoseWidgetQueryKey }),
     ]);
   const syncReminders = async () => {
     let notice: 'none' | 'denied' | 'failed' = 'failed';

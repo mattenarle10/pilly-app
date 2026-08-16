@@ -26,9 +26,22 @@ describe('medicine setup validation', () => {
       schedules: [{ time: '09:00', reminderEnabled: false }],
       appearanceShape: 'capsule',
       appearanceSize: 'medium',
-      appearanceTone: 'rose',
-      appearanceSecondaryTone: 'rose',
+      appearanceColor: '#F3CCD7',
+      appearanceSecondaryColor: '#F3CCD7',
     });
+  });
+
+  test('migrates the old appearance palette into editable colors', () => {
+    const draft = draftSchema.parse({
+      ...defaults,
+      appearanceColor: undefined,
+      appearanceSecondaryColor: undefined,
+      appearanceTone: 'lavender',
+      appearanceSecondaryTone: 'peach',
+    });
+
+    expect(draft.appearanceColor).toBe('#ECEAF7');
+    expect(draft.appearanceSecondaryColor).toBe('#FBE9DE');
   });
 
   test('returns a typed issue for each invalid step', () => {

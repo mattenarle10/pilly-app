@@ -66,8 +66,8 @@ function EditMedicineForm({
         supply: detail.medication.supplyCount === null ? '' : `${detail.medication.supplyCount}`,
         appearanceShape: detail.medication.appearanceShape,
         appearanceSize: detail.medication.appearanceSize,
-        appearanceTone: detail.medication.appearanceTone,
-        appearanceSecondaryTone: detail.medication.appearanceSecondaryTone,
+        appearanceColor: detail.medication.appearanceColor,
+        appearanceSecondaryColor: detail.medication.appearanceSecondaryColor,
       }) satisfies MedicationDraft,
     [detail, schedule],
   );
@@ -143,12 +143,12 @@ function EditMedicineForm({
       <AppearanceStep
         shape={values.appearanceShape}
         size={values.appearanceSize}
-        tone={values.appearanceTone}
-        secondaryTone={values.appearanceSecondaryTone}
+        color={values.appearanceColor}
+        secondaryColor={values.appearanceSecondaryColor}
         onShapeChange={(shape) => setFieldValue('appearanceShape', shape)}
         onSizeChange={(size) => setFieldValue('appearanceSize', size)}
-        onToneChange={(tone) => setFieldValue('appearanceTone', tone)}
-        onSecondaryToneChange={(tone) => setFieldValue('appearanceSecondaryTone', tone)}
+        onColorChange={(color) => setFieldValue('appearanceColor', color)}
+        onSecondaryColorChange={(color) => setFieldValue('appearanceSecondaryColor', color)}
       />
       <ScheduleStep
         selectedDays={values.selectedDays}

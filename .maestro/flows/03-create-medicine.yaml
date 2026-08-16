@@ -1,0 +1,16 @@
+appId: dev.sidequests.pilly
+name: Create medicine with appearance and reminder
+---
+- launchApp:
+    clearState: true
+    permissions:
+      notifications: allow
+- runFlow: ../subflows/create-medicine.yaml
+- tapOn: 'Medicines'
+- assertVisible: 'Test Medicine'
+- tapOn: 'Open Test Medicine'
+- assertVisible: 'medium capsule'
+- tapOn: 'Dose history'
+- assertVisible: 'No recorded changes'
+- tapOn: 'Back'
+- assertVisible: 'Test Medicine'

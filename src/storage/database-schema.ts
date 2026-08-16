@@ -7,12 +7,8 @@ export const medications = sqliteTable('medications', {
   supplyCount: real('supply_count'),
   appearanceShape: text('appearance_shape', { enum: ['round', 'oval', 'capsule'] }).notNull(),
   appearanceSize: text('appearance_size', { enum: ['small', 'medium', 'large'] }).notNull(),
-  appearanceTone: text('appearance_tone', {
-    enum: ['rose', 'peach', 'lavender', 'neutral'],
-  }).notNull(),
-  appearanceSecondaryTone: text('appearance_secondary_tone', {
-    enum: ['rose', 'peach', 'lavender', 'neutral'],
-  }).notNull(),
+  appearanceColor: text('appearance_color').notNull(),
+  appearanceSecondaryColor: text('appearance_secondary_color').notNull(),
   createdAt: text('created_at').notNull(),
   updatedAt: text('updated_at').notNull(),
   archivedAt: text('archived_at'),

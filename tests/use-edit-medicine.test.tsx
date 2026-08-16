@@ -58,8 +58,8 @@ describe('useEditMedicine', () => {
           { time: '20:15', reminderEnabled: true },
           { time: '08:00', reminderEnabled: false },
         ],
-        appearanceTone: 'lavender',
-        appearanceSecondaryTone: 'peach',
+        appearanceColor: '#ECEAF7',
+        appearanceSecondaryColor: '#FBE9DE',
       }),
     );
 
@@ -69,8 +69,8 @@ describe('useEditMedicine', () => {
       supplyCount: 12,
       appearanceShape: 'capsule',
       appearanceSize: 'medium',
-      appearanceTone: 'lavender',
-      appearanceSecondaryTone: 'peach',
+      appearanceColor: '#ECEAF7',
+      appearanceSecondaryColor: '#FBE9DE',
       schedules: [
         {
           hour: 8,

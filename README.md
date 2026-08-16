@@ -13,7 +13,8 @@ The core tracker works without an account or network connection. Medication deta
 - Today view with Taken, Skipped, and correction actions
 - Immediate undo and a local dose-change history
 - Seven-day view driven by the same schedule state
-- Reconciled local reminders with private notification copy
+- Reconciled local reminders with private foreground/background presentation and same-time grouping
+- Privacy-safe small and medium iOS Next dose Home Screen widgets
 - Audited manual supply corrections with an explicitly approximate estimate
 - Local privacy and data controls
 - Free private JSON export plus RevenueCat-backed Plus PDF and CSV tools
@@ -53,7 +54,7 @@ Run the repository checks:
 bun run verify
 ```
 
-Pilly uses native modules, including SQLite, notifications, and RevenueCat. Use an Expo development build rather than Expo Go for full behavior.
+Pilly uses native modules, including SQLite, notifications, widgets, and RevenueCat. Use an Expo development build rather than Expo Go for full behavior. After adding or changing a widget target, rebuild the iOS app with `bun run ios`; restarting Metro alone cannot install a native extension. After first installing or upgrading `expo-widgets`, restart Metro once with `bun run dev -- --clear` so the SDK 57 widget serializer is loaded before the app registers its layouts.
 
 The SQLite schema is migrated on device. Schedule edits begin the following day and retain the older schedule rows so past dose identities and records are not rewritten.
 

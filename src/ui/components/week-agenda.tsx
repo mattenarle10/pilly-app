@@ -37,8 +37,8 @@ export function WeekAgenda({
                       <MedicationAppearance
                         shape={dose.medication.appearanceShape}
                         size={dose.medication.appearanceSize}
-                        tone={dose.medication.appearanceTone}
-                        secondaryTone={dose.medication.appearanceSecondaryTone}
+                        color={dose.medication.appearanceColor}
+                        secondaryColor={dose.medication.appearanceSecondaryColor}
                         display="mini"
                       />
                       <View style={styles.copy}>

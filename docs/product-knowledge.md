@@ -1,6 +1,6 @@
 # Pilly product knowledge
 
-Last updated: 2026-08-14
+Last updated: 2026-08-15
 
 This is the versioned product and architecture reference for the current Expo app. `AGENTS.md` remains the binding instruction file. The earlier Swift prototype and its local planning files are archived context, not the implementation source of truth.
 
@@ -12,16 +12,16 @@ Pilly records what a person enters. It does not recommend doses, diagnose condit
 
 ## Code boundaries
 
-| Area             | Responsibility                                                                                       |
-| ---------------- | ---------------------------------------------------------------------------------------------------- |
-| `app/`           | Expo Router pages. Each route owns its screen UI, page composition, and navigation.                  |
-| `src/hooks/`     | One flat set of shared and route-facing orchestration hooks. No screen UI or nested feature folders. |
-| `src/models/`    | App-facing types, deterministic product rules, and Zod validation. No persistence or UI imports.     |
-| `src/providers/` | Root provider composition and app-wide synchronization mounted by the Router layout.                 |
-| `src/services/`  | External/native integrations such as local notifications and RevenueCat purchases.                   |
-| `src/storage/`   | SQLite schema, migrations, and repository implementation.                                            |
-| `src/ui/`        | Shared components, icons, illustrations, typography, spacing, color, radius, and motion rules.       |
-| `tests/`         | One flat top-level Jest suite that imports implementation through explicit `@/` source aliases.      |
+| Area             | Responsibility                                                                                          |
+| ---------------- | ------------------------------------------------------------------------------------------------------- |
+| `app/`           | Expo Router pages. Each route owns its screen UI, page composition, and navigation.                     |
+| `src/hooks/`     | One flat set of shared and route-facing orchestration hooks. No screen UI or nested feature folders.    |
+| `src/models/`    | App-facing types, deterministic product rules, and Zod validation. No persistence or UI imports.        |
+| `src/providers/` | Root provider composition and app-wide synchronization mounted by the Router layout.                    |
+| `src/services/`  | External/native integrations such as local notifications and RevenueCat purchases.                      |
+| `src/storage/`   | SQLite schema, migrations, and repository implementation.                                               |
+| `src/ui/`        | Shared components, icons, illustrations, widgets, typography, spacing, color, radius, and motion rules. |
+| `tests/`         | One flat top-level Jest suite that imports implementation through explicit `@/` source aliases.         |
 
 The route may coordinate a use case, but it should not know SQLite queries, file paths, native picker details, RevenueCat calls, or notification scheduling internals.
 
@@ -40,7 +40,7 @@ Medication data is stored in an on-device SQLite database through Expo SQLite an
 | `supply_events` | Manual counts and supply changes caused by dose records or corrections.                                                          |
 | `settings`      | Small local preferences such as onboarding, reminder notices, profile name, and cached Plus entitlement.                         |
 
-The current database schema version is 5. Migrations live in `src/storage/migrate-database.ts`. New schema changes must increment the version and preserve existing medication history. Version 4 adds shape, size, and a primary tone. Version 5 adds a secondary capsule tone with a safe matching-color default for existing medicines.
+The current database schema version is 6. Migrations live in `src/storage/migrate-database.ts`. New schema changes must increment the version and preserve existing medication history. Version 4 adds shape, size, and a primary tone. Version 5 adds a secondary capsule tone. Version 6 replaces those palette tokens with editable hex colors and maps every existing medicine to the matching color values.
 
 ### Profile identity
 
@@ -48,7 +48,9 @@ The current profile is a local first and optional last name. There is no account
 
 ### Notifications and purchases
 
-Local reminders are scheduled with the operating system and reconciled from SQLite schedule data. Private notification copy remains the default.
+Local reminders are scheduled with the operating system and reconciled from SQLite schedule data. Private notification copy remains the default: the lock-screen title and body do not expose a medicine name. iOS owns the notification identity and displays Pilly's app icon. Reminder slots shared by multiple medicines produce one notification, and the same banner, Notification Center entry, and sound are enabled while Pilly is in the foreground.
+
+The iOS Home Screen widget is also local-first. Its small and medium families show only reminder state, the next time, and pending dose count, never medicine names. Medium remains reminder-first even when empty; the small empty family may open Add Medicine as a compact setup action. The app writes a seven-day WidgetKit timeline from SQLite when it starts, returns to the foreground, or relevant medicine/dose data changes. Scheduled states open Today. It requires a native development or App Store build and is unavailable in Expo Go.
 
 RevenueCat stores purchase and entitlement records outside the medication database. Pilly caches the current Plus entitlement locally so an existing customer can keep access while temporarily offline. Medication data is never sent to RevenueCat.
 
@@ -73,9 +75,17 @@ There is no cloud sync, account, or import flow yet. App deletion can therefore 
 
 `/settings` is a compatibility route to Profile, not a separate screen.
 
+### Verification
+
+`bun run verify` is the fast static gate: formatting, TypeScript, ESLint, and the flat Jest suite. `bun run test:flows` is the complete local iOS gate: it runs the static gate, builds and installs a Release simulator app, clears app state per journey, and drives the major routes through Maestro. `bun run test:flows:installed` reruns Maestro against an already installed build while debugging a flow. Maestro is a local developer prerequisite and is not bundled into the app.
+
+Maestro owns major user journeys; Jest owns validation branches, time boundaries, storage migrations, permission outcomes, native-service payloads, and retry/error states. Do not add production-only test buttons, seed routes, or artificial notification triggers to make E2E easier.
+
 Recommended visual review order: Today, Medicine detail, Edit medicine, Add medicine, Medicines, Week, Profile, Export data, Pilly Plus, Welcome, Start Small, then Dose history.
 
-Next active checkpoint: complete the first-run onboarding tap-through. VoiceOver remains deferred to release QA.
+Next active checkpoint: review both Next dose widget sizes on a physical iPhone, then verify locked/background reminder delivery, sound, app-icon presentation, and time-zone behavior on the phone. VoiceOver remains deferred to release QA.
+
+The first distribution checkpoint remains one core-only internal TestFlight build, but EAS/upload stays paused until the notification and widget device checkpoint above is complete. Then follow `docs/testflight-runbook.md`; keep Pilly Plus hidden and checkout disabled in that production profile, and do not submit the build for public App Store review.
 
 ### Design review checklist
 
@@ -93,7 +103,7 @@ Next active checkpoint: complete the first-run onboarding tap-through. VoiceOver
 | Welcome and Start Small | Complete               | Release QA only: VoiceOver, Reduce Motion, and physical device           |
 | Dose history            | Complete               | Release QA only: error, long-history, accessibility, and physical device |
 
-Medicine appearance is local, optional recognition data. Shape, size, and curated soft tones are stored on the medicine and drive the code-native silhouette on Medicine Detail, the Add/Edit preview, the Medicines list, and a quieter cue beside each Today dose. Capsules support independently selected colors for each half; round and oval pills use one color. Add/Edit keeps only a compact preview row in the form and opens a dedicated editor sheet for the controls. The name remains the primary identifier. A future pattern or user photo should ship only if it improves recognition, remains legible without motion, and has an explicit privacy and storage model.
+Medicine appearance is local, optional recognition data. Shape, size, and user-selected colors are stored on the medicine and drive the code-native silhouette on Medicine Detail, the Add/Edit preview, the Medicines list, and a quieter cue beside each Today dose. Capsules support independently selected colors for each half; round and oval pills use one color. Add/Edit keeps only a compact preview row in the form and opens a responsive centered editor. Each color starts with Rose, Peach, Lavender, and Neutral recognition presets; the native iOS Custom picker is the final choice. The name remains the primary identifier. A future pattern or user photo should ship only if it improves recognition, remains legible without motion, and has an explicit privacy and storage model.
 
 Medicine Detail design and architecture checkpoint completed on 2026-08-10:
 
@@ -111,7 +121,7 @@ Medicine Detail design and architecture checkpoint completed on 2026-08-10:
 - [x] Review VoiceOver labels/order and dynamic type at default and the largest standard size. Accessibility extremes remain part of release QA.
 - [x] Replace transient supply-saving copy with quiet autosave and visible failure recovery only.
 - [x] Add a persisted, data-driven medicine appearance with safe migration defaults.
-- [x] Move appearance controls into a dedicated sheet and support split capsule colors.
+- [x] Move appearance controls into a responsive centered dialog and support split capsule colors.
 
 Add Medicine architecture checkpoint completed on 2026-08-10:
 
@@ -170,7 +180,7 @@ Today action-timing checkpoint completed on 2026-08-10:
 Edit Medicine implementation checkpoint completed on 2026-08-10:
 
 - [x] Keep appearance as one compact preview row in the form.
-- [x] Put shape, size, and curated color choices in a dedicated sheet.
+- [x] Put shape, size, preset-first colors, and a final native Custom choice in a centered dialog.
 - [x] Persist independent capsule-half colors while keeping round and oval pills single-color.
 - [x] Own the page composition in `app/medicine/[id]/edit.tsx`; remove the legacy Edit screen wrapper.
 - [x] Share reusable Add/Edit fields from `src/ui/components/` without creating another route UI layer.
@@ -183,10 +193,38 @@ Edit Medicine implementation checkpoint completed on 2026-08-10:
 - [x] Save medicine details, supply, appearance, and schedule in one repository transaction.
 - [x] Preserve current schedule rows when the schedule did not actually change; version changed schedules from tomorrow.
 - [x] Treat reminder reconciliation as best-effort after the local medicine save succeeds.
-- [x] Add focused tests for edit orchestration, validation, appearance, and schedule-change detection.
+- [x] Keep notification copy private, add the default alert sound, and test weekday mapping and permission outcomes.
+- [x] Add focused tests for edit orchestration, validation, appearance, reminders, and schedule-change detection.
 - [x] Review default and long-content composition, scrolled navigation spacing, dirty navigation, and save persistence on the simulator.
 
 Release QA remains intentionally separate from this completed implementation checkpoint: software-keyboard overlap at accessibility text sizes, VoiceOver order, and physical-device reminder behavior.
+
+Local automated-flow checkpoint completed on 2026-08-15:
+
+- [x] Keep the fast gate in Jest and static analysis; all 28 suites and 105 tests pass.
+- [x] Add local Maestro journeys for empty onboarding, the optional Plus/name path, medicine creation with appearance and reminders, detail/history, edit/archive/restore/delete, Profile, and Export.
+- [x] Make one `bun run test:flows` command verify, build, install, clear local state, and run the iOS journeys.
+- [x] Restore Expo Router's required `.expo/types/**/*.ts` and `expo-env.d.ts` TypeScript includes.
+- [x] Reconcile only Pilly-owned reminder notifications and interpret authorized, provisional, denied, and undetermined iOS permission states.
+- [ ] Install the Maestro CLI on each development machine before running the local black-box suite.
+- [ ] Keep exact OS notification delivery, app-icon presentation, background/time-zone behavior, and accessibility extremes in physical-device release QA.
+
+Local notifications and iOS widget checkpoint completed in code on 2026-08-15:
+
+- [x] Register the Expo notification handler before app content mounts so foreground reminders appear as an iOS banner, remain in Notification Center, and play the default sound.
+- [x] Keep reminder copy private and group medicines sharing an exact weekday/time into one Pilly-owned notification.
+- [x] Clear stale Pilly-owned notifications before every reminder reconciliation, including when permission is denied, without touching notifications owned by another feature.
+- [x] Visually verify the foreground banner and production Pilly app icon in the iOS simulator without adding a production test trigger.
+- [x] Add an Expo SDK 57 WidgetKit extension with small and medium Next dose Home Screen families.
+- [x] Keep widget content privacy-safe: timing, dose count, and readiness only; no medicine name or instruction.
+- [x] Build a seven-day local timeline and refresh it after app focus, medicine changes, reminder changes, archive/delete, and dose recording/correction.
+- [x] Rebuild the native iOS development app and confirm `ExpoWidgetsTarget.appex` is compiled, signed, and embedded in `Pilly.app` with the configured App Group files.
+- [x] Confirm the running iOS app stores the serialized `NextDoseWidget` layout and timeline in the configured App Group; native-extension embedding alone is not a complete widget checkpoint.
+- [x] Cover notification presentation/grouping and widget empty, upcoming, ready, recorded, and privacy states in Jest.
+- [x] Add and visually review the small and medium widget families in the simulator, including the empty-state render and serialized App Group layout.
+- [x] Stress-test populated upcoming and ready states with eight same-time simulator medicines; keep the count scoped to the latest due group instead of accumulating older missed groups.
+- [ ] Review the small and medium widget families on a physical iPhone.
+- [ ] Verify scheduled delivery while Pilly is foregrounded, backgrounded, and locked on a physical iPhone, including sound, app icon, edits/cancellation, relaunch, and time-zone changes.
 
 Medicine form navigation checkpoint completed on 2026-08-11:
 
@@ -378,7 +416,8 @@ Implemented:
 - Local SQLite medication and schedule CRUD
 - Today and seven-day schedule views
 - Taken, Skipped, correction, undo, and history
-- Local reminders with private copy
+- Local reminders with private copy, foreground banners, and same-time grouping
+- Privacy-safe small and medium iOS Next dose widgets backed by a seven-day local timeline
 - Manual supply count and approximate run-out estimate
 - Archive and restore
 - Router-owned first-run onboarding with an optional local name and a true empty start
@@ -391,11 +430,15 @@ Next implementation pass:
 - [x] Add a free, user-controlled data export destination from Profile with a versioned readable JSON file, device share sheet, loading/error states, and sensitive-data guidance.
 - [x] Verify both Start Small outcomes route correctly and only after onboarding persistence; the empty Today destination is also reviewed live in the iOS simulator.
 - [x] Finish the remaining local-product checkpoint: Dose History design and behavior.
+- [x] Implement visible foreground reminders and the native iOS Next dose widget without adding remote push infrastructure.
+- [ ] Complete the widget visual pass and locked/background reminder checks on a physical iPhone before starting EAS/TestFlight.
 - [ ] Review the Android adaptive icon and native splash in an Android release build.
 
 Before public release:
 
 - [ ] Keep local-only builds in internal testing; do not publicly release Pilly while Plus is disabled or still represented by the rejected lifetime draft.
+- [x] Add one minimal iOS production/TestFlight profile with remote build-number management and Plus explicitly disabled.
+- [ ] Complete the one-build internal TestFlight checklist in `docs/testflight-runbook.md`.
 - [ ] Finish the approved account, sync, photo-storage, and monthly/yearly Plus product; enable checkout only after its complete physical-device purchase and recovery pass.
 - [ ] Complete DSA trader verification and restore European availability for the Pilly app and every offered Plus product.
 - [ ] Test reminders, time-zone/background refresh, native tab behavior, and purchases on a physical device.
@@ -412,8 +455,8 @@ Before public release:
 - 2026-08-10: Add Medicine page composition now lives in `app/medicine/new.tsx`; reusable Add/Edit controls live in `src/ui/components/` and form rules live in `src/models/`. Do not reintroduce a page-wrapper layer for this route.
 - 2026-08-10: Detail screens use a calm, text-first hierarchy. Medicine Detail uses the medicine name as its single signature typographic moment, groups Schedule and Supply in one Overview surface, keeps setup presets in Add/Edit, and auto-saves reversible supply changes with visible failure recovery.
 - 2026-08-10: Visual richness comes from hierarchy, composition, typography, material, and interaction before color. New color meanings require an explicit design-direction and decision-log update; polish passes do not invent route-specific tint mappings.
-- 2026-08-10: Medicine appearance is recognition data, not decoration. A saved shape, size, and person-selected soft tone drive one code-native silhouette on Detail, a focused preview in Add/Edit, a compact Medicines-list cue, and a quieter Today cue. Existing medicines migrate to a medium rose capsule.
-- 2026-08-10: Add/Edit show appearance as one compact preview row. A dedicated sheet owns shape, size, and curated color choices; capsules persist separate colors for their two halves.
+- 2026-08-10: Medicine appearance is recognition data, not decoration. A saved shape, size, and person-selected color drive one code-native silhouette on Detail, a focused preview in Add/Edit, a compact Medicines-list cue, and a quieter Today cue. Existing medicines migrate safely to their prior visual colors.
+- 2026-08-10: Add/Edit show appearance as one compact preview row. A responsive centered dialog owns shape, size, and color choices; capsules persist separate colors for their two halves. Curated recognition presets come first and the unrestricted native picker is the final Custom choice.
 - 2026-08-10: Add and Edit Medicine share one native compact form header and one responsive scroll shell. The native header owns Back, the task title, safe-area spacing, and Add/Done; the form owns Name exactly once. Medicine Detail continues to use the saved medicine name as its hero title. This removes the duplicate identity and hand-built navigation tier while preserving explicit consequential actions.
 - 2026-08-10: Add validates on press and intercepts native Back and swipe gestures before saving its local draft. Edit keeps Done disabled until the draft is valid and semantically changed, and dirty navigation requires an explicit discard decision. Both forms are bounded to the live window width with shared bottom safe-area breathing room.
 - 2026-08-10: Add/Edit schedules use one shared weekday pattern with one or more exact local times. Each time owns its reminder state; Morning, Midday, Afternoon, Evening, and Night are derived context rather than saved meal semantics. One schedule surface and quiet separators scale the form without turning each time into another card.
@@ -438,6 +481,13 @@ Before public release:
 - 2026-08-13: The export-only lifetime Plus bundle is not strong enough to launch. Keep its App Store record as an unsubmitted draft and do not attach it to RevenueCat. Pilly Plus will instead earn recurring pricing through an optional account, secure cross-device sync and recovery, private medicine-photo storage, themes, and the existing premium exports. Plan one yearly subscription as the primary offer and one monthly fallback; define privacy, retention, deletion, recovery, and storage limits before choosing a backend or implementing the new paywall.
 - 2026-08-14: Finish the local app before planning or implementing Plus. Future medicine-photo objects will use S3, while account and structured-sync architecture remain undecided. Do not add cloud dependencies, beta distribution configuration, or new subscription products during the local-product pass.
 - 2026-08-14: Local-only Pilly builds are internal testing builds, not a reduced public launch. Public release waits until the approved account, sync, photo-storage, and monthly/yearly Plus product is implemented and enabled; the rejected lifetime draft stays detached and out of review.
+- 2026-08-15: Medicine colors are recognition data chosen by the person, not a Pilly theme palette. Add/Edit lead with four familiar defaults and place the native iOS color picker last as Custom; capsules expose the same sequence independently for each half. Schema version 6 migrates legacy palette tokens to their exact hex values. Local reminder banners stay intentionally generic so medicine names are not exposed on the lock screen; physical-device delivery remains release QA.
+- 2026-08-15: Local verification uses two deliberate layers: Jest for deterministic rules, branches, failures, and native-service contracts; Maestro for installed-app journeys. The local runner owns its Release simulator build and clears SQLite state per flow. There is no EAS workflow, beta distribution setup, or test-only runtime route in this pass.
+- 2026-08-15: The completed local-product pass may move to one core-only internal TestFlight build. The production profile uses normal App Store distribution, remote build-number management, the existing App Store Connect record, no RevenueCat key, and checkout disabled. Pilly Plus remains visible in local development but its entry points are absent from this production beta. Public App Store submission and paid-product testing remain separate checkpoints.
+- 2026-08-15: Medicine reminders remain OS-scheduled local notifications; Pilly does not register a remote push token or require a notification server for this product behavior. A root notification handler makes the same private alert visible while the app is open, and reminders at an identical weekday/time are grouped into one alert. The iOS WidgetKit extension exposes only next-dose timing and counts in small and medium Home Screen families, is refreshed from a seven-day SQLite timeline, and opens Today. Lock Screen widgets are deferred until their privacy and information value justify another family. EAS/TestFlight remains paused until both widget sizes and background/locked reminder delivery are reviewed on a physical iPhone.
+- 2026-08-15: Widget layout modules use an unsuffixed `.tsx` implementation plus explicit Android and web fallbacks. A generic `.ts` fallback can win Metro resolution on iOS and silently skip `createWidget`. After first installing or upgrading `expo-widgets`, restart Metro with a clean cache so Expo's SDK 57 Babel preset detects the package and serializes the widget function. A valid checkpoint verifies the serialized layout and timeline in the App Group and then reviews both rendered sizes; seeing the `.appex` embedded is necessary but insufficient.
+- 2026-08-16: Home Screen widgets use one quiet horizontal capsule as their signature visual. Medium is always reminder-first, including a calm `No reminders set` empty state; only the small empty family uses `Add medicine` as a setup action. Do not repeat the app name, build a mascot from geometric primitives, or squeeze onboarding copy into the widget. Native WidgetKit shapes and state text carry meaning; motion is limited to brief timeline-state transitions.
+- 2026-08-16: Populated widget stress fixtures belong only in simulator SQLite, never in production seed code or test-only routes. A ready widget describes the latest due schedule group rather than an ever-growing missed-dose backlog; Today and Dose History remain the complete record.
 - 2026-08-14: Dose History was already Router-owned, so its migration is a navigation and composition correction rather than a file move. The native header owns Back and the medicine name, while one audit surface groups correction chains by scheduled occurrence and distinguishes scheduled time from change time without a database migration.
 - 2026-08-15: Dose History's iOS Back action uses Expo Router's native toolbar button with its shared glass background hidden. This preserves the native header and accessible action area without letting the Back surface overpower the medicine name or history content.
 - 2026-08-13: Export files are ephemeral cache artifacts: create them only for an explicit share action and remove them after the share sheet resolves or fails. Export assembly stays in hooks/models, native file work stays in services, and product models never import UI-owned types.

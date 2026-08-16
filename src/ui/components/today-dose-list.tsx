@@ -90,8 +90,8 @@ function DoseRow({
         <MedicationAppearance
           shape={dose.medication.appearanceShape}
           size={dose.medication.appearanceSize}
-          tone={dose.medication.appearanceTone}
-          secondaryTone={dose.medication.appearanceSecondaryTone}
+          color={dose.medication.appearanceColor}
+          secondaryColor={dose.medication.appearanceSecondaryColor}
           display="mini"
         />
         <PillyText role="headline" numberOfLines={2} style={styles.medicineName}>

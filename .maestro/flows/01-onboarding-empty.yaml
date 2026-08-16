@@ -1,0 +1,17 @@
+appId: dev.sidequests.pilly
+name: Empty onboarding and primary navigation
+---
+- launchApp:
+    clearState: true
+- assertVisible: 'What’s next. What’s left.'
+- runFlow: ../subflows/finish-empty-onboarding.yaml
+- tapOn: 'Week'
+- assertVisible: 'Week'
+- tapOn: 'Medicines'
+- assertVisible: 'Your medicines live here'
+- tapOn: 'Today'
+- tapOn: 'Profile'
+- assertVisible: 'Profile'
+- assertVisible: 'Your data'
+- tapOn: 'Back'
+- assertVisible: 'Today'

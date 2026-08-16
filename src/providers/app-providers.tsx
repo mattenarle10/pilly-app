@@ -8,6 +8,7 @@ import { migrateDatabase } from '@/storage/migrate-database';
 import { colors } from '@/ui/tokens';
 
 import { PlusEntitlementSync } from './plus-entitlement-sync';
+import { WidgetSync } from './widget-sync';
 
 export function AppProviders({ children }: PropsWithChildren) {
   const [queryClient] = useState(
@@ -32,6 +33,7 @@ export function AppProviders({ children }: PropsWithChildren) {
       <SQLiteProvider databaseName="pilly.db" onInit={migrateDatabase} useSuspense>
         <QueryClientProvider client={queryClient}>
           <PlusEntitlementSync />
+          <WidgetSync />
           {children}
         </QueryClientProvider>
       </SQLiteProvider>

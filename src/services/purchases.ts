@@ -64,7 +64,10 @@ export function arePlusPurchasesEnabled(): boolean {
 }
 
 export function isPlusPurchasesSupported(): boolean {
-  return Platform.OS === 'ios';
+  return (
+    Platform.OS === 'ios' &&
+    (__DEV__ || Boolean(purchaseEnvironment.EXPO_PUBLIC_REVENUECAT_IOS_KEY))
+  );
 }
 
 export async function loadPlusStoreSnapshot(): Promise<PlusStoreSnapshot> {

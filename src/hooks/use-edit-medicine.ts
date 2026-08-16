@@ -6,6 +6,7 @@ import {
   supplyValue,
   type MedicationDraft,
 } from '@/models/medicine-form';
+import { nextDoseWidgetQueryKey } from '@/models/next-dose-widget';
 import { scheduleLocalReminders } from '@/services/notifications';
 import { useRepository } from './use-repository';
 
@@ -27,8 +28,8 @@ export function useEditMedicine(medicationId: string) {
         supplyCount: supplyValue(draft.supply),
         appearanceShape: draft.appearanceShape,
         appearanceSize: draft.appearanceSize,
-        appearanceTone: draft.appearanceTone,
-        appearanceSecondaryTone: draft.appearanceSecondaryTone,
+        appearanceColor: draft.appearanceColor,
+        appearanceSecondaryColor: draft.appearanceSecondaryColor,
         schedules: scheduleConfigurationFromDraft(draft),
       });
 
@@ -49,6 +50,7 @@ export function useEditMedicine(medicationId: string) {
         queryClient.invalidateQueries({ queryKey: ['week'] }),
         queryClient.invalidateQueries({ queryKey: ['organizer-week'] }),
         queryClient.invalidateQueries({ queryKey: ['settings', 'reminderNotice'] }),
+        queryClient.invalidateQueries({ queryKey: nextDoseWidgetQueryKey }),
       ]);
     },
   });

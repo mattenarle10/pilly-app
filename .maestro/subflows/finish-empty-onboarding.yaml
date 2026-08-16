@@ -1,0 +1,6 @@
+- tapOn: 'Continue'
+- assertVisible: 'What should Pilly call you?'
+- tapOn: 'Skip for now'
+- assertVisible: 'Start with one medicine'
+- tapOn: 'Not now'
+- assertVisible: 'Today'

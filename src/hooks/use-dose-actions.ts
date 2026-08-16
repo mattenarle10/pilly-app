@@ -4,6 +4,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import * as Haptics from 'expo-haptics';
 
 import type { DoseStatus, ScheduledDose } from '@/models/dose';
+import { nextDoseWidgetQueryKey } from '@/models/next-dose-widget';
 import { useRepository } from './use-repository';
 
 export type RecentDoseAction = {
@@ -53,7 +54,10 @@ export function useDoseActions() {
           ? null
           : { dose: variables.dose, status: variables.status },
       );
-      return queryClient.invalidateQueries({ queryKey: ['scheduled-doses'] });
+      return Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['scheduled-doses'] }),
+        queryClient.invalidateQueries({ queryKey: nextDoseWidgetQueryKey }),
+      ]);
     },
     onSettled: () => queryClient.invalidateQueries({ queryKey: ['organizer-week'] }),
   });

@@ -52,8 +52,8 @@ export default function NewMedicationRoute() {
         supplyCount: supplyValue(value.supply),
         appearanceShape: value.appearanceShape,
         appearanceSize: value.appearanceSize,
-        appearanceTone: value.appearanceTone,
-        appearanceSecondaryTone: value.appearanceSecondaryTone,
+        appearanceColor: value.appearanceColor,
+        appearanceSecondaryColor: value.appearanceSecondaryColor,
         schedules: scheduleConfigurationFromDraft(value),
       });
       let reminderStatus: 'notRequested' | 'denied' | 'scheduled' | 'failed' = 'notRequested';
@@ -175,12 +175,12 @@ export default function NewMedicationRoute() {
       <AppearanceStep
         shape={values.appearanceShape}
         size={values.appearanceSize}
-        tone={values.appearanceTone}
-        secondaryTone={values.appearanceSecondaryTone}
+        color={values.appearanceColor}
+        secondaryColor={values.appearanceSecondaryColor}
         onShapeChange={(shape) => form.setFieldValue('appearanceShape', shape)}
         onSizeChange={(size) => form.setFieldValue('appearanceSize', size)}
-        onToneChange={(tone) => form.setFieldValue('appearanceTone', tone)}
-        onSecondaryToneChange={(tone) => form.setFieldValue('appearanceSecondaryTone', tone)}
+        onColorChange={(color) => form.setFieldValue('appearanceColor', color)}
+        onSecondaryColorChange={(color) => form.setFieldValue('appearanceSecondaryColor', color)}
       />
       <ScheduleStep
         selectedDays={values.selectedDays}

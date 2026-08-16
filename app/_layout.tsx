@@ -2,7 +2,10 @@ import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 
 import { AppProviders } from '@/providers';
+import { configureNotificationPresentation } from '@/services/notifications';
 import { colors } from '@/ui/tokens';
+
+configureNotificationPresentation();
 
 export default function RootLayout() {
   return (

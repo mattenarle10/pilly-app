@@ -9,8 +9,8 @@ describe('medicine input', () => {
         supplyCount: null,
         appearanceShape: 'capsule',
         appearanceSize: 'medium',
-        appearanceTone: 'rose',
-        appearanceSecondaryTone: 'neutral',
+        appearanceColor: '#F3CCD7',
+        appearanceSecondaryColor: '#F3F1EB',
         schedules: [],
       }).success,
     ).toBe(false);
@@ -21,8 +21,8 @@ describe('medicine input', () => {
         supplyCount: 14,
         appearanceShape: 'round',
         appearanceSize: 'small',
-        appearanceTone: 'lavender',
-        appearanceSecondaryTone: 'peach',
+        appearanceColor: '#ECEAF7',
+        appearanceSecondaryColor: '#FBE9DE',
         schedules: [{ hour: 9, minute: 0, weekdayMask: 127, sortOrder: 0, reminderEnabled: false }],
       }).success,
     ).toBe(true);
@@ -34,8 +34,8 @@ describe('medicine input', () => {
       instructions: 'One tablet',
       appearanceShape: 'round',
       appearanceSize: 'small',
-      appearanceTone: 'lavender',
-      appearanceSecondaryTone: 'peach',
+      appearanceColor: '#ECEAF7',
+      appearanceSecondaryColor: '#FBE9DE',
       schedules: [{ hour: 9, minute: 0, weekdayMask: 127, sortOrder: 0, reminderEnabled: false }],
     };
 

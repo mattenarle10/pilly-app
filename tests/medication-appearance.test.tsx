@@ -1,30 +1,34 @@
 import { StyleSheet } from 'react-native';
 import { render } from '@testing-library/react-native';
 
-import { colors } from '@/ui/tokens';
 import { MedicationAppearance } from '@/ui/components/medication-appearance';
 
 describe('MedicationAppearance', () => {
   test('renders independently selected capsule colors', async () => {
     const screen = await render(
-      <MedicationAppearance shape="capsule" size="medium" tone="rose" secondaryTone="lavender" />,
+      <MedicationAppearance
+        shape="capsule"
+        size="medium"
+        color="#D96C8A"
+        secondaryColor="#7470B8"
+      />,
     );
 
     expect(
       StyleSheet.flatten(
         screen.getByTestId('pill-body', { includeHiddenElements: true }).props.style,
       ),
-    ).toMatchObject({ backgroundColor: colors.brandSoft });
+    ).toMatchObject({ backgroundColor: '#D96C8A' });
     expect(
       StyleSheet.flatten(
         screen.getByTestId('pill-second-half', { includeHiddenElements: true }).props.style,
       ),
-    ).toMatchObject({ backgroundColor: colors.lavenderSoft });
+    ).toMatchObject({ backgroundColor: '#7470B8' });
   });
 
   test('keeps the second color out of single-color shapes', async () => {
     const screen = await render(
-      <MedicationAppearance shape="round" size="medium" tone="peach" secondaryTone="lavender" />,
+      <MedicationAppearance shape="round" size="medium" color="#F2B58A" secondaryColor="#7470B8" />,
     );
 
     expect(screen.queryByTestId('pill-second-half', { includeHiddenElements: true })).toBeNull();
@@ -33,8 +37,8 @@ describe('MedicationAppearance', () => {
   test('keeps the Today cue quieter than the list cue', async () => {
     const screen = await render(
       <>
-        <MedicationAppearance shape="capsule" size="medium" tone="rose" display="mini" />
-        <MedicationAppearance shape="capsule" size="medium" tone="rose" display="compact" />
+        <MedicationAppearance shape="capsule" size="medium" color="#D96C8A" display="mini" />
+        <MedicationAppearance shape="capsule" size="medium" color="#D96C8A" display="compact" />
       </>,
     );
     const appearances = screen.getAllByTestId('pill-body', { includeHiddenElements: true });

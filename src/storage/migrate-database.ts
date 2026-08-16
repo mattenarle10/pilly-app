@@ -1,6 +1,6 @@
 import type { SQLiteDatabase } from 'expo-sqlite';
 
-const databaseVersion = 5;
+const databaseVersion = 6;
 
 export async function migrateDatabase(database: SQLiteDatabase): Promise<void> {
   await database.execAsync('PRAGMA journal_mode = WAL; PRAGMA foreign_keys = ON;');
@@ -126,6 +126,26 @@ export async function migrateDatabase(database: SQLiteDatabase): Promise<void> {
     await database.execAsync(`
       ALTER TABLE medications ADD COLUMN appearance_secondary_tone TEXT NOT NULL DEFAULT 'rose'
         CHECK(appearance_secondary_tone IN ('rose', 'peach', 'lavender', 'neutral'));
+    `);
+  }
+
+  if (currentVersion < 6) {
+    await database.execAsync(`
+      ALTER TABLE medications ADD COLUMN appearance_color TEXT NOT NULL DEFAULT '#F3CCD7';
+      ALTER TABLE medications ADD COLUMN appearance_secondary_color TEXT NOT NULL DEFAULT '#FBE9DE';
+      UPDATE medications
+      SET appearance_color = CASE appearance_tone
+            WHEN 'peach' THEN '#FBE9DE'
+            WHEN 'lavender' THEN '#ECEAF7'
+            WHEN 'neutral' THEN '#F3F1EB'
+            ELSE '#F3CCD7'
+          END,
+          appearance_secondary_color = CASE appearance_secondary_tone
+            WHEN 'peach' THEN '#FBE9DE'
+            WHEN 'lavender' THEN '#ECEAF7'
+            WHEN 'neutral' THEN '#F3F1EB'
+            ELSE '#F3CCD7'
+          END;
     `);
   }
   await database.execAsync(`PRAGMA user_version = ${databaseVersion}`);

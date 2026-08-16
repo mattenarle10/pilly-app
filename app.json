@@ -49,7 +49,23 @@
           "enableBackgroundRemoteNotifications": false
         }
       ],
-      "expo-font"
+      "expo-font",
+      "expo-sharing",
+      [
+        "expo-widgets",
+        {
+          "bundleIdentifier": "dev.sidequests.pilly.widgets",
+          "groupIdentifier": "group.dev.sidequests.pilly",
+          "widgets": [
+            {
+              "name": "NextDoseWidget",
+              "displayName": "Pilly · Next dose",
+              "description": "See your next medicine time at a glance.",
+              "supportedFamilies": ["systemSmall", "systemMedium"]
+            }
+          ]
+        }
+      ]
     ]
   }
 }

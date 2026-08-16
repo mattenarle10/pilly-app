@@ -81,8 +81,8 @@ export class PillyRepository {
           supplyCount: validated.supplyCount,
           appearanceShape: validated.appearanceShape,
           appearanceSize: validated.appearanceSize,
-          appearanceTone: validated.appearanceTone,
-          appearanceSecondaryTone: validated.appearanceSecondaryTone,
+          appearanceColor: validated.appearanceColor,
+          appearanceSecondaryColor: validated.appearanceSecondaryColor,
           createdAt: now,
           updatedAt: now,
           archivedAt: null,
@@ -186,8 +186,8 @@ export class PillyRepository {
           supplyCount: validated.supplyCount,
           appearanceShape: validated.appearanceShape,
           appearanceSize: validated.appearanceSize,
-          appearanceTone: validated.appearanceTone,
-          appearanceSecondaryTone: validated.appearanceSecondaryTone,
+          appearanceColor: validated.appearanceColor,
+          appearanceSecondaryColor: validated.appearanceSecondaryColor,
           updatedAt: createdAt,
         })
         .where(eq(medications.id, medicationId))

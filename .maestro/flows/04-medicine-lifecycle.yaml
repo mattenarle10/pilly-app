@@ -1,0 +1,29 @@
+appId: dev.sidequests.pilly
+name: Edit archive restore and delete a medicine
+---
+- launchApp:
+    clearState: true
+    permissions:
+      notifications: allow
+- runFlow: ../subflows/create-medicine.yaml
+- tapOn: 'Medicines'
+- tapOn: 'Open Test Medicine'
+- tapOn: 'Edit medicine'
+- assertVisible: 'Edit medicine'
+- tapOn: 'Name'
+- eraseText
+- inputText: 'Updated Medicine'
+- hideKeyboard
+- tapOn: 'Done'
+- assertVisible: 'Updated Medicine'
+- tapOn: 'Archive'
+- assertVisible: 'Archive?'
+- tapOn: 'Archive'
+- assertVisible: 'Restore'
+- tapOn: 'Restore'
+- assertVisible: 'Archive'
+- tapOn: 'Delete'
+- assertVisible: 'Delete medicine?'
+- tapOn: 'Delete'
+- assertVisible: 'Medicines'
+- assertNotVisible: 'Updated Medicine'

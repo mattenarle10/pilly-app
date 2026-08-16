@@ -156,8 +156,8 @@ function MedicineList({
             <MedicationAppearance
               shape={medicine.appearanceShape}
               size={medicine.appearanceSize}
-              tone={medicine.appearanceTone}
-              secondaryTone={medicine.appearanceSecondaryTone}
+              color={medicine.appearanceColor}
+              secondaryColor={medicine.appearanceSecondaryColor}
               display="compact"
             />
             <View style={styles.copy}>

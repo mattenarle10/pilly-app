@@ -1,0 +1,22 @@
+- tapOn: 'Continue'
+- tapOn: 'Skip for now'
+- tapOn: 'Add first medicine'
+- assertVisible: 'Add medicine'
+- tapOn: 'Printed name'
+- inputText: 'Test Medicine'
+- hideKeyboard
+- tapOn: 'Edit pill appearance'
+- assertVisible: 'Pill appearance'
+- tapOn: 'Shape: Capsule'
+- tapOn: 'Size: Medium'
+- tapOn: 'Color 1: Lavender'
+- tapOn: 'Color 2: Neutral'
+- tapOn: 'Close'
+- scrollUntilVisible:
+    element:
+      text: 'Reminder for Morning dose'
+    direction: DOWN
+- tapOn: 'Reminder for Morning dose'
+- tapOn: 'Add'
+- assertVisible: 'Today'
+- assertVisible: 'Test Medicine'

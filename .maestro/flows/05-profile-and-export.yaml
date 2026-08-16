@@ -1,0 +1,20 @@
+appId: dev.sidequests.pilly
+name: Profile name export and Plus navigation
+---
+- launchApp:
+    clearState: true
+- runFlow: ../subflows/finish-empty-onboarding.yaml
+- tapOn: 'Profile'
+- tapOn: 'Edit name'
+- tapOn: 'First name'
+- inputText: 'Ada'
+- hideKeyboard
+- tapOn: 'Save'
+- assertVisible: 'Ada'
+- tapOn: 'Export data'
+- assertVisible: 'Your data, ready to take with you.'
+- tapOn: 'Back'
+- tapOn: 'Pilly Plus'
+- assertVisible: 'Clear records, ready to share.'
+- tapOn: 'Back'
+- assertVisible: 'Profile'

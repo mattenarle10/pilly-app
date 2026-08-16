@@ -1,8 +1,11 @@
 import { z } from 'zod';
 import {
+  defaultMedicationAppearanceColor,
+  defaultMedicationAppearanceSecondaryColor,
+  medicationAppearanceColorFromLegacy,
   medicationAppearanceShapeSchema,
   medicationAppearanceSizeSchema,
-  medicationAppearanceToneSchema,
+  medicationAppearanceColorSchema,
 } from '@/models/medication';
 import { weekdayMask, type Schedule, type ScheduleConfiguration } from '@/models/schedule';
 
@@ -21,17 +24,27 @@ const currentDraftSchema = z.object({
   supply: z.string(),
   appearanceShape: medicationAppearanceShapeSchema.default('capsule'),
   appearanceSize: medicationAppearanceSizeSchema.default('medium'),
-  appearanceTone: medicationAppearanceToneSchema.default('rose'),
-  appearanceSecondaryTone: medicationAppearanceToneSchema.default('rose'),
+  appearanceColor: medicationAppearanceColorSchema.default(defaultMedicationAppearanceColor),
+  appearanceSecondaryColor: medicationAppearanceColorSchema.default(
+    defaultMedicationAppearanceSecondaryColor,
+  ),
 });
 export const draftSchema = z.preprocess((value) => {
   if (!value || typeof value !== 'object' || Array.isArray(value)) return value;
   const legacy = value as Record<string, unknown>;
-  if (Array.isArray(legacy.schedules) || typeof legacy.time !== 'string') return value;
-  const { time, reminderEnabled, ...rest } = legacy;
+  const migrated = {
+    ...legacy,
+    appearanceColor: medicationAppearanceColorFromLegacy(
+      legacy.appearanceColor ?? legacy.appearanceTone,
+    ),
+    appearanceSecondaryColor: medicationAppearanceColorFromLegacy(
+      legacy.appearanceSecondaryColor ?? legacy.appearanceSecondaryTone,
+    ),
+  };
+  if (Array.isArray(legacy.schedules) || typeof legacy.time !== 'string') return migrated;
   return {
-    ...rest,
-    schedules: [{ time, reminderEnabled: reminderEnabled === true }],
+    ...migrated,
+    schedules: [{ time: legacy.time, reminderEnabled: legacy.reminderEnabled === true }],
   };
 }, currentDraftSchema);
 export type MedicationDraft = z.infer<typeof draftSchema>;
@@ -47,8 +60,8 @@ export const defaults: MedicationDraft = {
   supply: '',
   appearanceShape: 'capsule',
   appearanceSize: 'medium',
-  appearanceTone: 'rose',
-  appearanceSecondaryTone: 'rose',
+  appearanceColor: defaultMedicationAppearanceColor,
+  appearanceSecondaryColor: defaultMedicationAppearanceSecondaryColor,
 };
 
 const rules = [
@@ -205,7 +218,7 @@ export function medicationDraftsMatch(current: MedicationDraft, next: Medication
     supplyValue(current.supply) === supplyValue(next.supply) &&
     current.appearanceShape === next.appearanceShape &&
     current.appearanceSize === next.appearanceSize &&
-    current.appearanceTone === next.appearanceTone &&
-    current.appearanceSecondaryTone === next.appearanceSecondaryTone
+    current.appearanceColor === next.appearanceColor &&
+    current.appearanceSecondaryColor === next.appearanceSecondaryColor
   );
 }

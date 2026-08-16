@@ -78,8 +78,8 @@ export default function MedicineDetailRoute() {
         <MedicationAppearance
           shape={medication.appearanceShape}
           size={medication.appearanceSize}
-          tone={medication.appearanceTone}
-          secondaryTone={medication.appearanceSecondaryTone}
+          color={medication.appearanceColor}
+          secondaryColor={medication.appearanceSecondaryColor}
         />
         <View style={styles.medicineCopy}>
           <PillyText role="large-title" accessibilityRole="header">

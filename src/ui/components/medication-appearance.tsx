@@ -1,17 +1,17 @@
 import { StyleSheet, View } from 'react-native';
 
-import { colors, shadows } from '@/ui/tokens';
+import { shadows } from '@/ui/tokens';
 import type {
   MedicationAppearanceShape,
   MedicationAppearanceSize,
-  MedicationAppearanceTone,
+  MedicationAppearanceColor,
 } from '@/models/medication';
 
 type Props = {
   shape: MedicationAppearanceShape;
   size: MedicationAppearanceSize;
-  tone: MedicationAppearanceTone;
-  secondaryTone?: MedicationAppearanceTone;
+  color: MedicationAppearanceColor;
+  secondaryColor?: MedicationAppearanceColor;
   display?: 'mini' | 'compact' | 'hero';
 };
 
@@ -27,26 +27,11 @@ const sizeScale: Record<MedicationAppearanceSize, number> = {
   large: 1,
 };
 
-const toneColor: Record<MedicationAppearanceTone, string> = {
-  rose: colors.brandSoft,
-  peach: colors.peachSoft,
-  lavender: colors.lavenderSoft,
-  neutral: colors.surfaceSubtle,
-};
-
-export function medicationAppearanceLabel(
-  shape: MedicationAppearanceShape,
-  size: MedicationAppearanceSize,
-  tone: MedicationAppearanceTone,
-): string {
-  return `${size} ${tone} ${shape}`;
-}
-
 export function MedicationAppearance({
   shape,
   size,
-  tone,
-  secondaryTone = tone,
+  color,
+  secondaryColor = color,
   display = 'hero',
 }: Props) {
   const displayScale = display === 'mini' ? 0.42 : display === 'compact' ? 0.72 : 1;
@@ -67,15 +52,12 @@ export function MedicationAppearance({
       <View style={[styles.shadow, { width, height, borderRadius: height / 2 }]}>
         <View
           testID="pill-body"
-          style={[
-            styles.pill,
-            { width, height, borderRadius: height / 2, backgroundColor: toneColor[tone] },
-          ]}
+          style={[styles.pill, { width, height, borderRadius: height / 2, backgroundColor: color }]}
         >
           {shape === 'capsule' ? (
             <View
               testID="pill-second-half"
-              style={[styles.capsuleHalf, { backgroundColor: toneColor[secondaryTone] }]}
+              style={[styles.capsuleHalf, { backgroundColor: secondaryColor }]}
             />
           ) : null}
           <View
