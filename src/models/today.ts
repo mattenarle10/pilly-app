@@ -59,8 +59,8 @@ export function todayProgress(doses: ScheduledDose[] | undefined, now: Date): To
 
 export function todayProgressHeadline(progress: TodayProgress): string {
   if (progress.recorded === progress.total) return 'All done today';
-  if (progress.available > 0) return `${progress.available} ready now`;
-  return `${progress.upcoming} later today`;
+  if (progress.available > 0) return `${progress.available} due now`;
+  return `${doseCount(progress.upcoming)} later today`;
 }
 
 export function todayProgressDetail(progress: TodayProgress): string {

@@ -42,7 +42,7 @@ describe('Today dose availability', () => {
     );
 
     expect(progress).toEqual({ recorded: 1, total: 3, available: 1, upcoming: 1 });
-    expect(todayProgressHeadline(progress)).toBe('1 ready now');
+    expect(todayProgressHeadline(progress)).toBe('1 due now');
     expect(todayProgressDetail(progress)).toBe('1 of 3 done · 1 later');
   });
 
@@ -54,10 +54,10 @@ describe('Today dose availability', () => {
     expect([
       todayProgressHeadline({ recorded: 1, total: 3, available: 2, upcoming: 0 }),
       todayProgressDetail({ recorded: 1, total: 3, available: 2, upcoming: 0 }),
-    ]).toEqual(['2 ready now', '1 of 3 done']);
+    ]).toEqual(['2 due now', '1 of 3 done']);
     expect([
       todayProgressHeadline({ recorded: 1, total: 3, available: 0, upcoming: 2 }),
       todayProgressDetail({ recorded: 1, total: 3, available: 0, upcoming: 2 }),
-    ]).toEqual(['2 later today', '1 of 3 done']);
+    ]).toEqual(['2 doses later today', '1 of 3 done']);
   });
 });
