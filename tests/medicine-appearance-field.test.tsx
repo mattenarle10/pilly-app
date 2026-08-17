@@ -84,7 +84,7 @@ describe('medicine appearance field', () => {
     await fireEvent.press(screen.getByLabelText('Edit pill appearance'));
 
     expect(screen.getByText('Pill appearance')).toBeOnTheScreen();
-    expect(screen.getAllByLabelText('Custom…')).toHaveLength(2);
+    expect(screen.getAllByLabelText('Custom color')).toHaveLength(2);
     await fireEvent.press(screen.getByLabelText('Color 1: Lavender'));
     await fireEvent.press(screen.getByLabelText('Color 2: Neutral'));
 

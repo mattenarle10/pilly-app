@@ -1,6 +1,8 @@
 import { StyleSheet } from 'react-native';
 import { ColorPicker, Host } from '@expo/ui/swift-ui';
+import { font, foregroundStyle } from '@expo/ui/swift-ui/modifiers';
 
+import { colors } from '@/ui/tokens';
 import {
   normalizeMedicationAppearanceColor,
   type MedicationAppearanceColor,
@@ -19,6 +21,7 @@ export function MedicationColorPicker({ label, value, onChange }: Props) {
         label={label}
         selection={value}
         supportsOpacity={false}
+        modifiers={[font({ size: 15, weight: 'regular' }), foregroundStyle(colors.textPrimary)]}
         onSelectionChange={(next) => onChange(normalizeMedicationAppearanceColor(next))}
       />
     </Host>
@@ -26,5 +29,5 @@ export function MedicationColorPicker({ label, value, onChange }: Props) {
 }
 
 const styles = StyleSheet.create({
-  host: { minHeight: 44 },
+  host: { minHeight: 44, justifyContent: 'center' },
 });

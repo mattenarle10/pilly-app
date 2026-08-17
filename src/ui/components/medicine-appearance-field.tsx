@@ -205,7 +205,7 @@ function ColorChoiceGroup({
           );
         })}
       </View>
-      <MedicationColorPicker label="Custom…" value={value} onChange={onChange} />
+      <MedicationColorPicker label="Custom color" value={value} onChange={onChange} />
     </View>
   );
 }
