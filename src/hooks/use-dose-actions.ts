@@ -4,6 +4,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import * as Haptics from 'expo-haptics';
 
 import type { DoseStatus, ScheduledDose } from '@/models/dose';
+import { reconcileLocalReminders } from '@/services/notifications';
 import { queryKeys } from './query-keys';
 import { useRepository } from './use-repository';
 
@@ -19,6 +20,17 @@ export function useDoseActions() {
   const repository = useRepository();
   const queryClient = useQueryClient();
   const [recentAction, setRecentAction] = useState<RecentDoseAction | null>(null);
+  const canSyncReminders = () => {
+    const maybeStore = repository as Partial<{
+      listReminderSchedules: () => Promise<unknown>;
+      setSetting: (key: string, value: string) => Promise<unknown>;
+      listScheduledDosesForDates?: (dates: readonly Date[]) => Promise<unknown>;
+    }>;
+    return (
+      typeof maybeStore.listReminderSchedules === 'function' &&
+      typeof maybeStore.setSetting === 'function'
+    );
+  };
 
   useEffect(() => {
     if (!recentAction) return;
@@ -43,7 +55,7 @@ export function useDoseActions() {
     networkMode: 'always',
     mutationFn: ({ dose, status }: { dose: ScheduledDose; status: DoseStatus }) =>
       status === 'notRecorded' ? repository.undoDose(dose) : repository.recordDose(dose, status),
-    onSuccess: (_, variables) => {
+    onSuccess: async (_, variables) => {
       const feedback =
         variables.status === 'taken'
           ? Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)
@@ -54,9 +66,13 @@ export function useDoseActions() {
           ? null
           : { dose: variables.dose, status: variables.status },
       );
-      return Promise.all([
+      await Promise.all([
         queryClient.invalidateQueries({ queryKey: queryKeys.scheduledDoses.root }),
       ]);
+      if (canSyncReminders()) {
+        await reconcileLocalReminders(repository);
+        await queryClient.invalidateQueries({ queryKey: queryKeys.setting('reminderNotice') });
+      }
     },
     onSettled: () => queryClient.invalidateQueries({ queryKey: queryKeys.organizerWeek.root }),
   });
