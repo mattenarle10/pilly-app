@@ -14,6 +14,7 @@ type ReminderSchedule = {
 type ReminderSlot = {
   identifier: string;
   scheduleIds: string[];
+  medicineNames?: string[];
   trigger: Notifications.NotificationTriggerInput;
 };
 
@@ -63,7 +64,7 @@ export async function scheduleLocalReminders(
       identifier: slot.identifier,
       content: {
         title: 'Time for your medicine',
-        body: 'Open Pilly to see what’s due.',
+        body: reminderBodyForSlot(slot),
         sound: 'default',
         data: {
           kind: 'medicineReminder',
@@ -137,7 +138,10 @@ function buildUpcomingDosesSlots(
   now: Date,
 ): ReminderSlot[] {
   const enabledScheduleIds = new Set(schedules.map((schedule) => schedule.id));
-  const slotEntries = new Map<number, Set<string>>();
+  const slotEntries = new Map<
+    number,
+    { scheduleIds: Set<string>; medicineNames: Set<string> }
+  >();
   const nowMs = now.getTime();
 
   for (const row of dosesByDate) {
@@ -147,20 +151,25 @@ function buildUpcomingDosesSlots(
       if (!enabledScheduleIds.has(dose.schedule.id)) continue;
 
       const scheduledAt = dose.scheduledAt.getTime();
-      const ids = slotEntries.get(scheduledAt);
-      if (ids) {
-        ids.add(dose.schedule.id);
+      const slot = slotEntries.get(scheduledAt);
+      if (slot) {
+        slot.scheduleIds.add(dose.schedule.id);
+        slot.medicineNames.add(dose.medication.name);
       } else {
-        slotEntries.set(scheduledAt, new Set([dose.schedule.id]));
+        slotEntries.set(scheduledAt, {
+          scheduleIds: new Set([dose.schedule.id]),
+          medicineNames: new Set([dose.medication.name]),
+        });
       }
     }
   }
 
   return [...slotEntries.entries()]
     .sort(([left], [right]) => left - right)
-    .map(([scheduledAt, scheduleIds]) => ({
+    .map(([scheduledAt, slot]) => ({
       identifier: `pilly-reminder:${scheduledAt}`,
-      scheduleIds: [...scheduleIds],
+      scheduleIds: [...slot.scheduleIds],
+      medicineNames: [...slot.medicineNames],
       trigger: {
         type: Notifications.SchedulableTriggerInputTypes.DATE,
         date: new Date(scheduledAt),
@@ -173,7 +182,7 @@ function reminderSlots(schedules: readonly ReminderSchedule[]): {
   minute: number;
   weekday: number;
   scheduleIds: string[];
-}[] {
+  }[] {
   const slots = new Map<string, { hour: number; minute: number; weekday: number; scheduleIds: string[] }>();
   for (const schedule of schedules) {
     for (let day = 1; day <= 7; day += 1) {
@@ -196,6 +205,20 @@ function reminderSlots(schedules: readonly ReminderSchedule[]): {
     (left, right) =>
       left.weekday - right.weekday || left.hour - right.hour || left.minute - right.minute,
   );
+}
+
+function reminderBodyForSlot(slot: ReminderSlot): string {
+  if (!slot.medicineNames || slot.medicineNames.length === 0) {
+    return 'Open Pilly to see what’s due.';
+  }
+  const names = [...slot.medicineNames];
+  if (names.length === 1) {
+    return `Time to take ${names[0]}.`;
+  }
+  if (names.length === 2) {
+    return `Time to take ${names[0]} and ${names[1]}.`;
+  }
+  return `Time to take ${names[0]} and ${names.length - 1} others.`;
 }
 
 function reminderDates(now: Date): Date[] {
