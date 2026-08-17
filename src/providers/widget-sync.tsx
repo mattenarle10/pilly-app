@@ -7,12 +7,13 @@ import { queryKeys } from '@/hooks/query-keys';
 import { useWeekDoses } from '@/hooks/use-week-doses';
 import { buildNextDoseWidgetTimeline } from '@/models/next-dose-widget';
 import { weekStartingToday } from '@/models/schedule';
+import { appNow } from '@/services/app-clock';
 import NextDoseWidget from '@/ui/widgets/next-dose-widget';
 
 export function WidgetSync() {
   const repository = useRepository();
   const enabled = Platform.OS === 'ios';
-  const dates = useMemo(() => weekStartingToday(new Date()), []);
+  const dates = useMemo(() => weekStartingToday(appNow()), []);
   const doses = useWeekDoses(dates, enabled);
   const medicines = useQuery({
     queryKey: queryKeys.medications.active,
@@ -26,7 +27,7 @@ export function WidgetSync() {
         ? buildNextDoseWidgetTimeline({
             medicationCount: medicines.data.length,
             doses: doses.data.flat(),
-            now: new Date(),
+            now: appNow(),
           })
         : null,
     [doses.data, medicines.data],

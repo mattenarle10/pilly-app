@@ -3,13 +3,14 @@ import { useQuery } from '@tanstack/react-query';
 
 import { profileSettingKeys, resolveProfileName } from '@/models/profile';
 import { toLocalDate, weekStartingToday } from '@/models/schedule';
+import { appNow } from '@/services/app-clock';
 import { queryKeys } from './query-keys';
 import { useRepository } from './use-repository';
 import { useWeekDoses } from './use-week-doses';
 
 export function useTodayData() {
   const repository = useRepository();
-  const today = useMemo(() => new Date(), []);
+  const today = useMemo(() => appNow(), []);
   const dates = useMemo(() => weekStartingToday(today), [today]);
   const doses = useQuery({
     queryKey: queryKeys.scheduledDoses.date(toLocalDate(today)),

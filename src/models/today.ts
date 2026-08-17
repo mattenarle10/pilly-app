@@ -20,8 +20,9 @@ export function greetingFor(date: Date, firstName?: string | null): string {
 export function buildOrganizerDays(
   dates: readonly Date[],
   dosesByDay: readonly ScheduledDose[][] | undefined,
+  today: Date,
 ): TodayOrganizerDay[] {
-  return buildWeekDays(dates, dosesByDay, new Date());
+  return buildWeekDays(dates, dosesByDay, today);
 }
 
 export function groupTodayDoses(doses: ScheduledDose[] | undefined): TodayDoseGroup[] {

@@ -2,13 +2,14 @@ import { useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 
 import { weekStartingToday } from '@/models/schedule';
+import { appNow } from '@/services/app-clock';
 import { queryKeys } from './query-keys';
 import { useRepository } from './use-repository';
 import { useWeekDoses } from './use-week-doses';
 
 export function useWeekData() {
   const repository = useRepository();
-  const today = useMemo(() => new Date(), []);
+  const today = useMemo(() => appNow(), []);
   const dates = useMemo(() => weekStartingToday(today), [today]);
   const doses = useWeekDoses(dates);
   const medicines = useQuery({

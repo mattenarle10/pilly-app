@@ -35,7 +35,7 @@ export default function Today() {
   const { mutation, recentAction, recordDose, undoRecent } = useDoseActions();
   const [correction, setCorrection] = useState<ScheduledDose | null>(null);
   const [correctionVisible, setCorrectionVisible] = useState(false);
-  const organizerDays = buildOrganizerDays(dates, weekDoses.data);
+  const organizerDays = buildOrganizerDays(dates, weekDoses.data, today);
   const doseGroups = groupTodayDoses(doses.data);
   const progress = todayProgress(doses.data, now);
   const nextScheduledDay = organizerDays.slice(1).find((day) => day.state !== 'empty');
