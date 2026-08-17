@@ -1,0 +1,18 @@
+appId: dev.sidequests.pilly
+name: Correct a dose and review its history
+---
+- launchApp:
+    clearState: true
+    permissions:
+      notifications: allow
+- runFlow: ../subflows/create-medicine.yaml
+- tapOn: 'Taken'
+- assertVisible: 'Status: Taken'
+- tapOn: 'Change status for Test Medicine'
+- assertVisible: 'Change record'
+- tapOn: 'Skipped'
+- assertVisible: 'Status: Skipped'
+- tapOn: 'Open details for Test Medicine'
+- tapOn: 'Dose history'
+- assertVisible: 'Marked Taken'
+- assertVisible: 'Changed Taken to Skipped'

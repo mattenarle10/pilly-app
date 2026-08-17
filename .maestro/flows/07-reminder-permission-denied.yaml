@@ -1,0 +1,13 @@
+appId: dev.sidequests.pilly
+name: Explain a denied reminder permission
+---
+- launchApp:
+    clearState: true
+    permissions:
+      notifications: deny
+- runFlow: ../subflows/create-medicine.yaml
+- assertVisible: 'Reminder is off'
+- assertVisible: 'Allow notifications in iPhone Settings.'
+- tapOn: 'Dismiss'
+- assertNotVisible: 'Reminder is off'
+- assertVisible: 'Open details for Test Medicine'

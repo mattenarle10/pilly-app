@@ -1,0 +1,34 @@
+appId: dev.sidequests.pilly
+name: Recover from an incomplete medicine form
+---
+- launchApp:
+    clearState: true
+- retry:
+    maxRetries: 3
+    commands:
+      - tapOn: 'Continue'
+      - assertVisible: 'What should Pilly call you?'
+- tapOn:
+    text: 'Skip for now'
+    retryTapIfNoChange: true
+- assertVisible: 'Start with one medicine'
+- tapOn:
+    text: 'Add first medicine'
+    retryTapIfNoChange: true
+- assertVisible: 'Add medicine'
+- tapOn: 'Add'
+- assertVisible: 'Enter the name from the label.'
+- tapOn:
+    id: 'medicine-name'
+- inputText: 'Validated Medicine'
+- hideKeyboard
+- runFlow:
+    when:
+      visible: 'Pill appearance'
+    commands:
+      - tapOn: 'Close'
+- tapOn:
+    text: 'Add'
+    retryTapIfNoChange: true
+- assertVisible: 'Today'
+- assertVisible: 'Open details for Validated Medicine'

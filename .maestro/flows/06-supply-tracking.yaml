@@ -1,0 +1,24 @@
+appId: dev.sidequests.pilly
+name: Start and adjust medicine supply
+---
+- launchApp:
+    clearState: true
+    permissions:
+      notifications: allow
+- runFlow: ../subflows/create-medicine.yaml
+- tapOn: 'Open details for Test Medicine'
+- assertVisible: 'Not tracked'
+- tapOn: 'Start tracking Supply'
+- assertVisible: 'About 1 day left'
+- tapOn: 'Increase Supply'
+- assertVisible: 'About 2 days left'
+- swipe:
+    start: 50%, 65%
+    end: 50%, 60%
+    duration: 700
+- tapOn: 'Back'
+- tapOn: 'Medicines'
+- tapOn: 'Open Test Medicine'
+- assertVisible: 'About 2 days left'
+- tapOn: 'Decrease Supply'
+- assertVisible: 'About 1 day left'
