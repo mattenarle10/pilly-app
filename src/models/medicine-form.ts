@@ -20,7 +20,7 @@ const currentDraftSchema = z.object({
   selectedDays: z.array(z.number()),
   schedules: z
     .array(medicationScheduleDraftSchema)
-    .default([{ time: '09:00', reminderEnabled: false }]),
+    .default([{ time: '09:00', reminderEnabled: true }]),
   supply: z.string(),
   appearanceShape: medicationAppearanceShapeSchema.default('capsule'),
   appearanceSize: medicationAppearanceSizeSchema.default('medium'),
@@ -56,7 +56,7 @@ export const defaults: MedicationDraft = {
   name: '',
   instructions: '',
   selectedDays: [1, 2, 3, 4, 5, 6, 7],
-  schedules: [{ time: '09:00', reminderEnabled: false }],
+  schedules: [{ time: '09:00', reminderEnabled: true }],
   supply: '',
   appearanceShape: 'capsule',
   appearanceSize: 'medium',

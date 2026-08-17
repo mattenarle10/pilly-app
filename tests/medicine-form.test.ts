@@ -164,7 +164,7 @@ describe('medicine setup validation', () => {
     expect(
       medicationDraftsMatch(defaults, {
         ...defaults,
-        schedules: [{ time: '09:00', reminderEnabled: true }],
+        schedules: [{ time: '09:00', reminderEnabled: false }],
       }),
     ).toBe(false);
     expect(
