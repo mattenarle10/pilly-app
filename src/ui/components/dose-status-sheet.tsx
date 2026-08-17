@@ -39,6 +39,7 @@ export function DoseStatusSheet({
             <Pressable
               key={status}
               accessibilityRole="radio"
+              accessibilityLabel={visual.label}
               accessibilityState={{ selected, disabled: busy }}
               disabled={busy}
               onPress={() => onSelect(status)}
