@@ -150,6 +150,7 @@ export default function MedicineDetailRoute() {
               showOff={false}
               supportingText={supplyEstimate}
               embedded
+              startActionVariant="quiet"
             />
           </View>
         </PillyCard>

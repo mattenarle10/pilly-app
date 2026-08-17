@@ -14,6 +14,7 @@ type Props = {
   showOff?: boolean;
   supportingText?: string;
   embedded?: boolean;
+  startActionVariant?: 'primary' | 'quiet';
 };
 
 export function PillyNumberPicker({
@@ -24,6 +25,7 @@ export function PillyNumberPicker({
   showOff = true,
   supportingText,
   embedded = false,
+  startActionVariant = 'primary',
 }: Props) {
   const decrement = () => {
     if (value !== null && value > 0) onChange(value - 1);
@@ -57,7 +59,9 @@ export function PillyNumberPicker({
             <PillyButton
               label="Start"
               accessibilityLabel={`Start tracking ${label}`}
-              icon="add"
+              variant={startActionVariant}
+              tone={startActionVariant === 'quiet' ? 'brand' : 'default'}
+              icon={startActionVariant === 'quiet' ? undefined : 'add'}
               size="compact"
               onPress={increment}
             />
