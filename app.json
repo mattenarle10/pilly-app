@@ -13,7 +13,10 @@
         "dark": "./assets/icon-dark.png"
       },
       "supportsTablet": false,
-      "bundleIdentifier": "dev.sidequests.pilly"
+      "bundleIdentifier": "dev.sidequests.pilly",
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false
+      }
     },
     "android": {
       "adaptiveIcon": {
@@ -61,11 +64,38 @@
               "name": "NextDoseWidget",
               "displayName": "Pilly · Next dose",
               "description": "See your next medicine time at a glance.",
-              "supportedFamilies": ["systemSmall", "systemMedium"]
+              "supportedFamilies": [
+                "systemSmall",
+                "systemMedium"
+              ]
             }
           ]
         }
       ]
-    ]
+    ],
+    "extra": {
+      "router": {},
+      "eas": {
+        "build": {
+          "experimental": {
+            "ios": {
+              "appExtensions": [
+                {
+                  "targetName": "ExpoWidgetsTarget",
+                  "bundleIdentifier": "dev.sidequests.pilly.widgets",
+                  "entitlements": {
+                    "com.apple.security.application-groups": [
+                      "group.dev.sidequests.pilly"
+                    ]
+                  }
+                }
+              ]
+            }
+          }
+        },
+        "projectId": "2adfb178-e395-4e8b-abf4-8f8d34c9dcfb"
+      }
+    },
+    "owner": "mattenarle10"
   }
 }
