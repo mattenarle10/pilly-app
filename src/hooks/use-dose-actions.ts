@@ -24,7 +24,6 @@ export function useDoseActions() {
     const maybeStore = repository as Partial<{
       listReminderSchedules: () => Promise<unknown>;
       setSetting: (key: string, value: string) => Promise<unknown>;
-      listScheduledDosesForDates?: (dates: readonly Date[]) => Promise<unknown>;
     }>;
     return (
       typeof maybeStore.listReminderSchedules === 'function' &&

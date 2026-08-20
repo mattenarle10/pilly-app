@@ -5,7 +5,6 @@ import {
   reconcileLocalReminders,
   scheduleLocalReminders,
 } from '@/services/notifications';
-import type { ScheduledDose } from '@/models/dose';
 
 jest.mock('expo-notifications', () => ({
   getAllScheduledNotificationsAsync: jest.fn(),
@@ -37,36 +36,6 @@ const reminder = {
   minute: 15,
   weekdayMask: 1 | 4,
   reminderEnabled: true,
-};
-
-const doseDue: ScheduledDose = {
-  occurrenceId: '4cf5bccb-1e47-4093-b91d-428cf5eed57b:2099-08-16',
-  medication: {
-    id: 'd7bf17a4-3b0c-4c61-9155-7102fe0769f2',
-    name: 'Morning capsule',
-    instructions: 'With food',
-    supplyCount: null,
-    appearanceShape: 'capsule',
-    appearanceSize: 'medium',
-    appearanceColor: '#F3CCD7',
-    appearanceSecondaryColor: '#F3CCD7',
-    createdAt: '2026-08-16T00:00:00.000Z',
-    updatedAt: '2026-08-16T00:00:00.000Z',
-    archivedAt: null,
-    timeZoneIdentifier: 'Asia/Manila',
-  },
-  schedule: {
-    id: '4cf5bccb-1e47-4093-b91d-428cf5eed57b',
-    medicationId: 'd7bf17a4-3b0c-4c61-9155-7102fe0769f2',
-    hour: 9,
-    minute: 15,
-    weekdayMask: 127,
-    sortOrder: 0,
-    reminderEnabled: true,
-  },
-  scheduledAt: new Date('2099-08-16T09:00:00.000Z'),
-  status: 'notRecorded',
-  recordedAt: null,
 };
 
 describe('local medicine reminders', () => {
@@ -168,7 +137,7 @@ describe('local medicine reminders', () => {
     expect(scheduleNotification).not.toHaveBeenCalled();
   });
 
-  test('uses private copy and schedules only the selected weekdays', async () => {
+  test('uses private recurring copy and schedules only the selected weekdays', async () => {
     await expect(scheduleLocalReminders([reminder])).resolves.toBe('scheduled');
 
     expect(scheduleNotification).toHaveBeenCalledTimes(2);
@@ -196,18 +165,6 @@ describe('local medicine reminders', () => {
       expect.objectContaining({
         identifier: 'pilly-reminder:4:9:15',
         trigger: expect.objectContaining({ weekday: 4 }),
-      }),
-    );
-  });
-
-  test('uses the next medicine name in the next due dose notification body', async () => {
-    await scheduleLocalReminders([reminder], [[doseDue]]);
-
-    expect(scheduleNotification).toHaveBeenCalledWith(
-      expect.objectContaining({
-        content: expect.objectContaining({
-          body: 'Time to take Morning capsule.',
-        }),
       }),
     );
   });
