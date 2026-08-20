@@ -87,6 +87,26 @@ describe('next-dose widget timeline', () => {
     });
   });
 
+  test('updates relative-day copy at local midnight before the next dose', () => {
+    const lateEvening = new Date(2026, 7, 15, 23, 30);
+    const midnight = new Date(2026, 7, 16, 0, 0);
+    const scheduledAt = new Date(2026, 7, 16, 9, 0);
+    const timeline = buildNextDoseWidgetTimeline({
+      medicationCount: 1,
+      doses: [scheduledDose(scheduledAt, 'notRecorded')],
+      now: lateEvening,
+    });
+
+    expect(timeline).toContainEqual({
+      date: midnight,
+      props: {
+        state: 'upcoming',
+        title: '9:00 AM',
+        detail: 'Today · 1 dose',
+      },
+    });
+  });
+
   test('ignores recorded doses and shows a calm clear state', () => {
     const timeline = buildNextDoseWidgetTimeline({
       medicationCount: 1,

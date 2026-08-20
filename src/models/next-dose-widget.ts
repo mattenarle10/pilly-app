@@ -39,11 +39,31 @@ export function buildNextDoseWidgetTimeline({
         .filter((timestamp) => timestamp > now.getTime()),
     ),
   ];
+  const lastFutureTime = futureTimes.at(-1);
+  const timelineTimes = [
+    ...new Set([
+      now.getTime(),
+      ...futureTimes,
+      ...localMidnightsThrough(now, lastFutureTime == null ? null : new Date(lastFutureTime)),
+    ]),
+  ].sort((left, right) => left - right);
 
-  return [now.getTime(), ...futureTimes].slice(0, maxTimelineEntries).map((timestamp) => ({
+  return timelineTimes.slice(0, maxTimelineEntries).map((timestamp) => ({
     date: new Date(timestamp),
     props: widgetPropsAt(new Date(timestamp), medicationCount, pending),
   }));
+}
+
+function localMidnightsThrough(now: Date, end: Date | null): number[] {
+  if (!end) return [];
+
+  const cursor = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
+  const boundaries: number[] = [];
+  while (cursor.getTime() <= end.getTime()) {
+    boundaries.push(cursor.getTime());
+    cursor.setDate(cursor.getDate() + 1);
+  }
+  return boundaries;
 }
 
 function widgetPropsAt(
