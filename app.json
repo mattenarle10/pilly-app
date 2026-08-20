@@ -64,10 +64,7 @@
               "name": "NextDoseWidget",
               "displayName": "Pilly · Next dose",
               "description": "See your next medicine time at a glance.",
-              "supportedFamilies": [
-                "systemSmall",
-                "systemMedium"
-              ]
+              "supportedFamilies": ["systemSmall", "systemMedium"]
             }
           ]
         }
@@ -84,9 +81,7 @@
                   "targetName": "ExpoWidgetsTarget",
                   "bundleIdentifier": "dev.sidequests.pilly.widgets",
                   "entitlements": {
-                    "com.apple.security.application-groups": [
-                      "group.dev.sidequests.pilly"
-                    ]
+                    "com.apple.security.application-groups": ["group.dev.sidequests.pilly"]
                   }
                 }
               ]
