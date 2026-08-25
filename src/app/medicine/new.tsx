@@ -109,7 +109,6 @@ export default function NewMedicationRoute() {
 
   return (
     <MedicineFormShell
-      title="Add medicine"
       actionLabel="Add"
       actionLoading={createMutation.isPending}
       onAction={() => submit(values)}

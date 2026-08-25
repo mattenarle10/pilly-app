@@ -6,7 +6,6 @@ import { Screen } from './screen';
 import { colors, spacing } from '@/ui/tokens';
 
 type Props = {
-  title: string;
   actionLabel: string;
   actionDisabled?: boolean;
   actionLoading?: boolean;
@@ -17,7 +16,6 @@ type Props = {
 };
 
 export function MedicineFormShell({
-  title,
   actionLabel,
   actionDisabled = false,
   actionLoading = false,
@@ -30,19 +28,6 @@ export function MedicineFormShell({
 
   return (
     <>
-      <Stack.Screen
-        options={{
-          headerShown: true,
-          headerBackButtonDisplayMode: 'minimal',
-          headerBackButtonMenuEnabled: false,
-          headerShadowVisible: false,
-          headerStyle: { backgroundColor: colors.background },
-          headerTintColor: colors.textPrimary,
-          headerTitleAlign: 'center',
-          headerTitleStyle: { color: colors.textPrimary, fontWeight: '600' },
-          title,
-        }}
-      />
       <Stack.Toolbar placement="right">
         <Stack.Toolbar.Button
           accessibilityLabel={actionLoading ? `${actionLabel}, in progress` : actionLabel}

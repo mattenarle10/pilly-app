@@ -102,7 +102,6 @@ function EditMedicineForm({
 
   return (
     <MedicineFormShell
-      title="Edit medicine"
       actionLabel="Done"
       actionLoading={saveMutation.isPending}
       actionDisabled={!isDirty || issue !== null}
