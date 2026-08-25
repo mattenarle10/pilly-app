@@ -47,6 +47,7 @@ describe('ScheduleStep', () => {
       />,
     );
 
+    expect(screen.getByText('Add time')).toBeOnTheScreen();
     fireEvent.press(screen.getByLabelText('Add another dose time'));
 
     expect(onSchedulesChange).toHaveBeenCalledWith([

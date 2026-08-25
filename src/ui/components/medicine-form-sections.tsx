@@ -212,7 +212,7 @@ export function ScheduleStep({
         >
           <PillyIcon name="add" size={18} color={colors.brand} />
           <PillyText role="label" style={styles.addScheduleLabel}>
-            Add another time
+            Add time
           </PillyText>
         </Pressable>
       </PillyCard>
@@ -357,8 +357,8 @@ const styles = StyleSheet.create({
     minHeight: 52,
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
     gap: spacing.sm,
+    paddingHorizontal: spacing.lg,
     borderTopWidth: 1,
     borderTopColor: colors.surfaceSubtle,
   },
