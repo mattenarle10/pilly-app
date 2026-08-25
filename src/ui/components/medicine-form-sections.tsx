@@ -135,11 +135,6 @@ export function ScheduleStep({
               <PillyText role="label" style={active ? styles.dayTextActive : undefined}>
                 {day.label}
               </PillyText>
-              <PillyIcon
-                name={active ? 'done' : 'statusEmpty'}
-                size={13}
-                color={active ? colors.surface : colors.textSecondary}
-              />
             </Pressable>
           );
         })}
@@ -291,16 +286,14 @@ const styles = StyleSheet.create({
   day: {
     flex: 1,
     minWidth: 44,
-    minHeight: 52,
-    paddingVertical: spacing.xs,
-    borderRadius: radii.sm,
-    gap: 2,
+    height: 44,
+    borderRadius: radii.round,
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: colors.surfaceSubtle,
   },
-  dayActive: { backgroundColor: colors.brand },
-  dayTextActive: { color: colors.surface },
+  dayActive: { backgroundColor: colors.brandSoft },
+  dayTextActive: { color: colors.brandStrong },
   quickDays: { flexDirection: 'row', gap: spacing.sm },
   quickAction: { flex: 1 },
   scheduleSurface: { overflow: 'hidden' },
