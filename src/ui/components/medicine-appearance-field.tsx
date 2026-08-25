@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 
 import { MedicationAppearance } from './medication-appearance';
+import { MedicationAppearancePreview3D } from './medication-appearance-preview-3d';
 import { MedicationColorPicker } from './medication-color-picker';
 import { PillyDialog } from './pilly-dialog';
 import { PillyText } from './pilly-text';
@@ -9,7 +10,6 @@ import { PillyIcon } from '@/ui/icons';
 import { colors, radii, shadows, spacing } from '@/ui/tokens';
 import {
   medicationAppearanceColorName,
-  medicationAppearancePresets,
   type MedicationAppearanceColor,
   type MedicationAppearanceShape,
   type MedicationAppearanceSize,
@@ -20,26 +20,20 @@ const shapes: { value: MedicationAppearanceShape; label: string }[] = [
   { value: 'oval', label: 'Oval' },
   { value: 'capsule', label: 'Capsule' },
 ];
-const sizes: { value: MedicationAppearanceSize; label: string }[] = [
-  { value: 'small', label: 'Small' },
-  { value: 'medium', label: 'Medium' },
-  { value: 'large', label: 'Large' },
-];
-
 type Props = {
   shape: MedicationAppearanceShape;
   size: MedicationAppearanceSize;
   color: MedicationAppearanceColor;
   secondaryColor: MedicationAppearanceColor;
   onShapeChange: (value: MedicationAppearanceShape) => void;
-  onSizeChange: (value: MedicationAppearanceSize) => void;
   onColorChange: (value: MedicationAppearanceColor) => void;
   onSecondaryColorChange: (value: MedicationAppearanceColor) => void;
+  enableThreeDimensionalPreview?: boolean;
 };
 
 export function AppearanceStep(props: Props) {
   const [showEditor, setShowEditor] = useState(false);
-  const title = `${capitalize(props.size)} ${props.shape}`;
+  const title = capitalize(props.shape);
   const colorSummary = appearanceColorSummary(props.shape, props.color, props.secondaryColor);
 
   return (
@@ -80,12 +74,21 @@ export function AppearanceStep(props: Props) {
         onClose={() => setShowEditor(false)}
       >
         <View style={styles.preview}>
-          <MedicationAppearance
-            shape={props.shape}
-            size={props.size}
-            color={props.color}
-            secondaryColor={props.secondaryColor}
-          />
+          {props.enableThreeDimensionalPreview ? (
+            <MedicationAppearancePreview3D
+              shape={props.shape}
+              color={props.color}
+              secondaryColor={props.secondaryColor}
+              active={showEditor}
+            />
+          ) : (
+            <MedicationAppearance
+              shape={props.shape}
+              size="medium"
+              color={props.color}
+              secondaryColor={props.secondaryColor}
+            />
+          )}
           <PillyText role="caption" muted>
             {title} · {colorSummary}
           </PillyText>
@@ -96,24 +99,13 @@ export function AppearanceStep(props: Props) {
           value={props.shape}
           onChange={props.onShapeChange}
         />
-        <ChoiceGroup
-          label="Size"
-          options={sizes}
-          value={props.size}
-          onChange={props.onSizeChange}
+        <AppearanceColorEditor
+          shape={props.shape}
+          color={props.color}
+          secondaryColor={props.secondaryColor}
+          onColorChange={props.onColorChange}
+          onSecondaryColorChange={props.onSecondaryColorChange}
         />
-        <ColorChoiceGroup
-          label={props.shape === 'capsule' ? 'Color 1' : 'Color'}
-          value={props.color}
-          onChange={props.onColorChange}
-        />
-        {props.shape === 'capsule' ? (
-          <ColorChoiceGroup
-            label="Color 2"
-            value={props.secondaryColor}
-            onChange={props.onSecondaryColorChange}
-          />
-        ) : null}
       </PillyDialog>
     </View>
   );
@@ -169,44 +161,76 @@ function ChoiceGroup<Value extends string>({
   );
 }
 
-function ColorChoiceGroup({
-  label,
-  value,
-  onChange,
-}: {
-  label: string;
-  value: MedicationAppearanceColor;
-  onChange: (value: MedicationAppearanceColor) => void;
-}) {
+type CapsuleColorSlot = 'primary' | 'secondary';
+
+function AppearanceColorEditor({
+  shape,
+  color,
+  secondaryColor,
+  onColorChange,
+  onSecondaryColorChange,
+}: Pick<Props, 'shape' | 'color' | 'secondaryColor' | 'onColorChange' | 'onSecondaryColorChange'>) {
+  const [activeSlot, setActiveSlot] = useState<CapsuleColorSlot>('primary');
+  const editingSecondary = shape === 'capsule' && activeSlot === 'secondary';
+  const value = editingSecondary ? secondaryColor : color;
+  const onChange = editingSecondary ? onSecondaryColorChange : onColorChange;
+
   return (
     <View style={styles.choiceGroup}>
       <PillyText role="caption" muted>
-        {label}
+        Color
       </PillyText>
-      <View accessibilityRole="radiogroup" style={styles.swatches}>
-        {medicationAppearancePresets.map((preset) => {
-          const selected = preset.color === value;
-          return (
-            <Pressable
-              key={preset.label}
-              accessibilityRole="radio"
-              accessibilityLabel={`${label}: ${preset.label}`}
-              accessibilityState={{ selected }}
-              onPress={() => onChange(preset.color)}
-              style={({ pressed }) => [
-                styles.swatchChoice,
-                selected && styles.swatchChoiceActive,
-                pressed && styles.swatchChoicePressed,
-              ]}
-            >
-              <View style={[styles.swatch, { backgroundColor: preset.color }]} />
-              <PillyText role="caption">{preset.label}</PillyText>
-            </Pressable>
-          );
-        })}
-      </View>
-      <MedicationColorPicker label="Custom color" value={value} onChange={onChange} />
+      {shape === 'capsule' ? (
+        <View accessibilityRole="radiogroup" style={styles.colorTargets}>
+          <ColorTarget
+            label="Left"
+            accessibilityLabel="Edit left half color"
+            color={color}
+            selected={activeSlot === 'primary'}
+            onPress={() => setActiveSlot('primary')}
+          />
+          <ColorTarget
+            label="Right"
+            accessibilityLabel="Edit right half color"
+            color={secondaryColor}
+            selected={activeSlot === 'secondary'}
+            onPress={() => setActiveSlot('secondary')}
+          />
+        </View>
+      ) : null}
+      <MedicationColorPicker label="Choose color" value={value} onChange={onChange} />
     </View>
+  );
+}
+
+function ColorTarget({
+  label,
+  accessibilityLabel,
+  color,
+  selected,
+  onPress,
+}: {
+  label: string;
+  accessibilityLabel: string;
+  color: MedicationAppearanceColor;
+  selected: boolean;
+  onPress: () => void;
+}) {
+  return (
+    <Pressable
+      accessibilityRole="radio"
+      accessibilityLabel={accessibilityLabel}
+      accessibilityState={{ selected }}
+      onPress={onPress}
+      style={({ pressed }) => [
+        styles.colorTarget,
+        selected && styles.colorTargetActive,
+        pressed && styles.colorTargetPressed,
+      ]}
+    >
+      <View style={[styles.targetSwatch, { backgroundColor: color }]} />
+      <PillyText role="label">{label}</PillyText>
+    </Pressable>
   );
 }
 
@@ -244,21 +268,22 @@ const styles = StyleSheet.create({
   },
   choiceActive: { backgroundColor: colors.brand },
   choiceTextActive: { color: colors.surface },
-  swatches: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
-  swatchChoice: {
-    minWidth: 92,
+  colorTargets: { flexDirection: 'row', gap: spacing.sm },
+  colorTarget: {
+    flex: 1,
     minHeight: 44,
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'center',
     gap: spacing.sm,
     paddingHorizontal: spacing.sm,
     borderWidth: 1,
     borderColor: colors.surfaceSubtle,
-    borderRadius: radii.round,
+    borderRadius: radii.lg,
   },
-  swatchChoiceActive: { borderColor: colors.brand, backgroundColor: colors.brandSoft },
-  swatchChoicePressed: { opacity: 0.72 },
-  swatch: {
+  colorTargetActive: { borderColor: colors.brand, backgroundColor: colors.brandSoft },
+  colorTargetPressed: { opacity: 0.72 },
+  targetSwatch: {
     width: 22,
     height: 22,
     borderRadius: radii.round,

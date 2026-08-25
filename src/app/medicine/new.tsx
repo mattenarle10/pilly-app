@@ -166,7 +166,6 @@ export default function NewMedicationRoute() {
         color={values.appearanceColor}
         secondaryColor={values.appearanceSecondaryColor}
         onShapeChange={(shape) => form.setFieldValue('appearanceShape', shape)}
-        onSizeChange={(size) => form.setFieldValue('appearanceSize', size)}
         onColorChange={(color) => form.setFieldValue('appearanceColor', color)}
         onSecondaryColorChange={(color) => form.setFieldValue('appearanceSecondaryColor', color)}
       />

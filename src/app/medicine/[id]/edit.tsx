@@ -183,12 +183,12 @@ const EditAppearanceSection = memo(function EditAppearanceSection({
 
   return (
     <AppearanceStep
+      enableThreeDimensionalPreview
       shape={shape}
       size={size}
       color={color}
       secondaryColor={secondaryColor}
       onShapeChange={(value) => setFieldValue('appearanceShape', value)}
-      onSizeChange={(value) => setFieldValue('appearanceSize', value)}
       onColorChange={(value) => setFieldValue('appearanceColor', value)}
       onSecondaryColorChange={(value) => setFieldValue('appearanceSecondaryColor', value)}
     />
