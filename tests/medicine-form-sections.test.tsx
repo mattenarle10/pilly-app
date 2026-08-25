@@ -18,6 +18,24 @@ jest.mock('react-native-reanimated', () => {
 describe('ScheduleStep', () => {
   afterEach(cleanup);
 
+  test('keeps day presets compact and exposes their selected state', async () => {
+    const onDaysChange = jest.fn();
+    const screen = await render(
+      <ScheduleStep
+        selectedDays={[1, 2, 3, 4, 5, 6, 7]}
+        schedules={[{ time: '09:00', reminderEnabled: false }]}
+        onDaysChange={onDaysChange}
+        onSchedulesChange={jest.fn()}
+      />,
+    );
+
+    expect(screen.getByLabelText('Every day').props.accessibilityState).toEqual({ selected: true });
+    expect(screen.getByLabelText('Weekdays').props.accessibilityState).toEqual({ selected: false });
+
+    fireEvent.press(screen.getByLabelText('Weekdays'));
+    expect(onDaysChange).toHaveBeenCalledWith([1, 2, 3, 4, 5]);
+  });
+
   test('adds the next useful exact time without adding another control cluster', async () => {
     const onSchedulesChange = jest.fn();
     const screen = await render(
