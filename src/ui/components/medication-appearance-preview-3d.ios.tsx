@@ -1,25 +1,16 @@
 /* eslint-disable react/no-unknown-property -- React Three Fiber exposes Three.js properties through JSX. */
 import {
   Component,
-  forwardRef,
   useCallback,
   useEffect,
-  useImperativeHandle,
-  useMemo,
   useRef,
   useState,
   type ErrorInfo,
   type PropsWithChildren,
 } from 'react';
-import {
-  ActivityIndicator,
-  PanResponder,
-  StyleSheet,
-  View,
-  type AccessibilityActionEvent,
-} from 'react-native';
-import { Canvas, useFrame, useThree } from '@react-three/fiber/native';
-import type { Group, Vector2 } from 'three';
+import { ActivityIndicator, StyleSheet, View } from 'react-native';
+import { Canvas, useFrame } from '@react-three/fiber/native';
+import type { Vector2 } from 'three';
 
 import type { MedicationAppearancePreview3DProps } from './medication-appearance-preview-3d';
 import { MedicationAppearance } from './medication-appearance';
@@ -30,12 +21,6 @@ const rendererConfig = { alpha: true, antialias: true };
 const capsuleHalfProfiles = createCapsuleHalfProfiles();
 const tabletProfile = createTabletProfile();
 const initialYaw = -0.18;
-const accessibleRotationStep = Math.PI / 6;
-const dragRadiansPerPoint = Math.PI / 180;
-
-type RotationController = {
-  rotateBy: (radians: number) => void;
-};
 
 export function MedicationAppearancePreview3D(props: MedicationAppearancePreview3DProps) {
   if (!props.active) {
@@ -65,31 +50,6 @@ function StaticPreview({ shape, color, secondaryColor }: MedicationAppearancePre
 function InteractivePreview({ shape, color, secondaryColor }: MedicationAppearancePreview3DProps) {
   const [ready, setReady] = useState(false);
   const [showProgress, setShowProgress] = useState(false);
-  const rotationController = useRef<RotationController>(null);
-  const lastDragDistance = useRef(0);
-  const resetDrag = useCallback(() => {
-    lastDragDistance.current = 0;
-  }, []);
-  const handleDrag = useCallback((_event: unknown, gestureState: { dx: number; dy: number }) => {
-    const delta = rotationDeltaFromGesture(gestureState, lastDragDistance.current);
-    lastDragDistance.current = gestureState.dx;
-    rotationController.current?.rotateBy(delta);
-  }, []);
-  const panResponder = useMemo(() => {
-    // PanResponder stores these callbacks and invokes them only after a native touch event.
-    // eslint-disable-next-line react-hooks/refs -- No ref is read while this responder is created.
-    return PanResponder.create({
-      onStartShouldSetPanResponder: () => true,
-      onStartShouldSetPanResponderCapture: () => true,
-      onMoveShouldSetPanResponder: () => true,
-      onMoveShouldSetPanResponderCapture: () => true,
-      onPanResponderGrant: resetDrag,
-      onPanResponderMove: handleDrag,
-      onPanResponderTerminationRequest: () => false,
-      onPanResponderRelease: resetDrag,
-      onPanResponderTerminate: resetDrag,
-    });
-  }, [handleDrag, resetDrag]);
 
   useEffect(() => {
     if (ready) return;
@@ -102,28 +62,13 @@ function InteractivePreview({ shape, color, secondaryColor }: MedicationAppearan
     setShowProgress(false);
   }, []);
 
-  const handleAccessibilityAction = useCallback((event: AccessibilityActionEvent) => {
-    if (event.nativeEvent.actionName === 'increment') {
-      rotationController.current?.rotateBy(accessibleRotationStep);
-    } else if (event.nativeEvent.actionName === 'decrement') {
-      rotationController.current?.rotateBy(-accessibleRotationStep);
-    }
-  }, []);
-
   return (
     <View
       accessible
-      accessibilityRole="adjustable"
-      accessibilityLabel={`3D ${shape} preview`}
-      accessibilityHint="Swipe up or down to rotate"
+      accessibilityRole="image"
+      accessibilityLabel={`${capitalize(shape)} pill preview`}
       accessibilityState={{ busy: !ready }}
-      accessibilityActions={[
-        { name: 'increment', label: 'Rotate right' },
-        { name: 'decrement', label: 'Rotate left' },
-      ]}
-      onAccessibilityAction={handleAccessibilityAction}
       style={styles.frame}
-      {...panResponder.panHandlers}
     >
       <View style={[styles.fallback, ready && styles.hidden]}>
         <MedicationAppearance
@@ -156,58 +101,24 @@ function InteractivePreview({ shape, color, secondaryColor }: MedicationAppearan
         <ambientLight intensity={1.35} />
         <directionalLight position={[-3, 4, 6]} intensity={2.1} />
         <directionalLight position={[4, -2, 3]} intensity={0.55} />
-        <MedicationModelScene
-          ref={rotationController}
-          shape={shape}
-          color={color}
-          secondaryColor={secondaryColor}
-        />
+        <MedicationModelScene shape={shape} color={color} secondaryColor={secondaryColor} />
         <FirstFrameReporter onReady={handleReady} />
       </Canvas>
     </View>
   );
 }
 
-export function rotationDeltaFromGesture(
-  gesture: { dx: number; dy: number },
-  previousDistance: number,
-): number {
-  return (gesture.dx - previousDistance) * dragRadiansPerPoint;
-}
-
-const MedicationModelScene = forwardRef<
-  RotationController,
-  Pick<MedicationAppearancePreview3DProps, 'shape' | 'color' | 'secondaryColor'>
->(function MedicationModelScene({ shape, color, secondaryColor }, ref) {
-  const modelRef = useRef<Group>(null);
-  const yaw = useRef(initialYaw);
-  const invalidate = useThree((state) => state.invalidate);
-
-  const setYaw = useCallback(
-    (nextYaw: number) => {
-      yaw.current = nextYaw;
-      if (modelRef.current) modelRef.current.rotation.y = nextYaw;
-      invalidate();
-    },
-    [invalidate],
-  );
-
-  useEffect(() => setYaw(initialYaw), [setYaw, shape]);
-
-  useImperativeHandle(
-    ref,
-    () => ({
-      rotateBy: (radians) => setYaw(yaw.current + radians),
-    }),
-    [setYaw],
-  );
-
+function MedicationModelScene({
+  shape,
+  color,
+  secondaryColor,
+}: Pick<MedicationAppearancePreview3DProps, 'shape' | 'color' | 'secondaryColor'>) {
   return (
-    <group ref={modelRef} rotation={[0.28, initialYaw, 0]}>
+    <group rotation={[0.28, initialYaw, 0]}>
       <MedicationModel shape={shape} color={color} secondaryColor={secondaryColor} />
     </group>
   );
-});
+}
 
 function MedicationModel({
   shape,
@@ -326,6 +237,10 @@ function createTabletProfile(): Vector2[] {
 function lathePoint(x: number, y: number): Vector2 {
   // LatheGeometry reads x and y only; a plain point avoids loading a second Three.js entry module.
   return { x, y } as Vector2;
+}
+
+function capitalize(value: string): string {
+  return value.charAt(0).toUpperCase() + value.slice(1);
 }
 
 class PreviewErrorBoundary extends Component<

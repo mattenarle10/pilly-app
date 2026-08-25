@@ -1,9 +1,6 @@
-import { cleanup, fireEvent, render } from '@testing-library/react-native';
+import { cleanup, render } from '@testing-library/react-native';
 
-import {
-  MedicationAppearancePreview3D,
-  rotationDeltaFromGesture,
-} from '@/ui/components/medication-appearance-preview-3d.ios';
+import { MedicationAppearancePreview3D } from '@/ui/components/medication-appearance-preview-3d.ios';
 
 jest.mock('@react-three/fiber/native', () => {
   const React = jest.requireActual<typeof import('react')>('react');
@@ -17,8 +14,6 @@ jest.mock('@react-three/fiber/native', () => {
       style?: object;
     }) => React.createElement(View, { pointerEvents, style, testID: 'three-canvas' }),
     useFrame: jest.fn(),
-    useThree: (selector: (state: { invalidate: () => void }) => unknown) =>
-      selector({ invalidate: jest.fn() }),
   };
 });
 
@@ -38,7 +33,7 @@ jest.mock('react-native-reanimated', () => {
 describe('MedicationAppearancePreview3D', () => {
   afterEach(cleanup);
 
-  test('keeps the Canvas render-only and exposes native rotation actions', async () => {
+  test('keeps the Canvas render-only and exposes an informational preview', async () => {
     const screen = await render(
       <MedicationAppearancePreview3D
         active
@@ -49,21 +44,8 @@ describe('MedicationAppearancePreview3D', () => {
     );
 
     expect(screen.getByTestId('three-canvas').props.pointerEvents).toBe('none');
-    const preview = screen.getByLabelText('3D oval preview');
-    expect(preview.props.accessibilityRole).toBe('adjustable');
-    expect(preview.props.accessibilityActions).toEqual([
-      { name: 'increment', label: 'Rotate right' },
-      { name: 'decrement', label: 'Rotate left' },
-    ]);
-
-    await fireEvent(preview, 'accessibilityAction', {
-      nativeEvent: { actionName: 'increment' },
-    });
-  });
-
-  test('derives rotation only from horizontal drag distance', () => {
-    expect(rotationDeltaFromGesture({ dx: 90, dy: 0 }, 0)).toBeCloseTo(Math.PI / 2);
-    expect(rotationDeltaFromGesture({ dx: 90, dy: 600 }, 0)).toBeCloseTo(Math.PI / 2);
-    expect(rotationDeltaFromGesture({ dx: 100, dy: -600 }, 90)).toBeCloseTo(Math.PI / 18);
+    const preview = screen.getByLabelText('Oval pill preview');
+    expect(preview.props.accessibilityRole).toBe('image');
+    expect(preview.props.accessibilityActions).toBeUndefined();
   });
 });

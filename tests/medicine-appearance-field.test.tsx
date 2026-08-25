@@ -80,7 +80,7 @@ describe('medicine appearance field', () => {
     expect(screen.getByText('Pill appearance')).toBeOnTheScreen();
     expect(screen.getByLabelText('Done')).toBeOnTheScreen();
     expect(screen.queryByLabelText('Close')).not.toBeOnTheScreen();
-    expect(screen.getByText('Drag to rotate')).toBeOnTheScreen();
+    expect(screen.queryByText('Drag to rotate')).not.toBeOnTheScreen();
     expect(screen.queryByText('Capsule · Rose + Peach')).not.toBeOnTheScreen();
     expect(screen.getByLabelText('Choose color')).toBeOnTheScreen();
     const [shapeLabel] = screen

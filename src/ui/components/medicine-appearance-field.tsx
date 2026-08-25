@@ -90,11 +90,6 @@ export function AppearanceStep(props: Props) {
               secondaryColor={props.secondaryColor}
             />
           )}
-          {props.enableThreeDimensionalPreview ? (
-            <PillyText role="caption" muted>
-              Drag to rotate
-            </PillyText>
-          ) : null}
         </View>
         <ChoiceGroup
           label="Shape"
