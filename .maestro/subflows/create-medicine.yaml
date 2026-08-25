@@ -33,14 +33,11 @@ name: Create a test medicine
       - tapOn: 'Edit pill appearance'
 - assertVisible: 'Pill appearance'
 - tapOn: 'Shape: Capsule'
-- tapOn: 'Size: Medium'
-- tapOn: 'Color 1: Lavender'
-- tapOn: 'Color 2: Neutral'
 - runFlow:
     when:
       visible: 'Pill appearance'
     commands:
-      - tapOn: 'Close'
+      - tapOn: 'Done'
 - scrollUntilVisible:
     element:
       text: 'Reminder for Morning dose'

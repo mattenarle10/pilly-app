@@ -71,6 +71,7 @@ export function AppearanceStep(props: Props) {
         visible={showEditor}
         title="Pill appearance"
         message="Match what you see on the medicine."
+        footerAction={{ label: 'Done', onPress: () => setShowEditor(false) }}
         onClose={() => setShowEditor(false)}
       >
         <View style={styles.preview}>
@@ -89,9 +90,11 @@ export function AppearanceStep(props: Props) {
               secondaryColor={props.secondaryColor}
             />
           )}
-          <PillyText role="caption" muted>
-            {title} · {colorSummary}
-          </PillyText>
+          {props.enableThreeDimensionalPreview ? (
+            <PillyText role="caption" muted>
+              Drag to rotate
+            </PillyText>
+          ) : null}
         </View>
         <ChoiceGroup
           label="Shape"
@@ -150,7 +153,12 @@ function ChoiceGroup<Value extends string>({
               onPress={() => onChange(option.value)}
               style={[styles.choice, selected && styles.choiceActive]}
             >
-              <PillyText role="label" style={selected ? styles.choiceTextActive : undefined}>
+              <PillyText
+                role="label"
+                maxFontSizeMultiplier={1.4}
+                numberOfLines={1}
+                style={selected ? styles.choiceTextActive : undefined}
+              >
                 {option.label}
               </PillyText>
             </Pressable>

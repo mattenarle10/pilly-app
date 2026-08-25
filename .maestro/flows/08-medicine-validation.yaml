@@ -26,7 +26,7 @@ name: Recover from an incomplete medicine form
     when:
       visible: 'Pill appearance'
     commands:
-      - tapOn: 'Close'
+      - tapOn: 'Done'
 - tapOn:
     text: 'Add'
     retryTapIfNoChange: true
