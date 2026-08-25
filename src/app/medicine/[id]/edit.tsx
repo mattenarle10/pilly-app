@@ -160,7 +160,6 @@ const EditNameSection = memo(function EditNameSection({
 
   return (
     <NameStep
-      autoFocus={false}
       nameTestID="medicine-name"
       name={name}
       instructions={instructions}

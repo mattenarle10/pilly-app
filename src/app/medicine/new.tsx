@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { ScrollView } from 'react-native';
+import { Keyboard, ScrollView } from 'react-native';
 import { useForm, useStore } from '@tanstack/react-form';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { router, useNavigation } from 'expo-router';
@@ -78,6 +78,7 @@ export default function NewMedicationRoute() {
   }, [form]);
 
   usePreventRemove(!created, ({ data }) => {
+    Keyboard.dismiss();
     setPendingNavigation(() => () => navigation.dispatch(data.action));
     setShowExit(true);
   });

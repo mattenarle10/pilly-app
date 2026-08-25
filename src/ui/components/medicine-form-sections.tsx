@@ -33,7 +33,6 @@ function StepHeading({ title, message }: { title: string; message: string }) {
 }
 
 export function NameStep({
-  autoFocus = true,
   nameTestID,
   name,
   instructions,
@@ -41,7 +40,6 @@ export function NameStep({
   onNameChange,
   onInstructionsChange,
 }: {
-  autoFocus?: boolean;
   nameTestID?: string;
   name: string;
   instructions: string;
@@ -55,7 +53,6 @@ export function NameStep({
         testID={nameTestID}
         label="Name"
         icon="medicine"
-        autoFocus={autoFocus}
         value={name}
         onChangeText={onNameChange}
         placeholder="Printed name"

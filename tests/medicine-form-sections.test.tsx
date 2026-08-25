@@ -1,6 +1,6 @@
 import { cleanup, fireEvent, render } from '@testing-library/react-native';
 
-import { ScheduleStep } from '@/ui/components/medicine-form-sections';
+import { NameStep, ScheduleStep } from '@/ui/components/medicine-form-sections';
 
 jest.mock('react-native-reanimated', () => {
   const { View } = jest.requireActual<typeof import('react-native')>('react-native');
@@ -13,6 +13,23 @@ jest.mock('react-native-reanimated', () => {
     useSharedValue: (value: unknown) => ({ value }),
     withTiming: (value: unknown) => value,
   };
+});
+
+describe('NameStep', () => {
+  afterEach(cleanup);
+
+  test('waits for the user to focus the name field', async () => {
+    const screen = await render(
+      <NameStep
+        name=""
+        instructions=""
+        onNameChange={jest.fn()}
+        onInstructionsChange={jest.fn()}
+      />,
+    );
+
+    expect(screen.getByLabelText('Name')).not.toHaveProp('autoFocus', true);
+  });
 });
 
 describe('ScheduleStep', () => {
