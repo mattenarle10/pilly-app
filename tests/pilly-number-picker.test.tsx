@@ -27,8 +27,6 @@ describe('PillyNumberPicker', () => {
         label="Supply"
         value={null}
         onChange={onChange}
-        presets={[]}
-        showOff={false}
         embedded
         startActionVariant="quiet"
       />,
@@ -39,9 +37,21 @@ describe('PillyNumberPicker', () => {
       minHeight: controlHeights.compact,
       backgroundColor: 'transparent',
     });
-    expect(screen.getByText('Start')).toHaveStyle({ color: colors.brand });
+    expect(screen.getByText('Track')).toHaveStyle({ color: colors.brand });
+    expect(screen.queryByText('7')).not.toBeOnTheScreen();
+    expect(screen.queryByText('Off')).not.toBeOnTheScreen();
 
     fireEvent.press(action);
     expect(onChange).toHaveBeenCalledWith(1);
+  });
+
+  test('reveals presets after tracking starts', async () => {
+    const screen = await render(
+      <PillyNumberPicker label="Supply" value={14} onChange={jest.fn()} />,
+    );
+
+    expect(screen.getByText('7')).toBeOnTheScreen();
+    expect(screen.getByLabelText('Set Supply to 14')).toBeOnTheScreen();
+    expect(screen.getByText('Off')).toBeOnTheScreen();
   });
 });

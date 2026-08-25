@@ -303,6 +303,7 @@ export function DetailsStep({
       <PillyNumberPicker
         label="Doses left"
         value={supply.trim() === '' ? null : Number(supply)}
+        startActionVariant="quiet"
         onChange={(next) => onSupplyChange(next === null ? '' : `${next}`)}
       />
       {error ? <PillyBanner kind="error" message={error} compact /> : null}
