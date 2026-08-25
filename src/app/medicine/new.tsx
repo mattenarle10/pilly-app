@@ -160,6 +160,7 @@ export default function NewMedicationRoute() {
         onInstructionsChange={(text) => form.setFieldValue('instructions', text)}
       />
       <AppearanceStep
+        enableThreeDimensionalPreview
         shape={values.appearanceShape}
         size={values.appearanceSize}
         color={values.appearanceColor}
