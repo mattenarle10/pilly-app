@@ -1,7 +1,7 @@
-import { useEffect, useMemo, useState } from 'react';
+import { memo, useCallback, useEffect, useMemo, useState } from 'react';
 import { router, useLocalSearchParams, useNavigation } from 'expo-router';
 import { usePreventRemove } from 'expo-router/react-navigation';
-import { useForm, useStore } from '@tanstack/react-form';
+import { useForm, useSelector, type AnyFormApi } from '@tanstack/react-form';
 
 import type { MedicationDetail } from '@/models/medication';
 import { AppearanceStep } from '@/ui/components/medicine-appearance-field';
@@ -75,10 +75,13 @@ function EditMedicineForm({
       });
     },
   });
-  const values = useStore(form.store, (state) => state.values);
-  const isDirty = !medicationDraftsMatch(initialDraft, values);
-  const issue = validateMedicationDraft(values);
-  const scheduleChanged = !schedulesMatch(detail.schedules, scheduleConfigurationFromDraft(values));
+  const isDirty = useSelector(
+    form.store,
+    (state) => !medicationDraftsMatch(initialDraft, state.values),
+  );
+  const issue = useSelector(form.store, (state) => validateMedicationDraft(state.values), {
+    compare: issuesMatch,
+  });
 
   usePreventRemove(isDirty && !saved, ({ data }) => {
     setPendingNavigation(() => () => navigation.dispatch(data.action));
@@ -88,13 +91,14 @@ function EditMedicineForm({
     if (saved) router.back();
   }, [saved]);
 
-  const setFieldValue = <Field extends keyof MedicationDraft>(
-    field: Field,
-    value: MedicationDraft[Field],
-  ) => {
-    saveMutation.reset();
-    form.setFieldValue(field, value as never);
-  };
+  const resetSaveMutation = saveMutation.reset;
+  const setFieldValue = useCallback<SetMedicationFieldValue>(
+    (field, value) => {
+      resetSaveMutation();
+      form.setFieldValue(field, value as never);
+    },
+    [form, resetSaveMutation],
+  );
 
   return (
     <MedicineFormShell
@@ -128,49 +132,141 @@ function EditMedicineForm({
           compact
         />
       ) : null}
-      <NameStep
-        autoFocus={false}
-        nameTestID="medicine-name"
-        name={values.name}
-        instructions={values.instructions}
-        error={issue?.field === 'name' ? issue.message : undefined}
-        onNameChange={(text) => setFieldValue('name', text)}
-        onInstructionsChange={(text) => setFieldValue('instructions', text)}
-      />
-      <AppearanceStep
-        shape={values.appearanceShape}
-        size={values.appearanceSize}
-        color={values.appearanceColor}
-        secondaryColor={values.appearanceSecondaryColor}
-        onShapeChange={(shape) => setFieldValue('appearanceShape', shape)}
-        onSizeChange={(size) => setFieldValue('appearanceSize', size)}
-        onColorChange={(color) => setFieldValue('appearanceColor', color)}
-        onSecondaryColorChange={(color) => setFieldValue('appearanceSecondaryColor', color)}
-      />
-      <ScheduleStep
-        selectedDays={values.selectedDays}
-        schedules={values.schedules}
-        error={
-          issue?.field === 'selectedDays' || issue?.field === 'schedules'
-            ? issue.message
-            : undefined
-        }
-        onDaysChange={(days) => setFieldValue('selectedDays', days)}
-        onSchedulesChange={(schedules) => setFieldValue('schedules', schedules)}
-      />
-      <DetailsStep
-        supply={values.supply}
-        error={issue?.field === 'supply' ? issue.message : undefined}
-        onSupplyChange={(supply) => setFieldValue('supply', supply)}
-      />
-      {scheduleChanged ? (
-        <PillyBanner
-          kind="info"
-          message="Schedule changes start tomorrow. Past records stay unchanged."
-          compact
-        />
-      ) : null}
+      <EditNameSection form={form} issue={issue} setFieldValue={setFieldValue} />
+      <EditAppearanceSection form={form} setFieldValue={setFieldValue} />
+      <EditScheduleSection form={form} issue={issue} setFieldValue={setFieldValue} />
+      <EditDetailsSection form={form} issue={issue} setFieldValue={setFieldValue} />
+      <ScheduleChangedBanner form={form} initialSchedules={detail.schedules} />
     </MedicineFormShell>
+  );
+}
+
+type SetMedicationFieldValue = <Field extends keyof MedicationDraft>(
+  field: Field,
+  value: MedicationDraft[Field],
+) => void;
+
+type FormSectionProps = {
+  form: AnyFormApi;
+  setFieldValue: SetMedicationFieldValue;
+};
+
+const EditNameSection = memo(function EditNameSection({
+  form,
+  issue,
+  setFieldValue,
+}: FormSectionProps & { issue: ReturnType<typeof validateMedicationDraft> }) {
+  const name = useDraftValue(form, (draft) => draft.name);
+  const instructions = useDraftValue(form, (draft) => draft.instructions);
+
+  return (
+    <NameStep
+      autoFocus={false}
+      nameTestID="medicine-name"
+      name={name}
+      instructions={instructions}
+      error={issue?.field === 'name' ? issue.message : undefined}
+      onNameChange={(text) => setFieldValue('name', text)}
+      onInstructionsChange={(text) => setFieldValue('instructions', text)}
+    />
+  );
+});
+
+const EditAppearanceSection = memo(function EditAppearanceSection({
+  form,
+  setFieldValue,
+}: FormSectionProps) {
+  const shape = useDraftValue(form, (draft) => draft.appearanceShape);
+  const size = useDraftValue(form, (draft) => draft.appearanceSize);
+  const color = useDraftValue(form, (draft) => draft.appearanceColor);
+  const secondaryColor = useDraftValue(form, (draft) => draft.appearanceSecondaryColor);
+
+  return (
+    <AppearanceStep
+      shape={shape}
+      size={size}
+      color={color}
+      secondaryColor={secondaryColor}
+      onShapeChange={(value) => setFieldValue('appearanceShape', value)}
+      onSizeChange={(value) => setFieldValue('appearanceSize', value)}
+      onColorChange={(value) => setFieldValue('appearanceColor', value)}
+      onSecondaryColorChange={(value) => setFieldValue('appearanceSecondaryColor', value)}
+    />
+  );
+});
+
+const EditScheduleSection = memo(function EditScheduleSection({
+  form,
+  issue,
+  setFieldValue,
+}: FormSectionProps & { issue: ReturnType<typeof validateMedicationDraft> }) {
+  const selectedDays = useDraftValue(form, (draft) => draft.selectedDays);
+  const schedules = useDraftValue(form, (draft) => draft.schedules);
+
+  return (
+    <ScheduleStep
+      selectedDays={selectedDays}
+      schedules={schedules}
+      error={
+        issue?.field === 'selectedDays' || issue?.field === 'schedules' ? issue.message : undefined
+      }
+      onDaysChange={(value) => setFieldValue('selectedDays', value)}
+      onSchedulesChange={(value) => setFieldValue('schedules', value)}
+    />
+  );
+});
+
+const EditDetailsSection = memo(function EditDetailsSection({
+  form,
+  issue,
+  setFieldValue,
+}: FormSectionProps & { issue: ReturnType<typeof validateMedicationDraft> }) {
+  const supply = useDraftValue(form, (draft) => draft.supply);
+
+  return (
+    <DetailsStep
+      supply={supply}
+      error={issue?.field === 'supply' ? issue.message : undefined}
+      onSupplyChange={(value) => setFieldValue('supply', value)}
+    />
+  );
+});
+
+const ScheduleChangedBanner = memo(function ScheduleChangedBanner({
+  form,
+  initialSchedules,
+}: {
+  form: AnyFormApi;
+  initialSchedules: MedicationDetail['schedules'];
+}) {
+  const schedulesStillMatch = useSelector(form.store, (state) =>
+    schedulesMatch(
+      initialSchedules,
+      scheduleConfigurationFromDraft(state.values as MedicationDraft),
+    ),
+  );
+
+  return schedulesStillMatch ? null : (
+    <PillyBanner
+      kind="info"
+      message="Schedule changes start tomorrow. Past records stay unchanged."
+      compact
+    />
+  );
+});
+
+function useDraftValue<Value>(form: AnyFormApi, select: (draft: MedicationDraft) => Value): Value {
+  return useSelector(form.store, (state) => select(state.values as MedicationDraft));
+}
+
+function issuesMatch(
+  previous: ReturnType<typeof validateMedicationDraft>,
+  next: ReturnType<typeof validateMedicationDraft>,
+): boolean {
+  return (
+    previous?.field === next?.field &&
+    previous?.message === next?.message &&
+    previous?.step === next?.step
   );
 }
 
