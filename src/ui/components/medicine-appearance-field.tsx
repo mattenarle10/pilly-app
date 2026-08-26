@@ -231,7 +231,9 @@ function ColorTarget({
         pressed && styles.colorTargetPressed,
       ]}
     >
-      <View style={[styles.targetSwatch, { backgroundColor: color }]} />
+      <View style={styles.targetSwatchRing}>
+        <View style={[styles.targetSwatch, { backgroundColor: color }]} />
+      </View>
       <PillyText role="label">{label}</PillyText>
     </Pressable>
   );
@@ -286,11 +288,19 @@ const styles = StyleSheet.create({
   },
   colorTargetActive: { borderColor: colors.brand, backgroundColor: colors.brandSoft },
   colorTargetPressed: { opacity: 0.72 },
-  targetSwatch: {
-    width: 22,
-    height: 22,
+  targetSwatchRing: {
+    width: 26,
+    height: 26,
+    alignItems: 'center',
+    justifyContent: 'center',
     borderRadius: radii.round,
     borderWidth: 1,
     borderColor: colors.border,
+    backgroundColor: colors.surface,
+  },
+  targetSwatch: {
+    width: 20,
+    height: 20,
+    borderRadius: radii.round,
   },
 });
