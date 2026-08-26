@@ -21,10 +21,15 @@ const rendererConfig = { alpha: true, antialias: true };
 const capsuleHalfProfiles = createCapsuleHalfProfiles();
 const tabletProfile = createTabletProfile();
 const initialYaw = -0.18;
+const previewInitializationTimeoutMs = 5_000;
 
 export function MedicationAppearancePreview3D(props: MedicationAppearancePreview3DProps) {
   if (!props.active) {
-    return <StaticPreview {...props} />;
+    return (
+      <View style={styles.frame}>
+        <PreviewLoadingState />
+      </View>
+    );
   }
 
   return (
@@ -49,18 +54,21 @@ function StaticPreview({ shape, color, secondaryColor }: MedicationAppearancePre
 
 function InteractivePreview({ shape, color, secondaryColor }: MedicationAppearancePreview3DProps) {
   const [ready, setReady] = useState(false);
-  const [showProgress, setShowProgress] = useState(false);
+  const [timedOut, setTimedOut] = useState(false);
 
   useEffect(() => {
     if (ready) return;
-    const progressTimer = setTimeout(() => setShowProgress(true), 250);
-    return () => clearTimeout(progressTimer);
+    const timeout = setTimeout(() => setTimedOut(true), previewInitializationTimeoutMs);
+    return () => clearTimeout(timeout);
   }, [ready]);
 
   const handleReady = useCallback(() => {
     setReady(true);
-    setShowProgress(false);
   }, []);
+
+  if (timedOut) {
+    return <StaticPreview shape={shape} color={color} secondaryColor={secondaryColor} active />;
+  }
 
   return (
     <View
@@ -70,23 +78,6 @@ function InteractivePreview({ shape, color, secondaryColor }: MedicationAppearan
       accessibilityState={{ busy: !ready }}
       style={styles.frame}
     >
-      <View style={[styles.fallback, ready && styles.hidden]}>
-        <MedicationAppearance
-          shape={shape}
-          size="medium"
-          color={color}
-          secondaryColor={secondaryColor}
-        />
-        {showProgress ? (
-          <ActivityIndicator
-            accessibilityElementsHidden
-            importantForAccessibility="no-hide-descendants"
-            color={colors.brand}
-            size="small"
-            style={styles.progress}
-          />
-        ) : null}
-      </View>
       <Canvas
         accessibilityElementsHidden
         importantForAccessibility="no-hide-descendants"
@@ -104,6 +95,20 @@ function InteractivePreview({ shape, color, secondaryColor }: MedicationAppearan
         <MedicationModelScene shape={shape} color={color} secondaryColor={secondaryColor} />
         <FirstFrameReporter onReady={handleReady} />
       </Canvas>
+      {!ready ? <PreviewLoadingState /> : null}
+    </View>
+  );
+}
+
+function PreviewLoadingState() {
+  return (
+    <View
+      accessibilityElementsHidden
+      importantForAccessibility="no-hide-descendants"
+      style={styles.loadingOverlay}
+      testID="three-preview-loading"
+    >
+      <ActivityIndicator color={colors.brand} size="small" />
     </View>
   );
 }
@@ -273,12 +278,12 @@ const styles = StyleSheet.create({
     position: 'absolute',
     inset: 0,
   },
-  fallback: {
+  loadingOverlay: {
     position: 'absolute',
     inset: 0,
     alignItems: 'center',
     justifyContent: 'center',
+    zIndex: 1,
+    backgroundColor: colors.surface,
   },
-  hidden: { opacity: 0 },
-  progress: { position: 'absolute', bottom: 0 },
 });
