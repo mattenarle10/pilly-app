@@ -9,18 +9,23 @@ import {
   type PropsWithChildren,
 } from 'react';
 import { ActivityIndicator, StyleSheet, View } from 'react-native';
-import { Canvas, useFrame } from '@react-three/fiber/native';
+import { Canvas, useFrame, type GLProps } from '@react-three/fiber/native';
 import type { Vector2 } from 'three';
 
 import type { MedicationAppearancePreview3DProps } from './medication-appearance-preview-3d';
 import { MedicationAppearance } from './medication-appearance';
 import { colors } from '@/ui/tokens';
 
+// R3F Native loads Three through its CommonJS entry. Reuse that entry so Metro does not
+// initialize both Three's CommonJS and ESM builds in the same native runtime.
+// eslint-disable-next-line @typescript-eslint/no-require-imports
+const { WebGLRenderer } = require('three') as typeof import('three');
+
 const cameraConfig = { position: [0, 0, 6] as [number, number, number], zoom: 62 };
-const rendererConfig = { alpha: true, antialias: true };
 const capsuleHalfProfiles = createCapsuleHalfProfiles();
 const tabletProfile = createTabletProfile();
 const initialYaw = -0.18;
+const previewLoadingMinimumMs = 250;
 const previewInitializationTimeoutMs = 5_000;
 
 export function MedicationAppearancePreview3D(props: MedicationAppearancePreview3DProps) {
@@ -41,7 +46,12 @@ export function MedicationAppearancePreview3D(props: MedicationAppearancePreview
 
 function StaticPreview({ shape, color, secondaryColor }: MedicationAppearancePreview3DProps) {
   return (
-    <View style={styles.frame}>
+    <View
+      accessible
+      accessibilityRole="image"
+      accessibilityLabel={`${capitalize(shape)} pill preview`}
+      style={styles.frame}
+    >
       <MedicationAppearance
         shape={shape}
         size="medium"
@@ -53,8 +63,18 @@ function StaticPreview({ shape, color, secondaryColor }: MedicationAppearancePre
 }
 
 function InteractivePreview({ shape, color, secondaryColor }: MedicationAppearancePreview3DProps) {
-  const [ready, setReady] = useState(false);
+  const [framePresented, setFramePresented] = useState(false);
+  const [minimumLoadingTimeElapsed, setMinimumLoadingTimeElapsed] = useState(false);
   const [timedOut, setTimedOut] = useState(false);
+  const ready = framePresented && minimumLoadingTimeElapsed;
+
+  useEffect(() => {
+    const minimumLoadingTime = setTimeout(
+      () => setMinimumLoadingTimeElapsed(true),
+      previewLoadingMinimumMs,
+    );
+    return () => clearTimeout(minimumLoadingTime);
+  }, []);
 
   useEffect(() => {
     if (ready) return;
@@ -63,7 +83,7 @@ function InteractivePreview({ shape, color, secondaryColor }: MedicationAppearan
   }, [ready]);
 
   const handleReady = useCallback(() => {
-    setReady(true);
+    setFramePresented(true);
   }, []);
 
   if (timedOut) {
@@ -85,7 +105,7 @@ function InteractivePreview({ shape, color, secondaryColor }: MedicationAppearan
         orthographic
         frameloop="demand"
         camera={cameraConfig}
-        gl={rendererConfig}
+        gl={createExpoCompatibleRenderer}
         onCreated={({ gl }) => gl.setClearColor(0x000000, 0)}
         style={styles.canvas}
       >
@@ -99,6 +119,32 @@ function InteractivePreview({ shape, color, secondaryColor }: MedicationAppearan
     </View>
   );
 }
+
+const createExpoCompatibleRenderer: GLProps = (defaultProps) => {
+  const nativeCanvas = defaultProps.canvas as typeof defaultProps.canvas & {
+    getContext: (type: string, attributes: WebGLContextAttributes) => WebGLRenderingContext | null;
+  };
+  const context = nativeCanvas.getContext('webgl2', defaultProps);
+
+  if (!context) throw new Error('Expo GL did not provide a rendering context.');
+
+  const pixelStorei = context.pixelStorei.bind(context);
+
+  // Expo GL 57 does not implement these browser-only texture flags. Three calls them for
+  // internal textures, but both are no-ops for this solid-color scene.
+  context.pixelStorei = (parameter, value) => {
+    if (
+      parameter === context.UNPACK_PREMULTIPLY_ALPHA_WEBGL ||
+      parameter === context.UNPACK_COLORSPACE_CONVERSION_WEBGL
+    ) {
+      return;
+    }
+
+    pixelStorei(parameter, value);
+  };
+
+  return new WebGLRenderer(defaultProps);
+};
 
 function PreviewLoadingState() {
   return (
@@ -144,11 +190,11 @@ function CapsuleModel({ color, secondaryColor }: { color: string; secondaryColor
     <group rotation={[0, 0, Math.PI / 2]} scale={0.88}>
       <mesh>
         <latheGeometry args={[left, 28]} />
-        <meshStandardMaterial color={color} roughness={0.42} metalness={0.02} />
+        <meshPhongMaterial color={color} shininess={34} specular="#4a4146" />
       </mesh>
       <mesh>
         <latheGeometry args={[right, 28]} />
-        <meshStandardMaterial color={secondaryColor} roughness={0.42} metalness={0.02} />
+        <meshPhongMaterial color={secondaryColor} shininess={34} specular="#4a4146" />
       </mesh>
     </group>
   );
@@ -160,7 +206,7 @@ function TabletModel({ shape, color }: { shape: 'round' | 'oval'; color: string 
   return (
     <mesh rotation={[Math.PI / 2, 0, 0]} scale={scale}>
       <latheGeometry args={[tabletProfile, 36]} />
-      <meshStandardMaterial color={color} roughness={0.48} metalness={0.01} />
+      <meshPhongMaterial color={color} shininess={28} specular="#4a4146" />
     </mesh>
   );
 }

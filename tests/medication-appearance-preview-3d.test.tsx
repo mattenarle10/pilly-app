@@ -88,6 +88,7 @@ describe('MedicationAppearancePreview3D', () => {
   });
 
   test('reveals the Canvas only after its first frame is presented', async () => {
+    jest.useFakeTimers();
     jest
       .spyOn(globalThis, 'requestAnimationFrame')
       .mockImplementation((callback: FrameRequestCallback) => {
@@ -105,6 +106,15 @@ describe('MedicationAppearancePreview3D', () => {
     const firstFrame = jest.mocked(useFrame).mock.calls.at(-1)?.[0];
 
     await act(() => firstFrame?.({} as never, 0));
+
+    expect(
+      screen.getByTestId('three-preview-loading', { includeHiddenElements: true }),
+    ).toBeOnTheScreen();
+    expect(screen.getByLabelText('Round pill preview').props.accessibilityState).toEqual({
+      busy: true,
+    });
+
+    await act(() => jest.advanceTimersByTime(250));
 
     expect(screen.queryByTestId('three-preview-loading')).not.toBeOnTheScreen();
     expect(screen.getByLabelText('Round pill preview').props.accessibilityState).toEqual({
@@ -128,5 +138,7 @@ describe('MedicationAppearancePreview3D', () => {
     expect(screen.queryByTestId('three-preview-loading')).not.toBeOnTheScreen();
     expect(screen.queryByTestId('three-canvas')).not.toBeOnTheScreen();
     expect(screen.getByTestId('pill-body', { includeHiddenElements: true })).toBeOnTheScreen();
+    const fallback = screen.getByLabelText('Oval pill preview');
+    expect(fallback.props.accessibilityRole).toBe('image');
   });
 });
