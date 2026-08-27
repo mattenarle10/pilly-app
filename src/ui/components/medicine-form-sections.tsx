@@ -2,7 +2,6 @@ import { Pressable, StyleSheet, View } from 'react-native';
 import DateTimePicker from '@react-native-community/datetimepicker';
 
 import { PillyBanner } from './pilly-banner';
-import { PillyButton } from './pilly-button';
 import { PillyCard } from './pilly-card';
 import { PillyField } from './pilly-field';
 import { PillyIconButton } from './pilly-icon-button';
@@ -34,7 +33,6 @@ function StepHeading({ title, message }: { title: string; message: string }) {
 }
 
 export function NameStep({
-  autoFocus = true,
   nameTestID,
   name,
   instructions,
@@ -42,7 +40,6 @@ export function NameStep({
   onNameChange,
   onInstructionsChange,
 }: {
-  autoFocus?: boolean;
   nameTestID?: string;
   name: string;
   instructions: string;
@@ -56,7 +53,6 @@ export function NameStep({
         testID={nameTestID}
         label="Name"
         icon="medicine"
-        autoFocus={autoFocus}
         value={name}
         onChangeText={onNameChange}
         placeholder="Printed name"
@@ -135,29 +131,20 @@ export function ScheduleStep({
               <PillyText role="label" style={active ? styles.dayTextActive : undefined}>
                 {day.label}
               </PillyText>
-              <PillyIcon
-                name={active ? 'done' : 'statusEmpty'}
-                size={13}
-                color={active ? colors.surface : colors.textSecondary}
-              />
             </Pressable>
           );
         })}
       </View>
       <View style={styles.quickDays}>
-        <PillyButton
+        <DayPreset
           label="Every day"
-          size="compact"
-          variant="secondary"
+          selected={matchesDays(selectedDays, [1, 2, 3, 4, 5, 6, 7])}
           onPress={() => onDaysChange([1, 2, 3, 4, 5, 6, 7])}
-          style={styles.quickAction}
         />
-        <PillyButton
+        <DayPreset
           label="Weekdays"
-          size="compact"
-          variant="secondary"
+          selected={matchesDays(selectedDays, [1, 2, 3, 4, 5])}
           onPress={() => onDaysChange([1, 2, 3, 4, 5])}
-          style={styles.quickAction}
         />
       </View>
       <PillyCard padding="none" style={styles.scheduleSurface}>
@@ -222,13 +209,50 @@ export function ScheduleStep({
         >
           <PillyIcon name="add" size={18} color={colors.brand} />
           <PillyText role="label" style={styles.addScheduleLabel}>
-            Add another time
+            Add time
           </PillyText>
         </Pressable>
       </PillyCard>
       {error ? <PillyBanner kind="error" message={error} compact /> : null}
     </View>
   );
+}
+
+function DayPreset({
+  label,
+  selected,
+  onPress,
+}: {
+  label: string;
+  selected: boolean;
+  onPress: () => void;
+}) {
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={label}
+      accessibilityState={{ selected }}
+      onPress={onPress}
+      style={({ pressed }) => [
+        styles.dayPreset,
+        selected && styles.dayPresetSelected,
+        pressed && styles.dayPresetPressed,
+      ]}
+    >
+      <PillyText
+        role="label"
+        maxFontSizeMultiplier={1.4}
+        numberOfLines={1}
+        style={selected ? styles.dayPresetTextSelected : styles.dayPresetText}
+      >
+        {label}
+      </PillyText>
+    </Pressable>
+  );
+}
+
+function matchesDays(selectedDays: number[], preset: readonly number[]): boolean {
+  return selectedDays.length === preset.length && preset.every((day) => selectedDays.includes(day));
 }
 
 function timeContextLabel(value: string): string {
@@ -276,6 +300,7 @@ export function DetailsStep({
       <PillyNumberPicker
         label="Doses left"
         value={supply.trim() === '' ? null : Number(supply)}
+        startActionVariant="quiet"
         onChange={(next) => onSupplyChange(next === null ? '' : `${next}`)}
       />
       {error ? <PillyBanner kind="error" message={error} compact /> : null}
@@ -291,18 +316,25 @@ const styles = StyleSheet.create({
   day: {
     flex: 1,
     minWidth: 44,
-    minHeight: 52,
-    paddingVertical: spacing.xs,
-    borderRadius: radii.sm,
-    gap: 2,
+    height: 44,
+    borderRadius: radii.round,
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: colors.surfaceSubtle,
   },
-  dayActive: { backgroundColor: colors.brand },
-  dayTextActive: { color: colors.surface },
-  quickDays: { flexDirection: 'row', gap: spacing.sm },
-  quickAction: { flex: 1 },
+  dayActive: { backgroundColor: colors.brandSoft },
+  dayTextActive: { color: colors.brandStrong },
+  quickDays: { flexDirection: 'row', gap: spacing.xs },
+  dayPreset: {
+    minHeight: 44,
+    justifyContent: 'center',
+    paddingHorizontal: spacing.md,
+    borderRadius: radii.round,
+  },
+  dayPresetSelected: { backgroundColor: colors.brandSoft },
+  dayPresetPressed: { opacity: 0.68 },
+  dayPresetText: { color: colors.textSecondary },
+  dayPresetTextSelected: { color: colors.brandStrong },
   scheduleSurface: { overflow: 'hidden' },
   scheduleItem: { gap: spacing.xs, paddingHorizontal: spacing.lg, paddingVertical: spacing.sm },
   scheduleTimeRow: { minHeight: 44, flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
@@ -323,8 +355,8 @@ const styles = StyleSheet.create({
     minHeight: 52,
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
     gap: spacing.sm,
+    paddingHorizontal: spacing.lg,
     borderTopWidth: 1,
     borderTopColor: colors.surfaceSubtle,
   },

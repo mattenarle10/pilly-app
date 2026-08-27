@@ -1,4 +1,3 @@
-import type { ReactNode } from 'react';
 import { cleanup, fireEvent, render } from '@testing-library/react-native';
 
 import { medicationAppearancePalette } from '@/models/medication';
@@ -21,33 +20,28 @@ jest.mock('@/ui/components/medication-color-picker', () => {
   const React = jest.requireActual<typeof import('react')>('react');
   const { Pressable, Text } = jest.requireActual<typeof import('react-native')>('react-native');
   return {
-    MedicationColorPicker: ({ label }: { label: string }) =>
+    MedicationColorPicker: ({
+      label,
+      onChange,
+    }: {
+      label: string;
+      onChange: (value: string) => void;
+    }) =>
       React.createElement(
         Pressable,
-        { accessibilityRole: 'button', accessibilityLabel: label },
+        {
+          accessibilityRole: 'button',
+          accessibilityLabel: label,
+          onPress: () => onChange('#123456'),
+        },
         React.createElement(Text, null, label),
       ),
   };
 });
 
-jest.mock('@/ui/components/pilly-dialog', () => {
-  const React = jest.requireActual<typeof import('react')>('react');
-  const { Text, View } = jest.requireActual<typeof import('react-native')>('react-native');
-  return {
-    PillyDialog: ({
-      visible,
-      title,
-      children,
-    }: {
-      visible: boolean;
-      title: string;
-      children: ReactNode;
-    }) =>
-      visible
-        ? React.createElement(View, null, React.createElement(Text, null, title), children)
-        : null,
-  };
-});
+jest.mock('react-native-safe-area-context', () => ({
+  useSafeAreaInsets: () => ({ top: 0, right: 0, bottom: 0, left: 0 }),
+}));
 
 describe('medicine appearance field', () => {
   afterEach(cleanup);
@@ -65,7 +59,7 @@ describe('medicine appearance field', () => {
     );
   });
 
-  test('shows curated choices before the custom picker and selects each capsule half', async () => {
+  test('uses the compact editor treatment and routes colors to each capsule half', async () => {
     const onColorChange = jest.fn();
     const onSecondaryColorChange = jest.fn();
     const screen = await render(
@@ -75,7 +69,6 @@ describe('medicine appearance field', () => {
         color={medicationAppearancePalette.rose}
         secondaryColor={medicationAppearancePalette.peach}
         onShapeChange={jest.fn()}
-        onSizeChange={jest.fn()}
         onColorChange={onColorChange}
         onSecondaryColorChange={onSecondaryColorChange}
       />,
@@ -84,11 +77,44 @@ describe('medicine appearance field', () => {
     await fireEvent.press(screen.getByLabelText('Edit pill appearance'));
 
     expect(screen.getByText('Pill appearance')).toBeOnTheScreen();
-    expect(screen.getAllByLabelText('Custom color')).toHaveLength(2);
-    await fireEvent.press(screen.getByLabelText('Color 1: Lavender'));
-    await fireEvent.press(screen.getByLabelText('Color 2: Neutral'));
+    expect(screen.getByLabelText('Done')).toBeOnTheScreen();
+    expect(screen.queryByLabelText('Close')).not.toBeOnTheScreen();
+    expect(screen.queryByText('Drag to rotate')).not.toBeOnTheScreen();
+    expect(screen.queryByText('Capsule · Rose + Peach')).not.toBeOnTheScreen();
+    expect(screen.getByLabelText('Choose color')).toBeOnTheScreen();
+    const [shapeLabel] = screen
+      .getAllByText('Capsule')
+      .filter((element) => element.props.maxFontSizeMultiplier === 1.4);
+    expect(shapeLabel).toHaveProp('numberOfLines', 1);
+    await fireEvent.press(screen.getByLabelText('Choose color'));
+    await fireEvent.press(screen.getByLabelText('Edit right half color'));
+    await fireEvent.press(screen.getByLabelText('Choose color'));
 
-    expect(onColorChange).toHaveBeenCalledWith(medicationAppearancePalette.lavender);
-    expect(onSecondaryColorChange).toHaveBeenCalledWith(medicationAppearancePalette.neutral);
+    expect(onColorChange).toHaveBeenCalledWith('#123456');
+    expect(onSecondaryColorChange).toHaveBeenCalledWith('#123456');
+    expect(screen.queryByLabelText('Color 1: Lavender')).not.toBeOnTheScreen();
+  });
+
+  test('uses a single color target for tablets', async () => {
+    const onColorChange = jest.fn();
+    const screen = await render(
+      <AppearanceStep
+        shape="round"
+        size="large"
+        color={medicationAppearancePalette.rose}
+        secondaryColor={medicationAppearancePalette.peach}
+        onShapeChange={jest.fn()}
+        onColorChange={onColorChange}
+        onSecondaryColorChange={jest.fn()}
+      />,
+    );
+
+    await fireEvent.press(screen.getByLabelText('Edit pill appearance'));
+    await fireEvent.press(screen.getByLabelText('Choose color'));
+
+    expect(onColorChange).toHaveBeenCalledWith('#123456');
+    expect(screen.queryByText('Drag to rotate')).not.toBeOnTheScreen();
+    expect(screen.queryByLabelText('Edit left half color')).not.toBeOnTheScreen();
+    expect(screen.queryByLabelText('Edit right half color')).not.toBeOnTheScreen();
   });
 });

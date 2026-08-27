@@ -57,7 +57,7 @@ export function PillyNumberPicker({
         <View style={styles.controls}>
           {value === null ? (
             <PillyButton
-              label="Start"
+              label={startActionVariant === 'quiet' ? 'Track' : 'Start'}
               accessibilityLabel={`Start tracking ${label}`}
               variant={startActionVariant}
               tone={startActionVariant === 'quiet' ? 'brand' : 'default'}
@@ -78,7 +78,7 @@ export function PillyNumberPicker({
           )}
         </View>
       </View>
-      {presets.length > 0 || showOff ? (
+      {value !== null && (presets.length > 0 || showOff) ? (
         <>
           <View style={styles.divider} />
           <View style={styles.presets}>

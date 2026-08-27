@@ -1,19 +1,11 @@
 import type { ReactNode, Ref } from 'react';
-import {
-  ActivityIndicator,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  useWindowDimensions,
-} from 'react-native';
+import { ScrollView, StyleSheet, useWindowDimensions } from 'react-native';
 import { Stack } from 'expo-router';
 
-import { PillyText } from './pilly-text';
 import { Screen } from './screen';
 import { colors, spacing } from '@/ui/tokens';
 
 type Props = {
-  title: string;
   actionLabel: string;
   actionDisabled?: boolean;
   actionLoading?: boolean;
@@ -24,7 +16,6 @@ type Props = {
 };
 
 export function MedicineFormShell({
-  title,
   actionLabel,
   actionDisabled = false,
   actionLoading = false,
@@ -37,27 +28,17 @@ export function MedicineFormShell({
 
   return (
     <>
-      <Stack.Screen
-        options={{
-          headerShown: true,
-          headerBackButtonDisplayMode: 'minimal',
-          headerBackButtonMenuEnabled: false,
-          headerShadowVisible: false,
-          headerStyle: { backgroundColor: colors.background },
-          headerTintColor: colors.textPrimary,
-          headerTitleAlign: 'center',
-          headerTitleStyle: { color: colors.textPrimary, fontWeight: '600' },
-          title,
-          headerRight: () => (
-            <HeaderAction
-              label={actionLabel}
-              loading={actionLoading}
-              disabled={actionDisabled}
-              onPress={onAction}
-            />
-          ),
-        }}
-      />
+      <Stack.Toolbar placement="right">
+        <Stack.Toolbar.Button
+          accessibilityLabel={actionLoading ? `${actionLabel}, in progress` : actionLabel}
+          disabled={actionDisabled || actionLoading}
+          tintColor={colors.brand}
+          variant="done"
+          onPress={onAction}
+        >
+          {actionLabel}
+        </Stack.Toolbar.Button>
+      </Stack.Toolbar>
       <Screen scroll={false} safeAreaEdges={['bottom']} contentStyle={styles.screen}>
         <ScrollView
           ref={scrollRef}
@@ -75,42 +56,6 @@ export function MedicineFormShell({
   );
 }
 
-function HeaderAction({
-  label,
-  loading,
-  disabled,
-  onPress,
-}: {
-  label: string;
-  loading: boolean;
-  disabled: boolean;
-  onPress: () => void;
-}) {
-  return (
-    <Pressable
-      accessibilityRole="button"
-      accessibilityLabel={label}
-      accessibilityState={{ disabled: disabled || loading, busy: loading }}
-      disabled={disabled || loading}
-      hitSlop={6}
-      onPress={onPress}
-      style={({ pressed }) => [
-        styles.headerAction,
-        pressed && styles.headerActionPressed,
-        (disabled || loading) && styles.headerActionDisabled,
-      ]}
-    >
-      {loading ? (
-        <ActivityIndicator size="small" color={colors.brand} />
-      ) : (
-        <PillyText role="label" style={styles.headerActionLabel}>
-          {label}
-        </PillyText>
-      )}
-    </Pressable>
-  );
-}
-
 const styles = StyleSheet.create({
   screen: { paddingHorizontal: 0, paddingTop: 0, paddingBottom: spacing.sm },
   formViewport: { flex: 1 },
@@ -120,14 +65,4 @@ const styles = StyleSheet.create({
     paddingTop: spacing.lg,
     paddingBottom: spacing.xxxl,
   },
-  headerAction: {
-    minWidth: 44,
-    height: 44,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: spacing.sm,
-  },
-  headerActionLabel: { color: colors.brand },
-  headerActionPressed: { opacity: 0.72 },
-  headerActionDisabled: { opacity: 0.42 },
 });

@@ -1,6 +1,6 @@
 import { cleanup, fireEvent, render } from '@testing-library/react-native';
 
-import { ScheduleStep } from '@/ui/components/medicine-form-sections';
+import { NameStep, ScheduleStep } from '@/ui/components/medicine-form-sections';
 
 jest.mock('react-native-reanimated', () => {
   const { View } = jest.requireActual<typeof import('react-native')>('react-native');
@@ -15,8 +15,43 @@ jest.mock('react-native-reanimated', () => {
   };
 });
 
+describe('NameStep', () => {
+  afterEach(cleanup);
+
+  test('waits for the user to focus the name field', async () => {
+    const screen = await render(
+      <NameStep
+        name=""
+        instructions=""
+        onNameChange={jest.fn()}
+        onInstructionsChange={jest.fn()}
+      />,
+    );
+
+    expect(screen.getByLabelText('Name')).not.toHaveProp('autoFocus', true);
+  });
+});
+
 describe('ScheduleStep', () => {
   afterEach(cleanup);
+
+  test('keeps day presets compact and exposes their selected state', async () => {
+    const onDaysChange = jest.fn();
+    const screen = await render(
+      <ScheduleStep
+        selectedDays={[1, 2, 3, 4, 5, 6, 7]}
+        schedules={[{ time: '09:00', reminderEnabled: false }]}
+        onDaysChange={onDaysChange}
+        onSchedulesChange={jest.fn()}
+      />,
+    );
+
+    expect(screen.getByLabelText('Every day').props.accessibilityState).toEqual({ selected: true });
+    expect(screen.getByLabelText('Weekdays').props.accessibilityState).toEqual({ selected: false });
+
+    fireEvent.press(screen.getByLabelText('Weekdays'));
+    expect(onDaysChange).toHaveBeenCalledWith([1, 2, 3, 4, 5]);
+  });
 
   test('adds the next useful exact time without adding another control cluster', async () => {
     const onSchedulesChange = jest.fn();
@@ -29,6 +64,7 @@ describe('ScheduleStep', () => {
       />,
     );
 
+    expect(screen.getByText('Add time')).toBeOnTheScreen();
     fireEvent.press(screen.getByLabelText('Add another dose time'));
 
     expect(onSchedulesChange).toHaveBeenCalledWith([
