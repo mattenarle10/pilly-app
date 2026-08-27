@@ -68,8 +68,7 @@
             }
           ]
         }
-      ],
-      "expo-asset"
+      ]
     ],
     "extra": {
       "router": {},
