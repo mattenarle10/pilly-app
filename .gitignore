@@ -30,9 +30,27 @@ yarn-error.*
 .DS_Store
 *.pem
 
-# local env files
-.env
-.env*.local
+# local environment and credentials
+.env*
+!.env.example
+.npmrc
+credentials.json
+credentials*.json
+service-account*.json
+google-services.json
+GoogleService-Info.plist
+*.keystore
+
+# Terraform local state and plans
+.terraform/
+*.tfstate
+*.tfstate.*
+*.tfplan
+*.tfvars
+*.tfvars.json
+.terraformrc
+terraform.rc
+crash.log
 
 # typescript
 *.tsbuildinfo
