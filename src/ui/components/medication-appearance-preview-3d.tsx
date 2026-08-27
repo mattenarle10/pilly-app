@@ -9,5 +9,12 @@ export type MedicationAppearancePreview3DProps = {
 };
 
 export function MedicationAppearancePreview3D(props: MedicationAppearancePreview3DProps) {
-  return <MedicationAppearance {...props} size="medium" />;
+  return (
+    <MedicationAppearance
+      shape={props.shape}
+      color={props.color}
+      secondaryColor={props.secondaryColor}
+      size="medium"
+    />
+  );
 }

@@ -71,7 +71,6 @@ describe('medicine appearance field', () => {
         onShapeChange={jest.fn()}
         onColorChange={onColorChange}
         onSecondaryColorChange={onSecondaryColorChange}
-        enableThreeDimensionalPreview
       />,
     );
 

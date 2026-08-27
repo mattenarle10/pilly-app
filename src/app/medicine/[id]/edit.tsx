@@ -181,7 +181,6 @@ const EditAppearanceSection = memo(function EditAppearanceSection({
 
   return (
     <AppearanceStep
-      enableThreeDimensionalPreview
       shape={shape}
       size={size}
       color={color}

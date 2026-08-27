@@ -28,7 +28,6 @@ type Props = {
   onShapeChange: (value: MedicationAppearanceShape) => void;
   onColorChange: (value: MedicationAppearanceColor) => void;
   onSecondaryColorChange: (value: MedicationAppearanceColor) => void;
-  enableThreeDimensionalPreview?: boolean;
 };
 
 export function AppearanceStep(props: Props) {
@@ -75,21 +74,12 @@ export function AppearanceStep(props: Props) {
         onClose={() => setShowEditor(false)}
       >
         <View style={styles.preview}>
-          {props.enableThreeDimensionalPreview ? (
-            <MedicationAppearancePreview3D
-              shape={props.shape}
-              color={props.color}
-              secondaryColor={props.secondaryColor}
-              active={showEditor}
-            />
-          ) : (
-            <MedicationAppearance
-              shape={props.shape}
-              size="medium"
-              color={props.color}
-              secondaryColor={props.secondaryColor}
-            />
-          )}
+          <MedicationAppearancePreview3D
+            shape={props.shape}
+            color={props.color}
+            secondaryColor={props.secondaryColor}
+            active={showEditor}
+          />
         </View>
         <ChoiceGroup
           label="Shape"
