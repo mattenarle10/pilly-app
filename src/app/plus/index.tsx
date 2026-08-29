@@ -1,7 +1,9 @@
-import { useState } from 'react';
 import { ActivityIndicator, StyleSheet, View } from 'react-native';
-import { Stack } from 'expo-router';
+import { router, Stack } from 'expo-router';
 
+import { useAccountSession } from '@/hooks/use-account-session';
+import { usePlus } from '@/hooks/use-plus';
+import { GoogleSignInButton } from '@/ui/components/google-sign-in-button';
 import { PillyBanner } from '@/ui/components/pilly-banner';
 import { PillyButton } from '@/ui/components/pilly-button';
 import { PillyText } from '@/ui/components/pilly-text';
@@ -9,46 +11,13 @@ import { Screen } from '@/ui/components/screen';
 import { PillyIcon, type PillyIconName } from '@/ui/icons';
 import { PillyPlusCompanion } from '@/ui/illustrations';
 import { colors, radii, shadows, spacing } from '@/ui/tokens';
-import { usePlus } from '@/hooks/use-plus';
-
-type Notice = { kind: 'error' | 'info'; message: string };
 
 export default function PlusRoute() {
+  const account = useAccountSession();
   const plus = usePlus();
-  const [notice, setNotice] = useState<Notice | null>(null);
-  const busy = plus.purchase.isPending || plus.restore.isPending;
   const preview = plus.state.kind === 'preview';
-  const active = plus.state.active;
-
-  const buy = async () => {
-    setNotice(null);
-    try {
-      const result = await plus.purchase.mutateAsync();
-      if (result.kind === 'inactive') {
-        setNotice({ kind: 'error', message: 'The purchase finished, but Plus is not active yet.' });
-      }
-    } catch (cause) {
-      setNotice({
-        kind: 'error',
-        message: cause instanceof Error ? cause.message : 'The App Store could not finish.',
-      });
-    }
-  };
-
-  const restore = async () => {
-    setNotice(null);
-    try {
-      const result = await plus.restore.mutateAsync();
-      if (result.kind === 'inactive') {
-        setNotice({ kind: 'info', message: 'No Pilly Plus purchase was found for this Apple ID.' });
-      }
-    } catch (cause) {
-      setNotice({
-        kind: 'error',
-        message: cause instanceof Error ? cause.message : 'The App Store could not restore Plus.',
-      });
-    }
-  };
+  const signedIn = account.state.kind === 'signed-in';
+  const active = signedIn && plus.state.active;
 
   return (
     <>
@@ -76,122 +45,120 @@ export default function PlusRoute() {
             <View style={styles.previewStatus}>
               <PillyIcon name="info" size={16} color={colors.brand} />
               <PillyText role="caption" style={styles.previewStatusLabel}>
-                {active ? 'Paid version preview' : 'Free version preview'}
+                {active ? 'Plus access preview' : 'Free preview'} · checkout off
               </PillyText>
             </View>
           ) : null}
           <PillyText role="large-title" accessibilityRole="header" style={styles.heroTitle}>
-            {active ? 'Pilly Plus is yours.' : 'Clear records, ready to share.'}
+            Your medicines, ready when you need them.
           </PillyText>
           <PillyText muted style={styles.heroCopy}>
-            {active
-              ? 'Your advanced export tools are unlocked for life.'
-              : 'Turn your medicine plan and dose history into useful files.'}
+            Pilly Plus adds private backup and recovery without changing how local tracking works.
           </PillyText>
+        </View>
+
+        <View style={styles.actions}>
+          {account.state.kind === 'loading' || plus.state.kind === 'loading' ? (
+            <View accessibilityLabel="Checking Pilly Plus" style={styles.loading}>
+              <ActivityIndicator color={colors.brand} />
+              <PillyText role="caption" muted>
+                Checking Pilly Plus…
+              </PillyText>
+            </View>
+          ) : account.state.kind !== 'signed-in' ? (
+            <>
+              <GoogleSignInButton
+                loading={account.busy}
+                disabled={!account.configured}
+                onPress={() => void account.signIn()}
+              />
+              <PillyText role="caption" muted style={styles.centeredCopy}>
+                Google is used only for Pilly Plus. Signing in does not upload your medicine data.
+              </PillyText>
+            </>
+          ) : (
+            <View style={styles.connectedSection}>
+              <View style={styles.connectedState}>
+                <PillyIcon
+                  name={active ? 'success' : 'profile'}
+                  size={20}
+                  color={active ? colors.success : colors.brand}
+                />
+                <View style={styles.connectedCopy}>
+                  <PillyText role="label">
+                    {active ? 'Pilly Plus preview is active' : 'Google account connected'}
+                  </PillyText>
+                  <PillyText role="caption" muted>
+                    {account.state.user.email}
+                  </PillyText>
+                </View>
+              </View>
+              <PillyText role="caption" muted style={styles.centeredCopy}>
+                {active
+                  ? 'No purchase was made. Cloud sync remains off in this local preview.'
+                  : 'Checkout remains off while the complete Plus experience is being built.'}
+              </PillyText>
+              <PillyButton
+                label="Manage Pilly Plus account"
+                variant="quiet"
+                size="medium"
+                onPress={() => router.push('/account')}
+              />
+            </View>
+          )}
+
+          {!account.configured ? (
+            <PillyBanner
+              kind="warning"
+              message="Google sign-in is not configured in this local build."
+              compact
+            />
+          ) : account.error === 'sign-in' ? (
+            <PillyBanner
+              kind="error"
+              message="Google sign-in didn’t finish. Your local data is unchanged."
+              compact
+            />
+          ) : plus.state.kind === 'error' ? (
+            <PillyBanner
+              kind="error"
+              title="Couldn’t check Pilly Plus"
+              message="Your saved access is unchanged. Try again when you’re connected."
+              actionLabel="Try again"
+              onAction={() => void plus.retry()}
+            />
+          ) : null}
         </View>
 
         <View style={styles.benefitsSection}>
           <PillyText role="headline">Included with Plus</PillyText>
           <View style={styles.benefits}>
             <Benefit
-              icon="print"
-              title="Medicine plan PDF"
-              message="A clean plan for home, travel, or appointments."
+              icon="private"
+              title="Private cloud backup"
+              message="Back up medicines, schedules, and dose history to your account."
             />
             <View style={styles.separator} />
             <Benefit
-              icon="calendar"
-              title="Dose history spreadsheet"
-              message="A CSV you can sort, filter, and keep."
+              icon="refresh"
+              title="Recovery across devices"
+              message="Restore your records on a new device when you choose to."
+            />
+            <View style={styles.separator} />
+            <Benefit
+              icon="photo"
+              title="Medicine photos"
+              message="Keep private recognition photos with your Pilly Plus account."
             />
           </View>
         </View>
 
         <View style={styles.freePromise}>
-          <View style={styles.freePromiseCopy}>
-            <PillyText role="label">The essentials stay free</PillyText>
-            <PillyText role="caption" muted>
-              Tracking, reminders, history, and a complete data export.
-            </PillyText>
-          </View>
-        </View>
-
-        <View style={styles.actions}>
-          {plus.state.kind === 'loading' ? (
-            <View accessibilityLabel="Loading Pilly Plus" style={styles.loading}>
-              <ActivityIndicator color={colors.brand} />
-              <PillyText role="caption" muted>
-                Checking Plus…
-              </PillyText>
-            </View>
-          ) : active ? (
-            <View style={styles.activeState}>
-              <PillyIcon name="done" size={20} color={colors.success} />
-              <View style={styles.activeStateCopy}>
-                <PillyText role="label">
-                  {preview ? 'Paid version preview' : 'Pilly Plus is active'}
-                </PillyText>
-                <PillyText role="caption" muted>
-                  {plus.state.kind === 'active' && plus.state.offline
-                    ? 'Using your saved access while the store is offline.'
-                    : preview
-                      ? 'No real App Store entitlement was changed.'
-                      : 'Purchased once. Yours to keep.'}
-                </PillyText>
-              </View>
-            </View>
-          ) : plus.state.kind === 'available' ? (
-            <>
-              <PillyButton
-                label={`Unlock for ${plus.state.offer.localizedPrice}`}
-                icon="unlock"
-                loading={plus.purchase.isPending}
-                onPress={() => void buy()}
-                fullWidth
-              />
-              <PillyText role="caption" muted style={styles.purchaseNote}>
-                Lifetime access. No subscription.
-              </PillyText>
-            </>
-          ) : plus.state.kind === 'error' ? (
-            <PillyBanner
-              kind="error"
-              title="Couldn’t reach the App Store"
-              message="Your saved access is unchanged. Try again when you’re connected."
-              actionLabel="Try again"
-              onAction={() => void plus.retry()}
-            />
-          ) : (
-            <View style={styles.unavailable}>
-              <PillyText role="label" style={styles.centeredCopy}>
-                {preview
-                  ? 'Checkout is off in preview mode'
-                  : plus.state.kind === 'unavailable' && plus.state.reason === 'gate'
-                    ? 'Plus is not for sale in this build yet'
-                    : 'Plus is not available yet'}
-              </PillyText>
-              <PillyText role="caption" muted style={styles.centeredCopy}>
-                {preview
-                  ? 'Use store mode to test a real RevenueCat offering.'
-                  : plus.state.kind === 'unavailable' && plus.state.reason === 'gate'
-                    ? 'The export tools are ready. Checkout opens after device purchase testing.'
-                    : 'You can keep using every essential Pilly feature for free.'}
-              </PillyText>
-            </View>
-          )}
-
-          {notice ? <PillyBanner kind={notice.kind} message={notice.message} compact /> : null}
-
-          {plus.state.canRestore && !active ? (
-            <PillyButton
-              label="Restore purchase"
-              variant="quiet"
-              size="medium"
-              disabled={busy}
-              onPress={() => void restore()}
-              fullWidth
-            />
-          ) : null}
+          <PillyText role="label">The essentials stay free</PillyText>
+          <PillyText role="caption" muted>
+            Tracking, reminders, Today, Week, history, and readable data export stay on your device
+            without an account.
+          </PillyText>
         </View>
       </Screen>
     </>
@@ -255,11 +222,8 @@ const styles = StyleSheet.create({
   benefitIcon: { width: 28, alignItems: 'center' },
   benefitCopy: { flex: 1, gap: spacing.xs },
   separator: { height: StyleSheet.hairlineWidth, marginLeft: 60, backgroundColor: colors.border },
-  freePromise: {
-    paddingHorizontal: spacing.xs,
-  },
-  freePromiseCopy: { flex: 1, gap: spacing.xs },
-  actions: { gap: spacing.sm },
+  freePromise: { gap: spacing.xs, paddingHorizontal: spacing.xs },
+  actions: { alignItems: 'center', gap: spacing.sm },
   loading: {
     minHeight: 56,
     flexDirection: 'row',
@@ -267,15 +231,15 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: spacing.sm,
   },
-  activeState: {
+  connectedSection: { width: '100%', alignItems: 'center', gap: spacing.sm },
+  connectedState: {
+    width: '100%',
     flexDirection: 'row',
-    alignItems: 'flex-start',
+    alignItems: 'center',
     gap: spacing.md,
     paddingHorizontal: spacing.xs,
     paddingVertical: spacing.sm,
   },
-  activeStateCopy: { flex: 1, gap: spacing.xs },
-  purchaseNote: { textAlign: 'center' },
-  unavailable: { gap: spacing.xs, paddingHorizontal: spacing.lg, paddingVertical: spacing.sm },
-  centeredCopy: { textAlign: 'center' },
+  connectedCopy: { flex: 1, gap: spacing.xs },
+  centeredCopy: { maxWidth: 340, textAlign: 'center' },
 });

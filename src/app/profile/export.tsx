@@ -5,6 +5,7 @@ import { router, Stack } from 'expo-router';
 import { exportSummary } from '@/models/export';
 import { sharePillyExport, type ExportFileKind } from '@/services/export-files';
 import { isPlusPurchasesSupported } from '@/services/purchases';
+import { useAccountSession } from '@/hooks/use-account-session';
 import { useExportData } from '@/hooks/use-export-data';
 import { usePlus } from '@/hooks/use-plus';
 import { PillyBanner } from '@/ui/components/pilly-banner';
@@ -16,13 +17,14 @@ import { PillyIcon, type PillyIconName } from '@/ui/icons';
 import { colors, spacing } from '@/ui/tokens';
 
 export default function ExportDataRoute() {
+  const account = useAccountSession();
   const data = useExportData();
   const plus = usePlus();
   const [sharing, setSharing] = useState<ExportFileKind | null>(null);
   const sharingRef = useRef(false);
   const [shareError, setShareError] = useState(false);
   const summary = data.data ? exportSummary(data.data) : null;
-  const isPlus = plus.state.active;
+  const isPlus = account.state.kind === 'signed-in' && plus.state.active;
   const plusSupported = isPlusPurchasesSupported();
 
   const leave = () => {

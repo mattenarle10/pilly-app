@@ -62,17 +62,18 @@ describe('account route', () => {
     jest.clearAllMocks();
   });
 
-  test('keeps account creation optional and starts Google sign-in', async () => {
+  test('keeps Google sign-in inside the optional Pilly Plus account path', async () => {
     const account = localAccount();
     mockedUseAccountSession.mockReturnValue(account);
     const screen = await render(<AccountRoute />, { wrapper });
 
-    expect(screen.getByText('Local by default.')).toBeOnTheScreen();
+    expect(screen.getByText('Connect Pilly Plus.')).toBeOnTheScreen();
     expect(
-      screen.getByText('Medicine tracking stays fully usable without an account or a connection.'),
+      screen.getByText('Use Google to prepare secure backup and recovery across your devices.'),
     ).toBeOnTheScreen();
+    expect(screen.getByText('Used only for Pilly Plus cloud features.')).toBeOnTheScreen();
 
-    fireEvent.press(screen.getByText('Continue with Google'));
+    fireEvent.press(screen.getByLabelText('Sign in with Google'));
     expect(account.signIn).toHaveBeenCalledTimes(1);
   });
 
@@ -81,7 +82,7 @@ describe('account route', () => {
     mockedUseAccountSession.mockReturnValue(localAccount());
     const screen = await render(<AccountRoute />, { wrapper });
 
-    fireEvent.press(screen.getByText('Keep using Pilly locally'));
+    fireEvent.press(screen.getByText('Not now'));
     expect(mockBack).toHaveBeenCalledTimes(1);
   });
 

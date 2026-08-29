@@ -94,5 +94,5 @@ export function PillyPlusCompanion() {
 }
 
 const styles = StyleSheet.create({
-  frame: { width: '100%', maxWidth: 340, height: 164, alignSelf: 'center' },
+  frame: { width: '100%', maxWidth: 300, height: 142, alignSelf: 'center' },
 });

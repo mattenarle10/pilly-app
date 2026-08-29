@@ -114,8 +114,8 @@ export default function ProfileRoute() {
           </View>
           <PillyText muted>
             {account.state.kind === 'signed-in'
-              ? `Connected as ${account.state.user.email}`
-              : 'No account. Saved only on this iPhone.'}
+              ? `Pilly Plus account · ${account.state.user.email}`
+              : 'Medicine tracking stays on this iPhone.'}
           </PillyText>
         </View>
 
@@ -142,17 +142,17 @@ export default function ProfileRoute() {
         ) : null}
 
         <ProfileSection title="Your data">
-          <ProfileRow
-            icon="profile"
-            title="Account"
-            message={
-              account.state.kind === 'signed-in'
-                ? 'Google account connected'
-                : 'Optional. Local tracking stays free'
-            }
-            onPress={() => router.push('/account')}
-          />
-          <View style={styles.separator} />
+          {account.state.kind === 'signed-in' ? (
+            <>
+              <ProfileRow
+                icon="profile"
+                title="Pilly Plus account"
+                message="Manage your connected Google account"
+                onPress={() => router.push('/account')}
+              />
+              <View style={styles.separator} />
+            </>
+          ) : null}
           <ProfileRow
             icon="document"
             title="Export data"
@@ -167,7 +167,7 @@ export default function ProfileRoute() {
               <ProfileRow
                 icon="favorite"
                 title="Pilly Plus"
-                message="PDF plans and spreadsheet exports"
+                message="Private backup, recovery, and medicine photos"
                 onPress={() => router.push('/plus')}
               />
               <View style={styles.separator} />

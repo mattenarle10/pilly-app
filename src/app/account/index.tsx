@@ -2,6 +2,7 @@ import { ActivityIndicator, StyleSheet, View } from 'react-native';
 import { router, Stack } from 'expo-router';
 
 import { useAccountSession } from '@/hooks/use-account-session';
+import { GoogleSignInButton } from '@/ui/components/google-sign-in-button';
 import { PillyBanner } from '@/ui/components/pilly-banner';
 import { PillyButton } from '@/ui/components/pilly-button';
 import { PillyText } from '@/ui/components/pilly-text';
@@ -29,7 +30,7 @@ export default function AccountRoute() {
           headerTintColor: colors.textPrimary,
           headerTitleAlign: 'center',
           headerTitleStyle: { color: colors.textPrimary, fontWeight: '600' },
-          title: 'Account',
+          title: 'Pilly Plus account',
         }}
       />
       <Screen
@@ -39,12 +40,12 @@ export default function AccountRoute() {
       >
         <View style={styles.intro}>
           <PillyText role="large-title" accessibilityRole="header" style={styles.title}>
-            {account.state.kind === 'signed-in' ? 'You’re connected.' : 'Local by default.'}
+            {account.state.kind === 'signed-in' ? 'You’re connected.' : 'Connect Pilly Plus.'}
           </PillyText>
           <PillyText muted style={styles.introCopy}>
             {account.state.kind === 'signed-in'
-              ? 'Your Pilly account is ready. Cloud sync is not enabled yet.'
-              : 'Medicine tracking stays fully usable without an account or a connection.'}
+              ? 'Your Plus account is ready. Cloud sync is not enabled yet.'
+              : 'Use Google to prepare secure backup and recovery across your devices.'}
           </PillyText>
         </View>
 
@@ -88,9 +89,9 @@ export default function AccountRoute() {
                 <PillyIcon name="private" size={24} color={colors.brand} />
               </View>
               <View style={styles.accountCopy}>
-                <PillyText role="headline">Optional account</PillyText>
+                <PillyText role="headline">Google account</PillyText>
                 <PillyText role="caption" muted>
-                  Google sign-in is the first step toward Pilly Plus cloud backup.
+                  Used only for Pilly Plus cloud features.
                 </PillyText>
               </View>
             </View>
@@ -108,16 +109,13 @@ export default function AccountRoute() {
               />
             ) : null}
             <View style={styles.actions}>
-              <PillyButton
-                label="Continue with Google"
-                variant="secondary"
+              <GoogleSignInButton
                 loading={account.busy}
                 disabled={!account.configured}
                 onPress={() => void account.signIn()}
-                fullWidth
               />
               <PillyButton
-                label="Keep using Pilly locally"
+                label="Not now"
                 variant="quiet"
                 size="medium"
                 disabled={account.busy}
@@ -129,8 +127,8 @@ export default function AccountRoute() {
         )}
 
         <PillyText role="caption" muted style={styles.boundary}>
-          Signing in does not upload medicine data until cloud sync is ready and you choose to use
-          it.
+          Free tracking never requires an account. Signing in does not upload medicine data until
+          cloud sync is ready and you choose to use it.
         </PillyText>
       </Screen>
     </>
@@ -167,6 +165,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   accountCopy: { flex: 1, gap: spacing.xs },
-  actions: { gap: spacing.xs },
+  actions: { alignItems: 'center', gap: spacing.xs },
   boundary: { marginTop: 'auto', paddingHorizontal: spacing.xs, paddingTop: spacing.xl },
 });
