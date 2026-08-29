@@ -11,10 +11,12 @@ import { PillyText } from '@/ui/components/pilly-text';
 import { Screen } from '@/ui/components/screen';
 import { PillyIcon, type PillyIconName } from '@/ui/icons';
 import { colors, radii, shadows, spacing } from '@/ui/tokens';
+import { useAccountSession } from '@/hooks/use-account-session';
 import { useProfile } from '@/hooks/use-profile';
 import { isPlusPurchasesSupported } from '@/services/purchases';
 
 export default function ProfileRoute() {
+  const account = useAccountSession();
   const profile = useProfile();
   const plusSupported = isPlusPurchasesSupported();
   const [nameModalOpen, setNameModalOpen] = useState(false);
@@ -110,7 +112,11 @@ export default function ProfileRoute() {
               </PillyText>
             </Pressable>
           </View>
-          <PillyText muted>No account. Saved only on this iPhone.</PillyText>
+          <PillyText muted>
+            {account.state.kind === 'signed-in'
+              ? `Connected as ${account.state.user.email}`
+              : 'No account. Saved only on this iPhone.'}
+          </PillyText>
         </View>
 
         {profile.isError ? (
@@ -136,6 +142,17 @@ export default function ProfileRoute() {
         ) : null}
 
         <ProfileSection title="Your data">
+          <ProfileRow
+            icon="profile"
+            title="Account"
+            message={
+              account.state.kind === 'signed-in'
+                ? 'Google account connected'
+                : 'Optional. Local tracking stays free'
+            }
+            onPress={() => router.push('/account')}
+          />
+          <View style={styles.separator} />
           <ProfileRow
             icon="document"
             title="Export data"
