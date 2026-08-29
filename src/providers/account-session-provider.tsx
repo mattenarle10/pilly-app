@@ -7,11 +7,11 @@ import {
   useState,
 } from 'react';
 
-import type { AccountUser } from '@/models/account';
+import type { AccountProvider, AccountUser } from '@/models/account';
 import {
   isAccountSignInConfigured,
   restoreAccountSession,
-  signInWithGoogle,
+  signInWithProvider,
   signOutAccount,
 } from '@/services/account-session';
 
@@ -24,8 +24,9 @@ export type AccountSessionContextValue = {
   state: AccountSessionState;
   configured: boolean;
   busy: boolean;
+  signingInWith: AccountProvider | null;
   error: 'sign-in' | 'sign-out' | null;
-  signIn: () => Promise<boolean>;
+  signIn: (provider: AccountProvider) => Promise<boolean>;
   signOut: () => Promise<void>;
 };
 
@@ -34,6 +35,7 @@ export const AccountSessionContext = createContext<AccountSessionContextValue | 
 export function AccountSessionProvider({ children }: PropsWithChildren) {
   const [state, setState] = useState<AccountSessionState>({ kind: 'loading', user: null });
   const [busy, setBusy] = useState(false);
+  const [signingInWith, setSigningInWith] = useState<AccountProvider | null>(null);
   const [error, setError] = useState<AccountSessionContextValue['error']>(null);
   const configured = isAccountSignInConfigured();
 
@@ -54,11 +56,12 @@ export function AccountSessionProvider({ children }: PropsWithChildren) {
     };
   }, []);
 
-  const signIn = useCallback(async () => {
+  const signIn = useCallback(async (provider: AccountProvider) => {
     setBusy(true);
+    setSigningInWith(provider);
     setError(null);
     try {
-      const session = await signInWithGoogle();
+      const session = await signInWithProvider(provider);
       if (!session) return false;
       setState({ kind: 'signed-in', user: session.user });
       return true;
@@ -66,6 +69,7 @@ export function AccountSessionProvider({ children }: PropsWithChildren) {
       setError('sign-in');
       return false;
     } finally {
+      setSigningInWith(null);
       setBusy(false);
     }
   }, []);
@@ -84,8 +88,8 @@ export function AccountSessionProvider({ children }: PropsWithChildren) {
   }, []);
 
   const value = useMemo(
-    () => ({ state, configured, busy, error, signIn, signOut }),
-    [busy, configured, error, signIn, signOut, state],
+    () => ({ state, configured, busy, signingInWith, error, signIn, signOut }),
+    [busy, configured, error, signIn, signingInWith, signOut, state],
   );
 
   return <AccountSessionContext.Provider value={value}>{children}</AccountSessionContext.Provider>;

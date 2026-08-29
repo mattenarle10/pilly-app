@@ -3,7 +3,7 @@ import * as SecureStore from 'expo-secure-store';
 import * as WebBrowser from 'expo-web-browser';
 import { z } from 'zod';
 
-import type { AccountSession, AccountUser } from '@/models/account';
+import type { AccountProvider, AccountSession, AccountUser } from '@/models/account';
 
 WebBrowser.maybeCompleteAuthSession();
 
@@ -30,6 +30,7 @@ const accountUserSchema = z.object({
   id: z.string().min(1),
   email: z.string().email(),
   displayName: z.string().min(1),
+  provider: z.enum(['apple', 'google']).default('google'),
 });
 
 const accountSessionSchema = z.object({
@@ -110,22 +111,29 @@ async function storeSession(session: AccountSession): Promise<void> {
   await SecureStore.setItemAsync(sessionKey, JSON.stringify(session), secureStoreOptions);
 }
 
-function toAccountUser(userInfo: unknown): AccountUser {
+const cognitoProviderName: Record<AccountProvider, string> = {
+  apple: 'SignInWithApple',
+  google: 'Google',
+};
+
+function toAccountUser(userInfo: unknown, provider: AccountProvider): AccountUser {
   const user = userInfoSchema.parse(userInfo);
   return {
     id: user.sub,
     email: user.email,
     displayName: user.name ?? user.given_name ?? user.email,
+    provider,
   };
 }
 
 async function createSession(
   token: AuthSession.TokenResponse,
   discovery: AuthSession.DiscoveryDocument,
+  provider: AccountProvider,
   refreshToken = token.refreshToken,
 ): Promise<AccountSession> {
   if (!refreshToken) throw new Error('The account provider did not return a refresh token.');
-  const user = toAccountUser(await AuthSession.fetchUserInfoAsync(token, discovery));
+  const user = toAccountUser(await AuthSession.fetchUserInfoAsync(token, discovery), provider);
   const session: AccountSession = {
     user,
     accessToken: token.accessToken,
@@ -145,7 +153,9 @@ export async function restoreAccountSession(): Promise<AccountSession | null> {
   return readStoredSession();
 }
 
-export async function signInWithGoogle(): Promise<AccountSession | null> {
+export async function signInWithProvider(
+  provider: AccountProvider,
+): Promise<AccountSession | null> {
   const environment = requireAuthEnvironment();
   const discovery = await getDiscovery(environment);
   const request = new AuthSession.AuthRequest({
@@ -154,12 +164,12 @@ export async function signInWithGoogle(): Promise<AccountSession | null> {
     responseType: AuthSession.ResponseType.Code,
     scopes: authScopes,
     usePKCE: true,
-    extraParams: { identity_provider: 'Google' },
+    extraParams: { identity_provider: cognitoProviderName[provider] },
   });
   const result = await request.promptAsync(discovery);
   if (result.type === 'cancel' || result.type === 'dismiss') return null;
   if (result.type !== 'success' || !result.params.code || !request.codeVerifier) {
-    throw new Error('Google sign-in did not complete.');
+    throw new Error('Account sign-in did not complete.');
   }
   const token = await AuthSession.exchangeCodeAsync(
     {
@@ -170,7 +180,7 @@ export async function signInWithGoogle(): Promise<AccountSession | null> {
     },
     discovery,
   );
-  return createSession(token, discovery);
+  return createSession(token, discovery, provider);
 }
 
 export async function getValidAccountSession(): Promise<AccountSession | null> {
@@ -183,7 +193,7 @@ export async function getValidAccountSession(): Promise<AccountSession | null> {
     { clientId: environment.clientId, refreshToken: stored.refreshToken },
     discovery,
   );
-  return createSession(token, discovery, stored.refreshToken);
+  return createSession(token, discovery, stored.user.provider, stored.refreshToken);
 }
 
 export async function signOutAccount(): Promise<void> {

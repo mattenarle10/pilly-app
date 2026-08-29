@@ -147,7 +147,7 @@ export default function ProfileRoute() {
               <ProfileRow
                 icon="profile"
                 title="Pilly Plus account"
-                message="Manage your connected Google account"
+                message="Manage your connected account"
                 onPress={() => router.push('/account')}
               />
               <View style={styles.separator} />

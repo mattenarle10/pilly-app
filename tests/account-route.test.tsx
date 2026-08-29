@@ -1,5 +1,5 @@
 import type { PropsWithChildren } from 'react';
-import { cleanup, fireEvent, render } from '@testing-library/react-native';
+import { act, cleanup, fireEvent, render } from '@testing-library/react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import type { AccountSessionContextValue } from '@/providers/account-session-provider';
@@ -20,6 +20,14 @@ jest.mock('expo-router', () => ({
   },
 }));
 jest.mock('@/hooks/use-account-session', () => ({ useAccountSession: jest.fn() }));
+jest.mock('@/ui/components/apple-sign-in-button', () => {
+  const { Pressable } = jest.requireActual<typeof import('react-native')>('react-native');
+  return {
+    AppleSignInButton: ({ onPress }: { onPress: () => void }) => (
+      <Pressable accessibilityLabel="Sign in with Apple" onPress={onPress} />
+    ),
+  };
+});
 jest.mock('react-native-reanimated', () => {
   const { View } = jest.requireActual<typeof import('react-native')>('react-native');
   return {
@@ -49,6 +57,7 @@ function localAccount(
     state: { kind: 'local', user: null },
     configured: true,
     busy: false,
+    signingInWith: null,
     error: null,
     signIn: jest.fn(async () => true),
     signOut: jest.fn(async () => undefined),
@@ -62,19 +71,29 @@ describe('account route', () => {
     jest.clearAllMocks();
   });
 
-  test('keeps Google sign-in inside the optional Pilly Plus account path', async () => {
+  test('keeps equivalent Apple and Google sign-in inside the optional Plus path', async () => {
     const account = localAccount();
     mockedUseAccountSession.mockReturnValue(account);
     const screen = await render(<AccountRoute />, { wrapper });
 
     expect(screen.getByText('Connect Pilly Plus.')).toBeOnTheScreen();
     expect(
-      screen.getByText('Use Google to prepare secure backup and recovery across your devices.'),
+      screen.getByText(
+        'Use Apple or Google to prepare secure backup and recovery across your devices.',
+      ),
     ).toBeOnTheScreen();
-    expect(screen.getByText('Used only for Pilly Plus cloud features.')).toBeOnTheScreen();
+    expect(
+      screen.getByText('Choose Apple or Google. Your free tracker stays local.'),
+    ).toBeOnTheScreen();
 
-    fireEvent.press(screen.getByLabelText('Sign in with Google'));
-    expect(account.signIn).toHaveBeenCalledTimes(1);
+    await act(async () => {
+      fireEvent.press(screen.getByLabelText('Sign in with Apple'));
+    });
+    await act(async () => {
+      fireEvent.press(screen.getByLabelText('Sign in with Google'));
+    });
+    expect(account.signIn).toHaveBeenNthCalledWith(1, 'apple');
+    expect(account.signIn).toHaveBeenNthCalledWith(2, 'google');
   });
 
   test('returns without changing local data', async () => {
@@ -90,14 +109,19 @@ describe('account route', () => {
     const account = localAccount({
       state: {
         kind: 'signed-in',
-        user: { id: 'account-1', email: 'matt@example.com', displayName: 'Matthew' },
+        user: {
+          id: 'account-1',
+          email: 'matt@example.com',
+          displayName: 'Matthew',
+          provider: 'apple',
+        },
       },
     });
     mockedUseAccountSession.mockReturnValue(account);
     const screen = await render(<AccountRoute />, { wrapper });
 
     expect(screen.getByText('You’re connected.')).toBeOnTheScreen();
-    expect(screen.getByText('matt@example.com')).toBeOnTheScreen();
+    expect(screen.getByText(/Apple · matt@example.com/)).toBeOnTheScreen();
     fireEvent.press(screen.getByText('Sign out'));
     expect(account.signOut).toHaveBeenCalledTimes(1);
   });

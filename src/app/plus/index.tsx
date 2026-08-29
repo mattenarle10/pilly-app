@@ -3,6 +3,8 @@ import { router, Stack } from 'expo-router';
 
 import { useAccountSession } from '@/hooks/use-account-session';
 import { usePlus } from '@/hooks/use-plus';
+import { accountProviderLabel } from '@/models/account';
+import { AppleSignInButton } from '@/ui/components/apple-sign-in-button';
 import { GoogleSignInButton } from '@/ui/components/google-sign-in-button';
 import { PillyBanner } from '@/ui/components/pilly-banner';
 import { PillyButton } from '@/ui/components/pilly-button';
@@ -67,13 +69,19 @@ export default function PlusRoute() {
             </View>
           ) : account.state.kind !== 'signed-in' ? (
             <>
+              <AppleSignInButton
+                loading={account.signingInWith === 'apple'}
+                disabled={!account.configured || account.busy}
+                onPress={() => void account.signIn('apple')}
+              />
               <GoogleSignInButton
-                loading={account.busy}
-                disabled={!account.configured}
-                onPress={() => void account.signIn()}
+                loading={account.signingInWith === 'google'}
+                disabled={!account.configured || account.busy}
+                onPress={() => void account.signIn('google')}
               />
               <PillyText role="caption" muted style={styles.centeredCopy}>
-                Google is used only for Pilly Plus. Signing in does not upload your medicine data.
+                Your account is used only for Pilly Plus. Signing in does not upload your medicine
+                data.
               </PillyText>
             </>
           ) : (
@@ -86,7 +94,9 @@ export default function PlusRoute() {
                 />
                 <View style={styles.connectedCopy}>
                   <PillyText role="label">
-                    {active ? 'Pilly Plus preview is active' : 'Google account connected'}
+                    {active
+                      ? 'Pilly Plus preview is active'
+                      : `${accountProviderLabel(account.state.user.provider)} account connected`}
                   </PillyText>
                   <PillyText role="caption" muted>
                     {account.state.user.email}
@@ -110,13 +120,13 @@ export default function PlusRoute() {
           {!account.configured ? (
             <PillyBanner
               kind="warning"
-              message="Google sign-in is not configured in this local build."
+              message="Account sign-in is not configured in this local build."
               compact
             />
           ) : account.error === 'sign-in' ? (
             <PillyBanner
               kind="error"
-              message="Google sign-in didn’t finish. Your local data is unchanged."
+              message="Sign-in didn’t finish. Your local data is unchanged."
               compact
             />
           ) : plus.state.kind === 'error' ? (

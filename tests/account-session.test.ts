@@ -4,7 +4,7 @@ import * as SecureStore from 'expo-secure-store';
 import {
   getValidAccountSession,
   restoreAccountSession,
-  signInWithGoogle,
+  signInWithProvider,
   signOutAccount,
 } from '@/services/account-session';
 
@@ -89,44 +89,54 @@ describe('account session service', () => {
     mockDeleteItem.mockResolvedValue(undefined);
   });
 
-  test('uses authorization code with PKCE and stores the Cognito session', async () => {
-    mockPromptAsync.mockResolvedValue({ type: 'success', params: { code: 'authorization-code' } });
+  test.each([
+    ['apple' as const, 'SignInWithApple'],
+    ['google' as const, 'Google'],
+  ])(
+    'routes %s through Cognito authorization code with PKCE',
+    async (provider, identityProvider) => {
+      mockPromptAsync.mockResolvedValue({
+        type: 'success',
+        params: { code: 'authorization-code' },
+      });
 
-    const session = await signInWithGoogle();
+      const session = await signInWithProvider(provider);
 
-    expect(mockAuthRequest).toHaveBeenCalledWith(
-      expect.objectContaining({
-        clientId: 'mobile-client',
-        redirectUri: 'pilly-app://auth/callback',
-        responseType: 'code',
-        usePKCE: true,
-        extraParams: { identity_provider: 'Google' },
-      }),
-    );
-    expect(mockExchangeCode).toHaveBeenCalledWith(
-      expect.objectContaining({
-        clientId: 'mobile-client',
-        code: 'authorization-code',
-        extraParams: { code_verifier: 'pkce-verifier' },
-      }),
-      discovery,
-    );
-    expect(session?.user).toEqual({
-      id: 'account-1',
-      email: 'matt@example.com',
-      displayName: 'Matthew',
-    });
-    expect(mockSetItem).toHaveBeenCalledWith(
-      'pilly.account-session.v1',
-      expect.stringContaining('refresh-token'),
-      expect.any(Object),
-    );
-  });
+      expect(mockAuthRequest).toHaveBeenCalledWith(
+        expect.objectContaining({
+          clientId: 'mobile-client',
+          redirectUri: 'pilly-app://auth/callback',
+          responseType: 'code',
+          usePKCE: true,
+          extraParams: { identity_provider: identityProvider },
+        }),
+      );
+      expect(mockExchangeCode).toHaveBeenCalledWith(
+        expect.objectContaining({
+          clientId: 'mobile-client',
+          code: 'authorization-code',
+          extraParams: { code_verifier: 'pkce-verifier' },
+        }),
+        discovery,
+      );
+      expect(session?.user).toEqual({
+        id: 'account-1',
+        email: 'matt@example.com',
+        displayName: 'Matthew',
+        provider,
+      });
+      expect(mockSetItem).toHaveBeenCalledWith(
+        'pilly.account-session.v1',
+        expect.stringContaining('refresh-token'),
+        expect.any(Object),
+      );
+    },
+  );
 
   test('treats closing the provider as cancellation', async () => {
     mockPromptAsync.mockResolvedValue({ type: 'cancel' });
 
-    await expect(signInWithGoogle()).resolves.toBeNull();
+    await expect(signInWithProvider('apple')).resolves.toBeNull();
     expect(mockExchangeCode).not.toHaveBeenCalled();
     expect(mockSetItem).not.toHaveBeenCalled();
   });
@@ -148,6 +158,22 @@ describe('account session service', () => {
       discovery,
     );
     expect(session?.refreshToken).toBe('original-refresh-token');
+    expect(session?.user.provider).toBe('google');
+  });
+
+  test('restores legacy Google sessions that predate provider tracking', async () => {
+    mockGetItem.mockResolvedValue(
+      JSON.stringify({
+        user: { id: 'account-1', email: 'matt@example.com', displayName: 'Matthew' },
+        accessToken: 'access-token',
+        refreshToken: 'refresh-token',
+        expiresAt: Date.now() + 60_000,
+      }),
+    );
+
+    await expect(restoreAccountSession()).resolves.toMatchObject({
+      user: { provider: 'google' },
+    });
   });
 
   test('removes corrupt secure storage instead of blocking the local app', async () => {

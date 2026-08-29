@@ -51,6 +51,7 @@ function account(state: AccountSessionContextValue['state']): AccountSessionCont
     state,
     configured: true,
     busy: false,
+    signingInWith: null,
     error: null,
     signIn: jest.fn(async () => true),
     signOut: jest.fn(async () => undefined),
@@ -92,17 +93,22 @@ describe('Profile route account boundary', () => {
     expect(screen.queryByText('Account')).toBeNull();
   });
 
-  test('shows account management only after Google is connected', async () => {
+  test('shows provider-neutral account management only after connection', async () => {
     mockedUseAccountSession.mockReturnValue(
       account({
         kind: 'signed-in',
-        user: { id: 'account-1', email: 'matt@example.com', displayName: 'Matthew' },
+        user: {
+          id: 'account-1',
+          email: 'matt@example.com',
+          displayName: 'Matthew',
+          provider: 'google',
+        },
       }),
     );
 
     const screen = await render(<ProfileRoute />, { wrapper });
 
     expect(screen.getByText('Pilly Plus account')).toBeOnTheScreen();
-    expect(screen.getByText('Manage your connected Google account')).toBeOnTheScreen();
+    expect(screen.getByText('Manage your connected account')).toBeOnTheScreen();
   });
 });

@@ -2,6 +2,8 @@ import { ActivityIndicator, StyleSheet, View } from 'react-native';
 import { router, Stack } from 'expo-router';
 
 import { useAccountSession } from '@/hooks/use-account-session';
+import { accountProviderLabel } from '@/models/account';
+import { AppleSignInButton } from '@/ui/components/apple-sign-in-button';
 import { GoogleSignInButton } from '@/ui/components/google-sign-in-button';
 import { PillyBanner } from '@/ui/components/pilly-banner';
 import { PillyButton } from '@/ui/components/pilly-button';
@@ -45,7 +47,7 @@ export default function AccountRoute() {
           <PillyText muted style={styles.introCopy}>
             {account.state.kind === 'signed-in'
               ? 'Your Plus account is ready. Cloud sync is not enabled yet.'
-              : 'Use Google to prepare secure backup and recovery across your devices.'}
+              : 'Use Apple or Google to prepare secure backup and recovery across your devices.'}
           </PillyText>
         </View>
 
@@ -65,7 +67,7 @@ export default function AccountRoute() {
               <View style={styles.accountCopy}>
                 <PillyText role="headline">{account.state.user.displayName}</PillyText>
                 <PillyText role="caption" muted>
-                  {account.state.user.email}
+                  {accountProviderLabel(account.state.user.provider)} · {account.state.user.email}
                 </PillyText>
               </View>
               <PillyIcon name="success" size={20} color={colors.success} />
@@ -89,30 +91,35 @@ export default function AccountRoute() {
                 <PillyIcon name="private" size={24} color={colors.brand} />
               </View>
               <View style={styles.accountCopy}>
-                <PillyText role="headline">Google account</PillyText>
+                <PillyText role="headline">Pilly Plus account</PillyText>
                 <PillyText role="caption" muted>
-                  Used only for Pilly Plus cloud features.
+                  Choose Apple or Google. Your free tracker stays local.
                 </PillyText>
               </View>
             </View>
             {!account.configured ? (
               <PillyBanner
                 kind="warning"
-                message="Google sign-in is not configured in this local build."
+                message="Account sign-in is not configured in this local build."
                 compact
               />
             ) : account.error === 'sign-in' ? (
               <PillyBanner
                 kind="error"
-                message="Google sign-in didn’t finish. Your local data is unchanged."
+                message="Sign-in didn’t finish. Your local data is unchanged."
                 compact
               />
             ) : null}
             <View style={styles.actions}>
+              <AppleSignInButton
+                loading={account.signingInWith === 'apple'}
+                disabled={!account.configured || account.busy}
+                onPress={() => void account.signIn('apple')}
+              />
               <GoogleSignInButton
-                loading={account.busy}
-                disabled={!account.configured}
-                onPress={() => void account.signIn()}
+                loading={account.signingInWith === 'google'}
+                disabled={!account.configured || account.busy}
+                onPress={() => void account.signIn('google')}
               />
               <PillyButton
                 label="Not now"
