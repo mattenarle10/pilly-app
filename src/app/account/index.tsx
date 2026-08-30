@@ -26,12 +26,12 @@ export default function AccountRoute() {
     >
       <View style={styles.intro}>
         <PillyText role="large-title" accessibilityRole="header" style={styles.title}>
-          {account.state.kind === 'signed-in' ? 'Your account.' : 'Connect an account.'}
+          {account.state.kind === 'signed-in' ? 'Your account' : 'Connect Pilly Plus'}
         </PillyText>
         <PillyText muted style={styles.introCopy}>
           {account.state.kind === 'signed-in'
-            ? 'Pilly Plus connected. Backup stays off until you choose it.'
-            : 'For private backup and recovery.'}
+            ? 'Backup stays off until you choose it.'
+            : 'Choose Apple or Google.'}
         </PillyText>
       </View>
 
@@ -102,10 +102,6 @@ export default function AccountRoute() {
           </View>
         </View>
       )}
-
-      <PillyText role="caption" muted style={styles.boundary}>
-        Free tracking works without an account.
-      </PillyText>
     </Screen>
   );
 }
@@ -125,5 +121,4 @@ const styles = StyleSheet.create({
   supportId: { gap: spacing.xs, paddingHorizontal: spacing.xs },
   localSection: { gap: spacing.md },
   actions: { alignItems: 'center', gap: spacing.xs },
-  boundary: { paddingHorizontal: spacing.xs, paddingTop: spacing.sm },
 });

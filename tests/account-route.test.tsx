@@ -76,8 +76,8 @@ describe('account route', () => {
     mockedUseAccountSession.mockReturnValue(account);
     const screen = await render(<AccountRoute />, { wrapper });
 
-    expect(screen.getByText('Connect an account.')).toBeOnTheScreen();
-    expect(screen.getByText('For private backup and recovery.')).toBeOnTheScreen();
+    expect(screen.getByText('Connect Pilly Plus')).toBeOnTheScreen();
+    expect(screen.getByText('Choose Apple or Google.')).toBeOnTheScreen();
     expect(screen.getByText('Medicine data stays local.')).toBeOnTheScreen();
 
     await act(async () => {
@@ -114,7 +114,7 @@ describe('account route', () => {
     mockedUseAccountSession.mockReturnValue(account);
     const screen = await render(<AccountRoute />, { wrapper });
 
-    expect(screen.getByText('Your account.')).toBeOnTheScreen();
+    expect(screen.getByText('Your account')).toBeOnTheScreen();
     expect(screen.getByText('Apple connected')).toBeOnTheScreen();
     expect(screen.getByText('matt@example.com')).toBeOnTheScreen();
     expect(screen.getByLabelText('Apple connected, matt@example.com')).toBeOnTheScreen();

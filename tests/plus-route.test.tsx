@@ -1,5 +1,5 @@
 import type { PropsWithChildren } from 'react';
-import { act, cleanup, fireEvent, render } from '@testing-library/react-native';
+import { cleanup, fireEvent, render } from '@testing-library/react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import type { AccountSessionContextValue } from '@/providers/account-session-provider';
@@ -16,14 +16,6 @@ jest.mock('expo-router', () => ({
 }));
 jest.mock('@/hooks/use-account-session', () => ({ useAccountSession: jest.fn() }));
 jest.mock('@/hooks/use-plus', () => ({ usePlus: jest.fn() }));
-jest.mock('@/ui/components/apple-sign-in-button', () => {
-  const { Pressable } = jest.requireActual<typeof import('react-native')>('react-native');
-  return {
-    AppleSignInButton: ({ onPress }: { onPress: () => void }) => (
-      <Pressable accessibilityLabel="Continue with Apple" onPress={onPress} />
-    ),
-  };
-});
 jest.mock('@/ui/illustrations', () => ({ PillyPlusCompanion: () => null }));
 jest.mock('react-native-reanimated', () => {
   const { View } = jest.requireActual<typeof import('react-native')>('react-native');
@@ -76,26 +68,23 @@ describe('Pilly Plus route', () => {
     jest.clearAllMocks();
   });
 
-  test('owns Apple and Google sign-in while keeping checkout off', async () => {
+  test('explains Plus and sends local users to the account route', async () => {
     const localAccount = account();
     mockedUseAccountSession.mockReturnValue(localAccount);
     mockedUsePlus.mockReturnValue(plus(false));
 
     const screen = await render(<PlusRoute />, { wrapper });
 
-    expect(screen.getByText('Private cloud backup')).toBeOnTheScreen();
+    expect(screen.getByText('Private backup')).toBeOnTheScreen();
     expect(screen.getByText('Medicine photos')).toBeOnTheScreen();
-    expect(screen.getByText('Preview · checkout off')).toBeOnTheScreen();
-    expect(screen.getByText('Medicine data stays local.')).toBeOnTheScreen();
+    expect(screen.getByText('Preview')).toBeOnTheScreen();
+    expect(screen.getByText('Connect account')).toBeOnTheScreen();
+    expect(screen.queryByLabelText('Continue with Apple')).toBeNull();
+    expect(screen.queryByLabelText('Continue with Google')).toBeNull();
     expect(screen.queryByText(/lifetime/i)).toBeNull();
-    await act(async () => {
-      fireEvent.press(screen.getByLabelText('Continue with Apple'));
-    });
-    await act(async () => {
-      fireEvent.press(screen.getByLabelText('Continue with Google'));
-    });
-    expect(localAccount.signIn).toHaveBeenNthCalledWith(1, 'apple');
-    expect(localAccount.signIn).toHaveBeenNthCalledWith(2, 'google');
+    fireEvent.press(screen.getByText('Connect account'));
+    expect(mockPush).toHaveBeenCalledWith('/account');
+    expect(localAccount.signIn).not.toHaveBeenCalled();
   });
 
   test('requires a connected account before showing active Plus access', async () => {
@@ -104,9 +93,8 @@ describe('Pilly Plus route', () => {
 
     const screen = await render(<PlusRoute />, { wrapper });
 
-    expect(screen.getByText('Preview · checkout off')).toBeOnTheScreen();
-    expect(screen.getByLabelText('Continue with Apple')).toBeOnTheScreen();
-    expect(screen.getByLabelText('Continue with Google')).toBeOnTheScreen();
+    expect(screen.getByText('Preview')).toBeOnTheScreen();
+    expect(screen.getByText('Connect account')).toBeOnTheScreen();
     expect(screen.queryByText('Pilly Plus preview is active')).toBeNull();
   });
 
@@ -130,7 +118,7 @@ describe('Pilly Plus route', () => {
 
     expect(screen.getByText('Pilly Plus preview is active')).toBeOnTheScreen();
     expect(screen.getByText('matt@example.com')).toBeOnTheScreen();
-    expect(screen.getByText('Plus preview · checkout off')).toBeOnTheScreen();
+    expect(screen.getByText('Preview')).toBeOnTheScreen();
     expect(screen.getByText('Preview access only. Cloud backup remains off.')).toBeOnTheScreen();
     fireEvent.press(screen.getByLabelText('Pilly Plus preview is active, matt@example.com'));
     expect(mockPush).toHaveBeenCalledWith('/account');

@@ -3,9 +3,9 @@ import { router } from 'expo-router';
 
 import { useAccountSession } from '@/hooks/use-account-session';
 import { usePlus } from '@/hooks/use-plus';
-import { AccountProviderActions } from '@/ui/components/account-provider-actions';
 import { ConnectedAccountSummary } from '@/ui/components/connected-account-summary';
 import { PillyBanner } from '@/ui/components/pilly-banner';
+import { PillyButton } from '@/ui/components/pilly-button';
 import { PillyText } from '@/ui/components/pilly-text';
 import { Screen } from '@/ui/components/screen';
 import { PillyIcon, type PillyIconName } from '@/ui/icons';
@@ -31,12 +31,12 @@ export default function PlusRoute() {
           <View style={styles.previewStatus}>
             <PillyIcon name="info" size={16} color={colors.brand} />
             <PillyText role="caption" style={styles.previewStatusLabel}>
-              {active ? 'Plus preview' : 'Preview'} · checkout off
+              Preview
             </PillyText>
           </View>
         ) : null}
         <PillyText role="large-title" accessibilityRole="header" style={styles.heroTitle}>
-          Your medicines, ready when you are.
+          Your medicines, safely backed up.
         </PillyText>
         <PillyText muted style={styles.heroCopy}>
           Private backup, recovery, and photos. Tracking stays local.
@@ -52,17 +52,12 @@ export default function PlusRoute() {
             </PillyText>
           </View>
         ) : account.state.kind !== 'signed-in' ? (
-          <>
-            <AccountProviderActions
-              configured={account.configured}
-              busy={account.busy}
-              signingInWith={account.signingInWith}
-              onSignIn={(provider) => void account.signIn(provider)}
-            />
-            <PillyText role="caption" muted style={styles.centeredCopy}>
-              Medicine data stays local.
-            </PillyText>
-          </>
+          <PillyButton
+            label="Connect account"
+            accessibilityHint="Choose Apple or Google on the Account screen"
+            onPress={() => router.push('/account')}
+            fullWidth
+          />
         ) : (
           <View style={styles.connectedSection}>
             <ConnectedAccountSummary
@@ -78,19 +73,7 @@ export default function PlusRoute() {
           </View>
         )}
 
-        {!account.configured ? (
-          <PillyBanner
-            kind="warning"
-            message="Account sign-in is not configured in this local build."
-            compact
-          />
-        ) : account.error === 'sign-in' ? (
-          <PillyBanner
-            kind="error"
-            message="Sign-in didn’t finish. Your local data is unchanged."
-            compact
-          />
-        ) : plus.state.kind === 'error' ? (
+        {plus.state.kind === 'error' ? (
           <PillyBanner
             kind="error"
             title="Couldn’t check Pilly Plus"
@@ -102,58 +85,35 @@ export default function PlusRoute() {
       </View>
 
       <View style={styles.benefitsSection}>
-        <PillyText role="headline">Included with Plus</PillyText>
+        <PillyText role="headline">With Plus</PillyText>
         <View style={styles.benefits}>
-          <Benefit
-            icon="private"
-            title="Private cloud backup"
-            message="Medicines, schedules, and dose history."
-          />
+          <Benefit icon="private" title="Private backup" />
           <View style={styles.separator} />
-          <Benefit
-            icon="refresh"
-            title="Device recovery"
-            message="Restore your records on another device."
-          />
+          <Benefit icon="refresh" title="Device recovery" />
           <View style={styles.separator} />
-          <Benefit
-            icon="photo"
-            title="Medicine photos"
-            message="Private recognition photos for your medicines."
-          />
+          <Benefit icon="photo" title="Medicine photos" />
         </View>
       </View>
 
       <View style={styles.freePromise}>
         <PillyText role="label">Core tracking stays free</PillyText>
         <PillyText role="caption" muted>
-          Reminders, history, and data export stay local without an account.
+          Reminders, history, and export stay free.
         </PillyText>
       </View>
     </Screen>
   );
 }
 
-function Benefit({
-  icon,
-  title,
-  message,
-}: {
-  icon: PillyIconName;
-  title: string;
-  message: string;
-}) {
+function Benefit({ icon, title }: { icon: PillyIconName; title: string }) {
   return (
     <View style={styles.benefit}>
       <View style={styles.benefitIcon}>
         <PillyIcon name={icon} size={20} color={colors.brand} />
       </View>
-      <View style={styles.benefitCopy}>
-        <PillyText role="label">{title}</PillyText>
-        <PillyText role="caption" muted>
-          {message}
-        </PillyText>
-      </View>
+      <PillyText role="label" style={styles.benefitCopy}>
+        {title}
+      </PillyText>
     </View>
   );
 }
@@ -181,18 +141,17 @@ const styles = StyleSheet.create({
     ...shadows.soft,
   },
   benefit: {
-    minHeight: 68,
+    minHeight: 56,
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.md,
     paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.sm,
   },
   benefitIcon: { width: 28, alignItems: 'center' },
-  benefitCopy: { flex: 1, gap: spacing.xs },
+  benefitCopy: { flex: 1 },
   separator: { height: StyleSheet.hairlineWidth, marginLeft: 60, backgroundColor: colors.border },
   freePromise: { gap: spacing.xs, paddingHorizontal: spacing.xs },
-  actions: { alignItems: 'center', gap: spacing.sm },
+  actions: { width: '100%', alignItems: 'center', gap: spacing.sm },
   loading: {
     minHeight: 56,
     flexDirection: 'row',
