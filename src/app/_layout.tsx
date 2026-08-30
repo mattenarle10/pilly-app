@@ -7,6 +7,17 @@ import { colors } from '@/ui/tokens';
 
 configureNotificationPresentation();
 
+const standardHeaderOptions = {
+  headerShown: true,
+  headerBackButtonDisplayMode: 'minimal' as const,
+  headerBackButtonMenuEnabled: false,
+  headerShadowVisible: false,
+  headerStyle: { backgroundColor: colors.background },
+  headerTintColor: colors.textPrimary,
+  headerTitleAlign: 'center' as const,
+  headerTitleStyle: { color: colors.textPrimary, fontWeight: '600' as const },
+};
+
 export default function RootLayout() {
   return (
     <AppProviders>
@@ -20,30 +31,28 @@ export default function RootLayout() {
         <Stack.Screen
           name="medicine/new"
           options={{
-            headerShown: true,
-            headerBackButtonDisplayMode: 'minimal',
-            headerBackButtonMenuEnabled: false,
-            headerShadowVisible: false,
-            headerStyle: { backgroundColor: colors.background },
-            headerTintColor: colors.textPrimary,
-            headerTitleAlign: 'center',
-            headerTitleStyle: { color: colors.textPrimary, fontWeight: '600' },
+            ...standardHeaderOptions,
             title: 'Add medicine',
           }}
         />
         <Stack.Screen
           name="medicine/[id]/edit"
           options={{
-            headerShown: true,
-            headerBackButtonDisplayMode: 'minimal',
-            headerBackButtonMenuEnabled: false,
-            headerShadowVisible: false,
-            headerStyle: { backgroundColor: colors.background },
-            headerTintColor: colors.textPrimary,
-            headerTitleAlign: 'center',
-            headerTitleStyle: { color: colors.textPrimary, fontWeight: '600' },
+            ...standardHeaderOptions,
             title: 'Edit medicine',
           }}
+        />
+        <Stack.Screen
+          name="profile/index"
+          options={{ ...standardHeaderOptions, title: 'Profile' }}
+        />
+        <Stack.Screen
+          name="account/index"
+          options={{ ...standardHeaderOptions, title: 'Pilly Plus account' }}
+        />
+        <Stack.Screen
+          name="plus/index"
+          options={{ ...standardHeaderOptions, title: 'Pilly Plus' }}
         />
       </Stack>
     </AppProviders>

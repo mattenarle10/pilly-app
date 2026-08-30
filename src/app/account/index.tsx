@@ -1,5 +1,5 @@
 import { ActivityIndicator, StyleSheet, View } from 'react-native';
-import { router, Stack } from 'expo-router';
+import { router } from 'expo-router';
 
 import { useAccountSession } from '@/hooks/use-account-session';
 import { accountProviderLabel } from '@/models/account';
@@ -21,124 +21,109 @@ export default function AccountRoute() {
   };
 
   return (
-    <>
-      <Stack.Screen
-        options={{
-          headerShown: true,
-          headerBackButtonDisplayMode: 'minimal',
-          headerBackButtonMenuEnabled: false,
-          headerShadowVisible: false,
-          headerStyle: { backgroundColor: colors.background },
-          headerTintColor: colors.textPrimary,
-          headerTitleAlign: 'center',
-          headerTitleStyle: { color: colors.textPrimary, fontWeight: '600' },
-          title: 'Pilly Plus account',
-        }}
-      />
-      <Screen
-        safeAreaEdges={['bottom']}
-        contentInsetAdjustmentBehavior="never"
-        contentStyle={styles.screen}
-      >
-        <View style={styles.intro}>
-          <PillyText role="large-title" accessibilityRole="header" style={styles.title}>
-            {account.state.kind === 'signed-in' ? 'You’re connected.' : 'Connect Pilly Plus.'}
-          </PillyText>
-          <PillyText muted style={styles.introCopy}>
-            {account.state.kind === 'signed-in'
-              ? 'Your Plus account is ready. Cloud sync is not enabled yet.'
-              : 'Use Apple or Google to prepare secure backup and recovery across your devices.'}
+    <Screen
+      safeAreaEdges={['bottom']}
+      contentInsetAdjustmentBehavior="never"
+      contentStyle={styles.screen}
+    >
+      <View style={styles.intro}>
+        <PillyText role="large-title" accessibilityRole="header" style={styles.title}>
+          {account.state.kind === 'signed-in' ? 'You’re connected.' : 'Connect Pilly Plus.'}
+        </PillyText>
+        <PillyText muted style={styles.introCopy}>
+          {account.state.kind === 'signed-in'
+            ? 'Your Plus account is ready. Cloud sync is not enabled yet.'
+            : 'Use Apple or Google to prepare secure backup and recovery across your devices.'}
+        </PillyText>
+      </View>
+
+      {account.state.kind === 'loading' ? (
+        <View accessibilityLabel="Checking account" style={styles.loading}>
+          <ActivityIndicator color={colors.brand} />
+          <PillyText role="caption" muted>
+            Checking your account…
           </PillyText>
         </View>
-
-        {account.state.kind === 'loading' ? (
-          <View accessibilityLabel="Checking account" style={styles.loading}>
-            <ActivityIndicator color={colors.brand} />
-            <PillyText role="caption" muted>
-              Checking your account…
-            </PillyText>
-          </View>
-        ) : account.state.kind === 'signed-in' ? (
-          <View style={styles.connectedSection}>
-            <View style={styles.accountSurface}>
-              <View style={styles.accountIcon}>
-                <PillyIcon name="profile" size={24} color={colors.brand} />
-              </View>
-              <View style={styles.accountCopy}>
-                <PillyText role="headline">{account.state.user.displayName}</PillyText>
-                <PillyText role="caption" muted>
-                  {accountProviderLabel(account.state.user.provider)} · {account.state.user.email}
-                </PillyText>
-              </View>
-              <PillyIcon name="success" size={20} color={colors.success} />
+      ) : account.state.kind === 'signed-in' ? (
+        <View style={styles.connectedSection}>
+          <View style={styles.accountSurface}>
+            <View style={styles.accountIcon}>
+              <PillyIcon name="profile" size={24} color={colors.brand} />
             </View>
-            {account.error === 'sign-out' ? (
-              <PillyBanner kind="error" message="Couldn’t securely sign out. Try again." compact />
-            ) : null}
+            <View style={styles.accountCopy}>
+              <PillyText role="headline">{account.state.user.displayName}</PillyText>
+              <PillyText role="caption" muted>
+                {accountProviderLabel(account.state.user.provider)} · {account.state.user.email}
+              </PillyText>
+            </View>
+            <PillyIcon name="success" size={20} color={colors.success} />
+          </View>
+          {account.error === 'sign-out' ? (
+            <PillyBanner kind="error" message="Couldn’t securely sign out. Try again." compact />
+          ) : null}
+          <PillyButton
+            label="Sign out"
+            variant="secondary"
+            size="medium"
+            loading={account.busy}
+            onPress={() => void account.signOut()}
+            fullWidth
+          />
+        </View>
+      ) : (
+        <View style={styles.localSection}>
+          <View style={styles.accountSurface}>
+            <View style={styles.accountIcon}>
+              <PillyIcon name="private" size={24} color={colors.brand} />
+            </View>
+            <View style={styles.accountCopy}>
+              <PillyText role="headline">Pilly Plus account</PillyText>
+              <PillyText role="caption" muted>
+                Choose Apple or Google. Your free tracker stays local.
+              </PillyText>
+            </View>
+          </View>
+          {!account.configured ? (
+            <PillyBanner
+              kind="warning"
+              message="Account sign-in is not configured in this local build."
+              compact
+            />
+          ) : account.error === 'sign-in' ? (
+            <PillyBanner
+              kind="error"
+              message="Sign-in didn’t finish. Your local data is unchanged."
+              compact
+            />
+          ) : null}
+          <View style={styles.actions}>
+            <AppleSignInButton
+              loading={account.signingInWith === 'apple'}
+              disabled={!account.configured || account.busy}
+              onPress={() => void account.signIn('apple')}
+            />
+            <GoogleSignInButton
+              loading={account.signingInWith === 'google'}
+              disabled={!account.configured || account.busy}
+              onPress={() => void account.signIn('google')}
+            />
             <PillyButton
-              label="Sign out"
-              variant="secondary"
+              label="Not now"
+              variant="quiet"
               size="medium"
-              loading={account.busy}
-              onPress={() => void account.signOut()}
+              disabled={account.busy}
+              onPress={leaveAccount}
               fullWidth
             />
           </View>
-        ) : (
-          <View style={styles.localSection}>
-            <View style={styles.accountSurface}>
-              <View style={styles.accountIcon}>
-                <PillyIcon name="private" size={24} color={colors.brand} />
-              </View>
-              <View style={styles.accountCopy}>
-                <PillyText role="headline">Pilly Plus account</PillyText>
-                <PillyText role="caption" muted>
-                  Choose Apple or Google. Your free tracker stays local.
-                </PillyText>
-              </View>
-            </View>
-            {!account.configured ? (
-              <PillyBanner
-                kind="warning"
-                message="Account sign-in is not configured in this local build."
-                compact
-              />
-            ) : account.error === 'sign-in' ? (
-              <PillyBanner
-                kind="error"
-                message="Sign-in didn’t finish. Your local data is unchanged."
-                compact
-              />
-            ) : null}
-            <View style={styles.actions}>
-              <AppleSignInButton
-                loading={account.signingInWith === 'apple'}
-                disabled={!account.configured || account.busy}
-                onPress={() => void account.signIn('apple')}
-              />
-              <GoogleSignInButton
-                loading={account.signingInWith === 'google'}
-                disabled={!account.configured || account.busy}
-                onPress={() => void account.signIn('google')}
-              />
-              <PillyButton
-                label="Not now"
-                variant="quiet"
-                size="medium"
-                disabled={account.busy}
-                onPress={leaveAccount}
-                fullWidth
-              />
-            </View>
-          </View>
-        )}
+        </View>
+      )}
 
-        <PillyText role="caption" muted style={styles.boundary}>
-          Free tracking never requires an account. Signing in does not upload medicine data until
-          cloud sync is ready and you choose to use it.
-        </PillyText>
-      </Screen>
-    </>
+      <PillyText role="caption" muted style={styles.boundary}>
+        Free tracking never requires an account. Signing in does not upload medicine data until
+        cloud sync is ready and you choose to use it.
+      </PillyText>
+    </Screen>
   );
 }
 
