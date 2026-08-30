@@ -7,7 +7,7 @@ import { useAccountSession } from '@/hooks/use-account-session';
 import { useProfile } from '@/hooks/use-profile';
 import { isPlusPurchasesSupported } from '@/services/purchases';
 
-import ProfileRoute from '../src/app/profile';
+import ProfileRoute from '@/app/profile';
 
 jest.mock('expo-router', () => ({
   Stack: { Screen: () => null },

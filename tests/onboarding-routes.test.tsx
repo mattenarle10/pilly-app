@@ -7,9 +7,9 @@ import type { PillyRepository } from '@/storage/repository';
 import { useRepository } from '@/hooks/use-repository';
 import { isPlusPurchasesSupported } from '@/services/purchases';
 
-import WelcomeRoute from '../src/app/(onboarding)/welcome';
-import OnboardingNameRoute from '../src/app/(onboarding)/name';
-import StartSmallRoute from '../src/app/(onboarding)/start-small';
+import WelcomeRoute from '@/app/(onboarding)/welcome';
+import OnboardingNameRoute from '@/app/(onboarding)/name';
+import StartSmallRoute from '@/app/(onboarding)/start-small';
 
 const mockPush = jest.fn();
 const mockReplace = jest.fn();

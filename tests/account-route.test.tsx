@@ -5,7 +5,7 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import type { AccountSessionContextValue } from '@/providers/account-session-provider';
 import { useAccountSession } from '@/hooks/use-account-session';
 
-import AccountRoute from '../src/app/account';
+import AccountRoute from '@/app/account';
 
 const mockBack = jest.fn();
 const mockReplace = jest.fn();

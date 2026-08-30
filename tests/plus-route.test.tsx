@@ -6,7 +6,7 @@ import type { AccountSessionContextValue } from '@/providers/account-session-pro
 import { useAccountSession } from '@/hooks/use-account-session';
 import { usePlus } from '@/hooks/use-plus';
 
-import PlusRoute from '../src/app/plus';
+import PlusRoute from '@/app/plus';
 
 const mockPush = jest.fn();
 
