@@ -8,7 +8,6 @@ import { PillyBanner } from '@/ui/components/pilly-banner';
 import { PillyButton } from '@/ui/components/pilly-button';
 import { PillyText } from '@/ui/components/pilly-text';
 import { Screen } from '@/ui/components/screen';
-import { PillyIcon } from '@/ui/icons';
 import { colors, spacing } from '@/ui/tokens';
 
 export default function AccountRoute() {
@@ -27,12 +26,12 @@ export default function AccountRoute() {
     >
       <View style={styles.intro}>
         <PillyText role="large-title" accessibilityRole="header" style={styles.title}>
-          {account.state.kind === 'signed-in' ? 'Your account.' : 'Connect your account.'}
+          {account.state.kind === 'signed-in' ? 'Your account.' : 'Connect an account.'}
         </PillyText>
         <PillyText muted style={styles.introCopy}>
           {account.state.kind === 'signed-in'
-            ? 'Connected for Pilly Plus. Cloud backup remains off until you choose it.'
-            : 'Use Apple or Google for private backup and recovery with Pilly Plus.'}
+            ? 'Pilly Plus connected. Backup stays off until you choose it.'
+            : 'For private backup and recovery.'}
         </PillyText>
       </View>
 
@@ -68,12 +67,6 @@ export default function AccountRoute() {
         </View>
       ) : (
         <View style={styles.localSection}>
-          <View style={styles.localPromise}>
-            <PillyIcon name="private" size={20} color={colors.brand} />
-            <PillyText role="caption" muted style={styles.localPromiseCopy}>
-              Signing in does not upload your medicine data.
-            </PillyText>
-          </View>
           {!account.configured ? (
             <PillyBanner
               kind="warning"
@@ -94,11 +87,15 @@ export default function AccountRoute() {
               signingInWith={account.signingInWith}
               onSignIn={(provider) => void account.signIn(provider)}
             />
+            <PillyText role="caption" muted>
+              Medicine data stays local.
+            </PillyText>
             <PillyButton
-              label="Keep using Pilly locally"
+              label="Not now"
               variant="quiet"
               size="medium"
               disabled={account.busy}
+              accessibilityHint="Keep using Pilly locally"
               onPress={leaveAccount}
               fullWidth
             />
@@ -107,7 +104,7 @@ export default function AccountRoute() {
       )}
 
       <PillyText role="caption" muted style={styles.boundary}>
-        Free tracking never requires an account or network connection.
+        Free tracking works without an account.
       </PillyText>
     </Screen>
   );
@@ -126,15 +123,7 @@ const styles = StyleSheet.create({
   },
   connectedSection: { gap: spacing.md },
   supportId: { gap: spacing.xs, paddingHorizontal: spacing.xs },
-  localSection: { gap: spacing.lg },
-  localPromise: {
-    minHeight: 44,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
-    paddingHorizontal: spacing.xs,
-  },
-  localPromiseCopy: { flex: 1 },
+  localSection: { gap: spacing.md },
   actions: { alignItems: 'center', gap: spacing.xs },
   boundary: { paddingHorizontal: spacing.xs, paddingTop: spacing.sm },
 });

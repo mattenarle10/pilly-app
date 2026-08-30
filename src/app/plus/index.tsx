@@ -39,7 +39,7 @@ export default function PlusRoute() {
           Your medicines, ready when you are.
         </PillyText>
         <PillyText muted style={styles.heroCopy}>
-          Private backup, recovery, and medicine photos—without changing local tracking.
+          Private backup, recovery, and photos. Tracking stays local.
         </PillyText>
       </View>
 
@@ -60,7 +60,7 @@ export default function PlusRoute() {
               onSignIn={(provider) => void account.signIn(provider)}
             />
             <PillyText role="caption" muted style={styles.centeredCopy}>
-              Signing in connects your Plus account. Medicine data stays local.
+              Medicine data stays local.
             </PillyText>
           </>
         ) : (

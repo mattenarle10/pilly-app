@@ -76,11 +76,9 @@ describe('account route', () => {
     mockedUseAccountSession.mockReturnValue(account);
     const screen = await render(<AccountRoute />, { wrapper });
 
-    expect(screen.getByText('Connect your account.')).toBeOnTheScreen();
-    expect(
-      screen.getByText('Use Apple or Google for private backup and recovery with Pilly Plus.'),
-    ).toBeOnTheScreen();
-    expect(screen.getByText('Signing in does not upload your medicine data.')).toBeOnTheScreen();
+    expect(screen.getByText('Connect an account.')).toBeOnTheScreen();
+    expect(screen.getByText('For private backup and recovery.')).toBeOnTheScreen();
+    expect(screen.getByText('Medicine data stays local.')).toBeOnTheScreen();
 
     await act(async () => {
       fireEvent.press(screen.getByLabelText('Continue with Apple'));
@@ -97,7 +95,7 @@ describe('account route', () => {
     mockedUseAccountSession.mockReturnValue(localAccount());
     const screen = await render(<AccountRoute />, { wrapper });
 
-    fireEvent.press(screen.getByText('Keep using Pilly locally'));
+    fireEvent.press(screen.getByText('Not now'));
     expect(mockBack).toHaveBeenCalledTimes(1);
   });
 

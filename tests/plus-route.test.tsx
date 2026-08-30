@@ -86,9 +86,7 @@ describe('Pilly Plus route', () => {
     expect(screen.getByText('Private cloud backup')).toBeOnTheScreen();
     expect(screen.getByText('Medicine photos')).toBeOnTheScreen();
     expect(screen.getByText('Preview · checkout off')).toBeOnTheScreen();
-    expect(
-      screen.getByText('Signing in connects your Plus account. Medicine data stays local.'),
-    ).toBeOnTheScreen();
+    expect(screen.getByText('Medicine data stays local.')).toBeOnTheScreen();
     expect(screen.queryByText(/lifetime/i)).toBeNull();
     await act(async () => {
       fireEvent.press(screen.getByLabelText('Continue with Apple'));
