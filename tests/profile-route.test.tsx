@@ -87,7 +87,7 @@ describe('Profile route account boundary', () => {
 
     const screen = await render(<ProfileRoute />, { wrapper });
 
-    expect(screen.getByText('Medicine tracking stays on this iPhone.')).toBeOnTheScreen();
+    expect(screen.getByText('Local profile')).toBeOnTheScreen();
     expect(screen.getByText('Pilly Plus')).toBeOnTheScreen();
     expect(screen.queryByText('Pilly Plus account')).toBeNull();
     expect(screen.queryByText('Account')).toBeNull();
@@ -108,7 +108,7 @@ describe('Profile route account boundary', () => {
 
     const screen = await render(<ProfileRoute />, { wrapper });
 
-    expect(screen.getByText('Pilly Plus account')).toBeOnTheScreen();
-    expect(screen.getByText('Manage your connected account')).toBeOnTheScreen();
+    expect(screen.getByText('Account')).toBeOnTheScreen();
+    expect(screen.getByText('Google · matt@example.com')).toBeOnTheScreen();
   });
 });

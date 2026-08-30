@@ -12,6 +12,7 @@ import { PillyIcon, type PillyIconName } from '@/ui/icons';
 import { colors, radii, shadows, spacing } from '@/ui/tokens';
 import { useAccountSession } from '@/hooks/use-account-session';
 import { useProfile } from '@/hooks/use-profile';
+import { accountProviderLabel } from '@/models/account';
 import { isPlusPurchasesSupported } from '@/services/purchases';
 
 export default function ProfileRoute() {
@@ -80,10 +81,8 @@ export default function ProfileRoute() {
               </PillyText>
             </Pressable>
           </View>
-          <PillyText muted>
-            {account.state.kind === 'signed-in'
-              ? `Pilly Plus account · ${account.state.user.email}`
-              : 'Medicine tracking stays on this iPhone.'}
+          <PillyText role="caption" muted>
+            Local profile
           </PillyText>
         </View>
 
@@ -114,8 +113,8 @@ export default function ProfileRoute() {
             <>
               <ProfileRow
                 icon="profile"
-                title="Pilly Plus account"
-                message="Manage your connected account"
+                title="Account"
+                message={`${accountProviderLabel(account.state.user.provider)} · ${account.state.user.email}`}
                 onPress={() => router.push('/account')}
               />
               <View style={styles.separator} />
