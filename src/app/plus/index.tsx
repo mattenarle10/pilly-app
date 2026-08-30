@@ -3,11 +3,9 @@ import { router } from 'expo-router';
 
 import { useAccountSession } from '@/hooks/use-account-session';
 import { usePlus } from '@/hooks/use-plus';
-import { accountProviderLabel } from '@/models/account';
-import { AppleSignInButton } from '@/ui/components/apple-sign-in-button';
-import { GoogleSignInButton } from '@/ui/components/google-sign-in-button';
+import { AccountProviderActions } from '@/ui/components/account-provider-actions';
+import { ConnectedAccountSummary } from '@/ui/components/connected-account-summary';
 import { PillyBanner } from '@/ui/components/pilly-banner';
-import { PillyButton } from '@/ui/components/pilly-button';
 import { PillyText } from '@/ui/components/pilly-text';
 import { Screen } from '@/ui/components/screen';
 import { PillyIcon, type PillyIconName } from '@/ui/icons';
@@ -55,15 +53,11 @@ export default function PlusRoute() {
           </View>
         ) : account.state.kind !== 'signed-in' ? (
           <>
-            <AppleSignInButton
-              loading={account.signingInWith === 'apple'}
-              disabled={!account.configured || account.busy}
-              onPress={() => void account.signIn('apple')}
-            />
-            <GoogleSignInButton
-              loading={account.signingInWith === 'google'}
-              disabled={!account.configured || account.busy}
-              onPress={() => void account.signIn('google')}
+            <AccountProviderActions
+              configured={account.configured}
+              busy={account.busy}
+              signingInWith={account.signingInWith}
+              onSignIn={(provider) => void account.signIn(provider)}
             />
             <PillyText role="caption" muted style={styles.centeredCopy}>
               Your account is used only for Pilly Plus. Signing in does not upload your medicine
@@ -72,34 +66,16 @@ export default function PlusRoute() {
           </>
         ) : (
           <View style={styles.connectedSection}>
-            <View style={styles.connectedState}>
-              <PillyIcon
-                name={active ? 'success' : 'profile'}
-                size={20}
-                color={active ? colors.success : colors.brand}
-              />
-              <View style={styles.connectedCopy}>
-                <PillyText role="label">
-                  {active
-                    ? 'Pilly Plus preview is active'
-                    : `${accountProviderLabel(account.state.user.provider)} account connected`}
-                </PillyText>
-                <PillyText role="caption" muted>
-                  {account.state.user.email}
-                </PillyText>
-              </View>
-            </View>
+            <ConnectedAccountSummary
+              user={account.state.user}
+              active={active}
+              onPress={() => router.push('/account')}
+            />
             <PillyText role="caption" muted style={styles.centeredCopy}>
               {active
                 ? 'No purchase was made. Cloud sync remains off in this local preview.'
                 : 'Checkout remains off while the complete Plus experience is being built.'}
             </PillyText>
-            <PillyButton
-              label="Manage Pilly Plus account"
-              variant="quiet"
-              size="medium"
-              onPress={() => router.push('/account')}
-            />
           </View>
         )}
 
@@ -227,14 +203,5 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
   },
   connectedSection: { width: '100%', alignItems: 'center', gap: spacing.sm },
-  connectedState: {
-    width: '100%',
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.md,
-    paddingHorizontal: spacing.xs,
-    paddingVertical: spacing.sm,
-  },
-  connectedCopy: { flex: 1, gap: spacing.xs },
   centeredCopy: { maxWidth: 340, textAlign: 'center' },
 });

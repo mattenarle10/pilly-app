@@ -55,13 +55,13 @@ export function AppleSignInButton({
 }
 
 const styles = StyleSheet.create({
-  button: { width: 188, height: 44 },
+  button: { width: 240, height: 56 },
   loading: {
     position: 'absolute',
     inset: 0,
     alignItems: 'center',
     justifyContent: 'center',
-    borderRadius: 22,
+    borderRadius: 28,
     backgroundColor: colors.surface,
   },
   disabled: { opacity: 0.48 },

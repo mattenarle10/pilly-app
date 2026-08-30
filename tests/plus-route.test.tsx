@@ -132,7 +132,7 @@ describe('Pilly Plus route', () => {
     expect(
       screen.getByText('No purchase was made. Cloud sync remains off in this local preview.'),
     ).toBeOnTheScreen();
-    fireEvent.press(screen.getByText('Manage Pilly Plus account'));
+    fireEvent.press(screen.getByLabelText('Pilly Plus preview is active, matt@example.com'));
     expect(mockPush).toHaveBeenCalledWith('/account');
   });
 });

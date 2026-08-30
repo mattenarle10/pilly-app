@@ -2,9 +2,8 @@ import { ActivityIndicator, StyleSheet, View } from 'react-native';
 import { router } from 'expo-router';
 
 import { useAccountSession } from '@/hooks/use-account-session';
-import { accountProviderLabel } from '@/models/account';
-import { AppleSignInButton } from '@/ui/components/apple-sign-in-button';
-import { GoogleSignInButton } from '@/ui/components/google-sign-in-button';
+import { AccountProviderActions } from '@/ui/components/account-provider-actions';
+import { ConnectedAccountSummary } from '@/ui/components/connected-account-summary';
 import { PillyBanner } from '@/ui/components/pilly-banner';
 import { PillyButton } from '@/ui/components/pilly-button';
 import { PillyText } from '@/ui/components/pilly-text';
@@ -46,18 +45,7 @@ export default function AccountRoute() {
         </View>
       ) : account.state.kind === 'signed-in' ? (
         <View style={styles.connectedSection}>
-          <View style={styles.accountSurface}>
-            <View style={styles.accountIcon}>
-              <PillyIcon name="profile" size={24} color={colors.brand} />
-            </View>
-            <View style={styles.accountCopy}>
-              <PillyText role="headline">{account.state.user.displayName}</PillyText>
-              <PillyText role="caption" muted>
-                {accountProviderLabel(account.state.user.provider)} · {account.state.user.email}
-              </PillyText>
-            </View>
-            <PillyIcon name="success" size={20} color={colors.success} />
-          </View>
+          <ConnectedAccountSummary user={account.state.user} />
           {account.error === 'sign-out' ? (
             <PillyBanner kind="error" message="Couldn’t securely sign out. Try again." compact />
           ) : null}
@@ -97,15 +85,11 @@ export default function AccountRoute() {
             />
           ) : null}
           <View style={styles.actions}>
-            <AppleSignInButton
-              loading={account.signingInWith === 'apple'}
-              disabled={!account.configured || account.busy}
-              onPress={() => void account.signIn('apple')}
-            />
-            <GoogleSignInButton
-              loading={account.signingInWith === 'google'}
-              disabled={!account.configured || account.busy}
-              onPress={() => void account.signIn('google')}
+            <AccountProviderActions
+              configured={account.configured}
+              busy={account.busy}
+              signingInWith={account.signingInWith}
+              onSignIn={(provider) => void account.signIn(provider)}
             />
             <PillyButton
               label="Not now"

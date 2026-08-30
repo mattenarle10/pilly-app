@@ -42,12 +42,12 @@ export function GoogleSignInButton({
 
 const styles = StyleSheet.create({
   button: {
-    width: 188,
-    height: 44,
+    width: 240,
+    height: 56,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  asset: { width: 188, height: 44 },
+  asset: { width: 240, height: 56 },
   loading: {
     position: 'absolute',
     inset: 0,
