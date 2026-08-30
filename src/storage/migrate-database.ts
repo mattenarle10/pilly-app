@@ -1,6 +1,6 @@
 import type { SQLiteDatabase } from 'expo-sqlite';
 
-const databaseVersion = 6;
+const databaseVersion = 7;
 
 export async function migrateDatabase(database: SQLiteDatabase): Promise<void> {
   await database.execAsync('PRAGMA journal_mode = WAL; PRAGMA foreign_keys = ON;');
@@ -146,6 +146,41 @@ export async function migrateDatabase(database: SQLiteDatabase): Promise<void> {
             WHEN 'neutral' THEN '#F3F1EB'
             ELSE '#F3CCD7'
           END;
+    `);
+  }
+  if (currentVersion < 7) {
+    await database.execAsync(`
+      CREATE TABLE IF NOT EXISTS sync_outbox (
+        mutation_id TEXT PRIMARY KEY NOT NULL,
+        account_id TEXT NOT NULL,
+        type TEXT NOT NULL,
+        entity_id TEXT NOT NULL,
+        occurred_at TEXT NOT NULL,
+        payload TEXT,
+        attempt_count INTEGER NOT NULL DEFAULT 0,
+        last_error TEXT,
+        created_at TEXT NOT NULL
+      );
+      CREATE INDEX IF NOT EXISTS sync_outbox_account_created_idx
+        ON sync_outbox(account_id, created_at);
+
+      CREATE TABLE IF NOT EXISTS cloud_state (
+        id TEXT PRIMARY KEY NOT NULL,
+        account_id TEXT,
+        device_id TEXT NOT NULL,
+        cursor INTEGER,
+        migration_state TEXT NOT NULL DEFAULT 'disconnected'
+          CHECK(migration_state IN (
+            'disconnected',
+            'pendingBackup',
+            'pendingRestore',
+            'pendingMerge',
+            'active',
+            'blockedAccount'
+          )),
+        last_successful_sync_at TEXT,
+        last_error TEXT
+      );
     `);
   }
   await database.execAsync(`PRAGMA user_version = ${databaseVersion}`);

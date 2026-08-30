@@ -65,3 +65,36 @@ export const settings = sqliteTable('settings', {
   key: text('key').primaryKey(),
   value: text('value').notNull(),
 });
+
+export const syncOutbox = sqliteTable('sync_outbox', {
+  mutationId: text('mutation_id').primaryKey(),
+  accountId: text('account_id').notNull(),
+  type: text('type').notNull(),
+  entityId: text('entity_id').notNull(),
+  occurredAt: text('occurred_at').notNull(),
+  payload: text('payload'),
+  attemptCount: integer('attempt_count').notNull().default(0),
+  lastError: text('last_error'),
+  createdAt: text('created_at').notNull(),
+});
+
+export const cloudState = sqliteTable('cloud_state', {
+  id: text('id').primaryKey(),
+  accountId: text('account_id'),
+  deviceId: text('device_id').notNull(),
+  cursor: integer('cursor'),
+  migrationState: text('migration_state', {
+    enum: [
+      'disconnected',
+      'pendingBackup',
+      'pendingRestore',
+      'pendingMerge',
+      'active',
+      'blockedAccount',
+    ],
+  })
+    .notNull()
+    .default('disconnected'),
+  lastSuccessfulSyncAt: text('last_successful_sync_at'),
+  lastError: text('last_error'),
+});
