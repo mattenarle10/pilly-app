@@ -41,7 +41,7 @@ export function AppleSignInButton({
         accessibilityState={{ busy: loading, disabled: inactive }}
         buttonStyle={AppleAuthentication.AppleAuthenticationButtonStyle.WHITE_OUTLINE}
         buttonType={AppleAuthentication.AppleAuthenticationButtonType.SIGN_IN}
-        cornerRadius={22}
+        cornerRadius={28}
         onPress={onPress}
         style={styles.button}
       />

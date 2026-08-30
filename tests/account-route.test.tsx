@@ -119,6 +119,7 @@ describe('account route', () => {
     expect(screen.getByText('Your account.')).toBeOnTheScreen();
     expect(screen.getByText('Apple connected')).toBeOnTheScreen();
     expect(screen.getByText('matt@example.com')).toBeOnTheScreen();
+    expect(screen.getByLabelText('Apple connected, matt@example.com')).toBeOnTheScreen();
     expect(screen.getByText('account-1')).toBeOnTheScreen();
     fireEvent.press(screen.getByText('Sign out'));
     expect(account.signOut).toHaveBeenCalledTimes(1);

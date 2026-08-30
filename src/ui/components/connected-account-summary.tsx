@@ -51,7 +51,7 @@ export function ConnectedAccountSummary({ user, active = false, onPress }: Props
       {({ pressed }) => content(pressed)}
     </Pressable>
   ) : (
-    <View accessibilityLabel={`${title}, ${user.email}`} style={styles.summary}>
+    <View accessible accessibilityLabel={`${title}, ${user.email}`} style={styles.summary}>
       {content()}
     </View>
   );
