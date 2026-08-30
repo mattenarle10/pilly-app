@@ -20,7 +20,7 @@ jest.mock('@/ui/components/apple-sign-in-button', () => {
   const { Pressable } = jest.requireActual<typeof import('react-native')>('react-native');
   return {
     AppleSignInButton: ({ onPress }: { onPress: () => void }) => (
-      <Pressable accessibilityLabel="Sign in with Apple" onPress={onPress} />
+      <Pressable accessibilityLabel="Continue with Apple" onPress={onPress} />
     ),
   };
 });
@@ -91,10 +91,10 @@ describe('Pilly Plus route', () => {
     ).toBeOnTheScreen();
     expect(screen.queryByText(/lifetime/i)).toBeNull();
     await act(async () => {
-      fireEvent.press(screen.getByLabelText('Sign in with Apple'));
+      fireEvent.press(screen.getByLabelText('Continue with Apple'));
     });
     await act(async () => {
-      fireEvent.press(screen.getByLabelText('Sign in with Google'));
+      fireEvent.press(screen.getByLabelText('Continue with Google'));
     });
     expect(localAccount.signIn).toHaveBeenNthCalledWith(1, 'apple');
     expect(localAccount.signIn).toHaveBeenNthCalledWith(2, 'google');
@@ -107,8 +107,8 @@ describe('Pilly Plus route', () => {
     const screen = await render(<PlusRoute />, { wrapper });
 
     expect(screen.getByText('Preview · checkout off')).toBeOnTheScreen();
-    expect(screen.getByLabelText('Sign in with Apple')).toBeOnTheScreen();
-    expect(screen.getByLabelText('Sign in with Google')).toBeOnTheScreen();
+    expect(screen.getByLabelText('Continue with Apple')).toBeOnTheScreen();
+    expect(screen.getByLabelText('Continue with Google')).toBeOnTheScreen();
     expect(screen.queryByText('Pilly Plus preview is active')).toBeNull();
   });
 

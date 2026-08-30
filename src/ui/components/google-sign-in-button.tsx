@@ -8,7 +8,7 @@ type GoogleSignInButtonProps = {
   onPress: () => void;
 };
 
-const googleButton = require('../../../assets/google-sign-in-ios-light-pill.png');
+const googleButton = require('../../../assets/google-sign-in-ios-light-square.png');
 
 export function GoogleSignInButton({
   disabled = false,
@@ -18,7 +18,8 @@ export function GoogleSignInButton({
   return (
     <Pressable
       accessibilityRole="button"
-      accessibilityLabel="Sign in with Google"
+      accessibilityLabel="Continue with Google"
+      accessibilityHint="Connect your Pilly Plus account"
       accessibilityState={{ busy: loading, disabled: disabled || loading }}
       disabled={disabled || loading}
       onPress={onPress}
@@ -42,17 +43,20 @@ export function GoogleSignInButton({
 
 const styles = StyleSheet.create({
   button: {
-    width: 240,
+    width: 56,
     height: 56,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  asset: { width: 240, height: 56 },
+  asset: { width: 56, height: 56 },
   loading: {
     position: 'absolute',
     inset: 0,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: colors.textSecondary,
+    borderRadius: 16,
     backgroundColor: colors.surface,
   },
-  pressed: { opacity: 0.78 },
+  pressed: { opacity: 0.82, transform: [{ scale: 0.96 }] },
   disabled: { opacity: 0.48 },
 });

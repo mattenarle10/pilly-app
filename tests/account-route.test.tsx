@@ -24,7 +24,7 @@ jest.mock('@/ui/components/apple-sign-in-button', () => {
   const { Pressable } = jest.requireActual<typeof import('react-native')>('react-native');
   return {
     AppleSignInButton: ({ onPress }: { onPress: () => void }) => (
-      <Pressable accessibilityLabel="Sign in with Apple" onPress={onPress} />
+      <Pressable accessibilityLabel="Continue with Apple" onPress={onPress} />
     ),
   };
 });
@@ -83,10 +83,10 @@ describe('account route', () => {
     expect(screen.getByText('Signing in does not upload your medicine data.')).toBeOnTheScreen();
 
     await act(async () => {
-      fireEvent.press(screen.getByLabelText('Sign in with Apple'));
+      fireEvent.press(screen.getByLabelText('Continue with Apple'));
     });
     await act(async () => {
-      fireEvent.press(screen.getByLabelText('Sign in with Google'));
+      fireEvent.press(screen.getByLabelText('Continue with Google'));
     });
     expect(account.signIn).toHaveBeenNthCalledWith(1, 'apple');
     expect(account.signIn).toHaveBeenNthCalledWith(2, 'google');
