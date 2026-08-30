@@ -1,5 +1,3 @@
-import { StyleSheet } from 'react-native';
-
 import { AccountProviderButton } from '@/ui/components/account-provider-button';
 
 type GoogleSignInButtonProps = {
@@ -21,12 +19,7 @@ export function GoogleSignInButton({
       disabled={disabled}
       label="Continue with Google"
       loading={loading}
-      logoStyle={styles.logo}
       onPress={onPress}
     />
   );
 }
-
-const styles = StyleSheet.create({
-  logo: { width: 60, height: 60 },
-});

@@ -5,18 +5,15 @@ import {
   StyleSheet,
   View,
   type ImageSourcePropType,
-  type ImageStyle,
-  type StyleProp,
 } from 'react-native';
 
-import { colors, controlHeights, radii, shadows } from '@/ui/tokens';
+import { colors, controlHeights, radii } from '@/ui/tokens';
 
 type Props = {
   asset: ImageSourcePropType;
   disabled?: boolean;
   label: string;
   loading?: boolean;
-  logoStyle: StyleProp<ImageStyle>;
   onPress: () => void;
 };
 
@@ -25,7 +22,6 @@ export function AccountProviderButton({
   disabled = false,
   label,
   loading = false,
-  logoStyle,
   onPress,
 }: Props) {
   const inactive = disabled || loading;
@@ -37,6 +33,7 @@ export function AccountProviderButton({
       accessibilityHint="Connect your Pilly Plus account"
       accessibilityState={{ busy: loading, disabled: inactive }}
       disabled={inactive}
+      hitSlop={6}
       onPress={onPress}
       style={({ pressed }) => [
         styles.button,
@@ -44,14 +41,13 @@ export function AccountProviderButton({
         inactive && styles.disabled,
       ]}
     >
-      <View accessible={false} style={styles.logoWindow}>
-        <Image
-          accessibilityIgnoresInvertColors
-          resizeMode="contain"
-          source={asset}
-          style={logoStyle}
-        />
-      </View>
+      <Image
+        accessibilityIgnoresInvertColors
+        accessible={false}
+        resizeMode="contain"
+        source={asset}
+        style={styles.asset}
+      />
       {loading ? (
         <View accessible={false} style={styles.loading}>
           <ActivityIndicator color={colors.brand} />
@@ -63,21 +59,15 @@ export function AccountProviderButton({
 
 const styles = StyleSheet.create({
   button: {
-    width: controlHeights.large,
-    height: controlHeights.large,
+    width: controlHeights.compact,
+    height: controlHeights.compact,
     borderRadius: radii.round,
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: colors.surface,
-    ...shadows.soft,
-  },
-  logoWindow: {
-    width: 30,
-    height: 30,
     overflow: 'hidden',
-    alignItems: 'center',
-    justifyContent: 'center',
   },
+  asset: { width: controlHeights.compact, height: controlHeights.compact },
   loading: {
     position: 'absolute',
     inset: 0,

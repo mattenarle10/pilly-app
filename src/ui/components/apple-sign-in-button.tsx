@@ -39,13 +39,11 @@ export function AppleSignInButton({
       disabled={disabled}
       label="Continue with Apple"
       loading={loading}
-      logoStyle={styles.logo}
       onPress={onPress}
     />
   );
 }
 
 const styles = StyleSheet.create({
-  button: { width: controlHeights.large, height: controlHeights.large },
-  logo: { width: 84, height: 84 },
+  button: { width: controlHeights.compact, height: controlHeights.compact },
 });
