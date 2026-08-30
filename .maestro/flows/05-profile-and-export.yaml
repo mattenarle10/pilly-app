@@ -22,6 +22,7 @@ name: Profile name export and Plus navigation
       visible: 'Pilly Plus'
     commands:
       - tapOn: 'Pilly Plus'
-      - assertVisible: 'Clear records, ready to share.'
+      - assertVisible: 'Your medicines, ready when you are.'
+      - assertVisible: 'Preview · checkout off'
       - tapOn: 'Back'
 - assertVisible: 'Profile'
