@@ -85,7 +85,10 @@ describe('Pilly Plus route', () => {
 
     expect(screen.getByText('Private cloud backup')).toBeOnTheScreen();
     expect(screen.getByText('Medicine photos')).toBeOnTheScreen();
-    expect(screen.getByText('Free preview · checkout off')).toBeOnTheScreen();
+    expect(screen.getByText('Preview · checkout off')).toBeOnTheScreen();
+    expect(
+      screen.getByText('Signing in connects your Plus account. Medicine data stays local.'),
+    ).toBeOnTheScreen();
     expect(screen.queryByText(/lifetime/i)).toBeNull();
     await act(async () => {
       fireEvent.press(screen.getByLabelText('Sign in with Apple'));
@@ -103,7 +106,7 @@ describe('Pilly Plus route', () => {
 
     const screen = await render(<PlusRoute />, { wrapper });
 
-    expect(screen.getByText('Free preview · checkout off')).toBeOnTheScreen();
+    expect(screen.getByText('Preview · checkout off')).toBeOnTheScreen();
     expect(screen.getByLabelText('Sign in with Apple')).toBeOnTheScreen();
     expect(screen.getByLabelText('Sign in with Google')).toBeOnTheScreen();
     expect(screen.queryByText('Pilly Plus preview is active')).toBeNull();
@@ -129,9 +132,8 @@ describe('Pilly Plus route', () => {
 
     expect(screen.getByText('Pilly Plus preview is active')).toBeOnTheScreen();
     expect(screen.getByText('matt@example.com')).toBeOnTheScreen();
-    expect(
-      screen.getByText('No purchase was made. Cloud sync remains off in this local preview.'),
-    ).toBeOnTheScreen();
+    expect(screen.getByText('Plus preview · checkout off')).toBeOnTheScreen();
+    expect(screen.getByText('Preview access only. Cloud backup remains off.')).toBeOnTheScreen();
     fireEvent.press(screen.getByLabelText('Pilly Plus preview is active, matt@example.com'));
     expect(mockPush).toHaveBeenCalledWith('/account');
   });

@@ -31,15 +31,15 @@ export default function PlusRoute() {
           <View style={styles.previewStatus}>
             <PillyIcon name="info" size={16} color={colors.brand} />
             <PillyText role="caption" style={styles.previewStatusLabel}>
-              {active ? 'Plus access preview' : 'Free preview'} · checkout off
+              {active ? 'Plus preview' : 'Preview'} · checkout off
             </PillyText>
           </View>
         ) : null}
         <PillyText role="large-title" accessibilityRole="header" style={styles.heroTitle}>
-          Your medicines, ready when you need them.
+          Your medicines, ready when you are.
         </PillyText>
         <PillyText muted style={styles.heroCopy}>
-          Pilly Plus adds private backup and recovery without changing how local tracking works.
+          Private backup, recovery, and medicine photos—without changing local tracking.
         </PillyText>
       </View>
 
@@ -60,8 +60,7 @@ export default function PlusRoute() {
               onSignIn={(provider) => void account.signIn(provider)}
             />
             <PillyText role="caption" muted style={styles.centeredCopy}>
-              Your account is used only for Pilly Plus. Signing in does not upload your medicine
-              data.
+              Signing in connects your Plus account. Medicine data stays local.
             </PillyText>
           </>
         ) : (
@@ -73,8 +72,8 @@ export default function PlusRoute() {
             />
             <PillyText role="caption" muted style={styles.centeredCopy}>
               {active
-                ? 'No purchase was made. Cloud sync remains off in this local preview.'
-                : 'Checkout remains off while the complete Plus experience is being built.'}
+                ? 'Preview access only. Cloud backup remains off.'
+                : 'Checkout and cloud backup remain off.'}
             </PillyText>
           </View>
         )}
@@ -108,28 +107,27 @@ export default function PlusRoute() {
           <Benefit
             icon="private"
             title="Private cloud backup"
-            message="Back up medicines, schedules, and dose history to your account."
+            message="Medicines, schedules, and dose history."
           />
           <View style={styles.separator} />
           <Benefit
             icon="refresh"
-            title="Recovery across devices"
-            message="Restore your records on a new device when you choose to."
+            title="Device recovery"
+            message="Restore your records on another device."
           />
           <View style={styles.separator} />
           <Benefit
             icon="photo"
             title="Medicine photos"
-            message="Keep private recognition photos with your Pilly Plus account."
+            message="Private recognition photos for your medicines."
           />
         </View>
       </View>
 
       <View style={styles.freePromise}>
-        <PillyText role="label">The essentials stay free</PillyText>
+        <PillyText role="label">Core tracking stays free</PillyText>
         <PillyText role="caption" muted>
-          Tracking, reminders, Today, Week, history, and readable data export stay on your device
-          without an account.
+          Reminders, history, and data export stay local without an account.
         </PillyText>
       </View>
     </Screen>
@@ -161,7 +159,7 @@ function Benefit({
 }
 
 const styles = StyleSheet.create({
-  screen: { gap: spacing.xl, paddingTop: spacing.sm, paddingBottom: spacing.xxxl },
+  screen: { gap: spacing.xxl, paddingTop: spacing.sm, paddingBottom: spacing.xxxl },
   hero: { alignItems: 'center', gap: spacing.sm },
   previewStatus: {
     minHeight: 30,
@@ -173,8 +171,8 @@ const styles = StyleSheet.create({
     backgroundColor: colors.lavenderSoft,
   },
   previewStatusLabel: { color: colors.brand },
-  heroTitle: { maxWidth: 360, textAlign: 'center', fontWeight: '600' },
-  heroCopy: { maxWidth: 360, textAlign: 'center' },
+  heroTitle: { maxWidth: 340, textAlign: 'center', fontWeight: '600' },
+  heroCopy: { maxWidth: 340, textAlign: 'center' },
   benefitsSection: { gap: spacing.md },
   benefits: {
     overflow: 'hidden',
@@ -183,12 +181,12 @@ const styles = StyleSheet.create({
     ...shadows.soft,
   },
   benefit: {
-    minHeight: 72,
+    minHeight: 68,
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.md,
     paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.md,
+    paddingVertical: spacing.sm,
   },
   benefitIcon: { width: 28, alignItems: 'center' },
   benefitCopy: { flex: 1, gap: spacing.xs },
