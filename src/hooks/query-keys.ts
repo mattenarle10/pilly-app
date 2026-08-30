@@ -17,7 +17,7 @@ export const queryKeys = {
   setting: (key: string) => ['settings', key] as const,
   plus: {
     root: ['plus'] as const,
-    store: ['plus', 'store'] as const,
+    store: (accountId: string) => ['plus', 'store', accountId] as const,
   },
   exportData: ['export-data'] as const,
 } as const;

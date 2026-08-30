@@ -13,9 +13,12 @@ import {
 } from '@/services/purchases';
 
 import { queryKeys } from './query-keys';
+import { useAccountSession } from './use-account-session';
 import { useRepository } from './use-repository';
 
-export const plusEntitlementSettingKey = 'plusEntitled';
+export function plusEntitlementSettingKey(accountId: string): string {
+  return `plusEntitled:${accountId}`;
+}
 
 export type PlusState =
   | { kind: 'loading'; active: false; canRestore: false }
@@ -31,47 +34,62 @@ export type PlusState =
   | { kind: 'error'; active: false; canRestore: true };
 
 export function usePlus() {
+  const account = useAccountSession();
   const repository = useRepository();
   const queryClient = useQueryClient();
   const previewMode = getPlusPreviewMode();
+  const accountId = account.state.kind === 'signed-in' ? account.state.user.id : null;
+  const entitlementSettingKey = accountId ? plusEntitlementSettingKey(accountId) : null;
   const cachedEntitlement = useQuery({
-    queryKey: queryKeys.setting(plusEntitlementSettingKey),
-    queryFn: () => repository.getSetting(plusEntitlementSettingKey),
+    queryKey: queryKeys.setting(entitlementSettingKey ?? 'plusEntitled:local'),
+    queryFn: () =>
+      entitlementSettingKey ? repository.getSetting(entitlementSettingKey) : Promise.resolve(null),
+    enabled: entitlementSettingKey !== null,
     networkMode: 'always',
   });
   const store = useQuery({
-    queryKey: queryKeys.plus.store,
+    queryKey: queryKeys.plus.store(accountId ?? 'local'),
     queryFn: async () => {
-      const snapshot = await loadPlusStoreSnapshot();
+      if (!accountId || !entitlementSettingKey) return { kind: 'unconfigured' } as const;
+      const snapshot = await loadPlusStoreSnapshot(accountId);
       if (snapshot.kind === 'ready') {
-        await repository.setSetting(plusEntitlementSettingKey, `${snapshot.active}`);
-        queryClient.setQueryData(
-          queryKeys.setting(plusEntitlementSettingKey),
-          `${snapshot.active}`,
-        );
+        await repository.setSetting(entitlementSettingKey, `${snapshot.active}`);
+        queryClient.setQueryData(queryKeys.setting(entitlementSettingKey), `${snapshot.active}`);
       }
       return snapshot;
     },
-    enabled: previewMode === 'store',
+    enabled: previewMode === 'store' && accountId !== null,
     networkMode: 'always',
   });
 
   const acceptResult = async (result: PlusActionResult) => {
     if (result.kind !== 'active') return result;
-    await repository.setSetting(plusEntitlementSettingKey, 'true');
-    queryClient.setQueryData(queryKeys.setting(plusEntitlementSettingKey), 'true');
+    if (!entitlementSettingKey) throw new Error('Sign in before using Pilly Plus.');
+    await repository.setSetting(entitlementSettingKey, 'true');
+    queryClient.setQueryData(queryKeys.setting(entitlementSettingKey), 'true');
     await queryClient.invalidateQueries({ queryKey: queryKeys.plus.root });
     return result;
   };
   const purchase = useMutation({
-    mutationFn: async (plan: PlusPlan) => acceptResult(await purchasePlus(plan)),
+    mutationFn: async (plan: PlusPlan) => {
+      if (!accountId) throw new Error('Sign in before using Pilly Plus.');
+      return acceptResult(await purchasePlus(accountId, plan));
+    },
   });
-  const restore = useMutation({ mutationFn: async () => acceptResult(await restorePlus()) });
-  const cachedActive = isPlusPurchasesSupported() && cachedEntitlement.data === 'true';
+  const restore = useMutation({
+    mutationFn: async () => {
+      if (!accountId) throw new Error('Sign in before using Pilly Plus.');
+      return acceptResult(await restorePlus(accountId));
+    },
+  });
+  const cachedActive =
+    accountId !== null && isPlusPurchasesSupported() && cachedEntitlement.data === 'true';
 
   let state: PlusState;
   if (previewMode !== 'store') {
     state = { kind: 'preview', active: previewMode === 'active', canRestore: false };
+  } else if (!accountId) {
+    state = { kind: 'unavailable', active: false, canRestore: false, reason: 'store' };
   } else if (cachedEntitlement.isPending) {
     state = { kind: 'loading', active: false, canRestore: false };
   } else if (store.isPending && cachedActive) {
@@ -107,6 +125,7 @@ export function usePlus() {
     state,
     purchase,
     restore,
-    retry: () => Promise.all([cachedEntitlement.refetch(), store.refetch()]),
+    retry: () =>
+      accountId ? Promise.all([cachedEntitlement.refetch(), store.refetch()]) : Promise.resolve([]),
   };
 }

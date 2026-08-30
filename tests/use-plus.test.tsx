@@ -3,6 +3,7 @@ import { act, cleanup, renderHook, waitFor } from '@testing-library/react-native
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
 import type { PillyRepository } from '@/storage/repository';
+import type { AccountSessionContextValue } from '@/providers/account-session-provider';
 import {
   arePlusPurchasesEnabled,
   getPlusPreviewMode,
@@ -13,12 +14,15 @@ import {
 } from '@/services/purchases';
 
 import { usePlus } from '@/hooks/use-plus';
+import { useAccountSession } from '@/hooks/use-account-session';
 import { useRepository } from '@/hooks/use-repository';
 
+jest.mock('@/hooks/use-account-session', () => ({ useAccountSession: jest.fn() }));
 jest.mock('@/hooks/use-repository');
 jest.mock('@/services/purchases');
 
 const mockedUseRepository = jest.mocked(useRepository);
+const mockedUseAccountSession = jest.mocked(useAccountSession);
 const mockedPreviewMode = jest.mocked(getPlusPreviewMode);
 const mockedPurchasesEnabled = jest.mocked(arePlusPurchasesEnabled);
 const mockedPurchasesSupported = jest.mocked(isPlusPurchasesSupported);
@@ -26,6 +30,26 @@ const mockedLoadSnapshot = jest.mocked(loadPlusStoreSnapshot);
 const mockedPurchase = jest.mocked(purchasePlus);
 const mockedRestore = jest.mocked(restorePlus);
 const queryClients = new Set<QueryClient>();
+
+function signedInAccount(): AccountSessionContextValue {
+  return {
+    state: {
+      kind: 'signed-in',
+      user: {
+        id: 'cognito-sub-1',
+        email: 'matt@example.com',
+        displayName: 'Matthew',
+        provider: 'apple',
+      },
+    },
+    configured: true,
+    busy: false,
+    signingInWith: null,
+    error: null,
+    signIn: jest.fn(async () => true),
+    signOut: jest.fn(async () => undefined),
+  };
+}
 
 async function setup(cachedEntitlement: string | null = null) {
   const repository = {
@@ -49,6 +73,7 @@ async function setup(cachedEntitlement: string | null = null) {
 
 describe('usePlus', () => {
   beforeEach(() => {
+    mockedUseAccountSession.mockReturnValue(signedInAccount());
     mockedPreviewMode.mockReturnValue('store');
     mockedPurchasesEnabled.mockReturnValue(false);
     mockedPurchasesSupported.mockReturnValue(true);
@@ -181,6 +206,26 @@ describe('usePlus', () => {
     expect(result.current.state.active).toBe(false);
   });
 
+  test('does not load or inherit paid access without a connected account', async () => {
+    mockedUseAccountSession.mockReturnValue({
+      ...signedInAccount(),
+      state: { kind: 'local', user: null },
+    });
+    const { repository, result } = await setup('true');
+
+    expect(result.current.state).toEqual({
+      kind: 'unavailable',
+      active: false,
+      canRestore: false,
+      reason: 'store',
+    });
+    expect(mockedLoadSnapshot).not.toHaveBeenCalled();
+    expect(repository.getSetting).not.toHaveBeenCalled();
+    await result.current.retry();
+    expect(mockedLoadSnapshot).not.toHaveBeenCalled();
+    expect(repository.getSetting).not.toHaveBeenCalled();
+  });
+
   test('does not turn a cancelled checkout into an error or entitlement', async () => {
     mockedPurchasesEnabled.mockReturnValue(true);
     mockedLoadSnapshot.mockResolvedValue({
@@ -209,7 +254,7 @@ describe('usePlus', () => {
     });
 
     expect(outcome).toEqual({ kind: 'cancelled' });
-    expect(mockedPurchase).toHaveBeenCalledWith('annual');
+    expect(mockedPurchase).toHaveBeenCalledWith('cognito-sub-1', 'annual');
     expect(repository.setSetting).not.toHaveBeenCalled();
     expect(mockedRestore).not.toHaveBeenCalled();
   });

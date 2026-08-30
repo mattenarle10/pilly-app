@@ -39,12 +39,17 @@ export type PlusStoreSnapshot =
 
 export type PlusActionResult = { kind: 'active' } | { kind: 'inactive' } | { kind: 'cancelled' };
 
-async function purchasesModule() {
+async function purchasesModule(appUserId?: string) {
   if (Platform.OS !== 'ios' || !purchaseEnvironment.EXPO_PUBLIC_REVENUECAT_IOS_KEY) return null;
   const { default: Purchases } = await import('react-native-purchases');
   if (!configured) {
-    Purchases.configure({ apiKey: purchaseEnvironment.EXPO_PUBLIC_REVENUECAT_IOS_KEY });
+    Purchases.configure({
+      apiKey: purchaseEnvironment.EXPO_PUBLIC_REVENUECAT_IOS_KEY,
+      ...(appUserId ? { appUserID: appUserId } : {}),
+    });
     configured = true;
+  } else if (appUserId && (await Purchases.getAppUserID()) !== appUserId) {
+    await Purchases.logIn(appUserId);
   }
   return Purchases;
 }
@@ -69,8 +74,8 @@ export function isPlusPurchasesSupported(): boolean {
   );
 }
 
-export async function loadPlusStoreSnapshot(): Promise<PlusStoreSnapshot> {
-  const purchases = await purchasesModule();
+export async function loadPlusStoreSnapshot(appUserId: string): Promise<PlusStoreSnapshot> {
+  const purchases = await purchasesModule(appUserId);
   if (!purchases) return { kind: 'unconfigured' };
 
   const [customerInfo, offerings] = await Promise.all([
@@ -104,12 +109,12 @@ export async function loadPlusStoreSnapshot(): Promise<PlusStoreSnapshot> {
   };
 }
 
-export async function purchasePlus(plan: PlusPlan): Promise<PlusActionResult> {
+export async function purchasePlus(appUserId: string, plan: PlusPlan): Promise<PlusActionResult> {
   if (!arePlusPurchasesEnabled()) {
     throw new Error('Purchases are not enabled in this build yet.');
   }
 
-  const purchases = await purchasesModule();
+  const purchases = await purchasesModule(appUserId);
   if (!purchases) throw new Error('Store setup is not available in this build.');
 
   const offerings = await purchases.getOfferings();
@@ -132,17 +137,18 @@ export async function purchasePlus(plan: PlusPlan): Promise<PlusActionResult> {
   }
 }
 
-export async function restorePlus(): Promise<PlusActionResult> {
-  const purchases = await purchasesModule();
+export async function restorePlus(appUserId: string): Promise<PlusActionResult> {
+  const purchases = await purchasesModule(appUserId);
   if (!purchases) throw new Error('Store setup is not available in this build.');
   return { kind: hasPlus(await purchases.restorePurchases()) ? 'active' : 'inactive' };
 }
 
 export async function subscribeToPlusEntitlement(
+  appUserId: string,
   onChange: (active: boolean) => void,
 ): Promise<() => void> {
   if (getPlusPreviewMode() !== 'store') return () => undefined;
-  const purchases = await purchasesModule();
+  const purchases = await purchasesModule(appUserId);
   if (!purchases) return () => undefined;
 
   const listener: CustomerInfoUpdateListener = (customerInfo) => onChange(hasPlus(customerInfo));
@@ -150,4 +156,11 @@ export async function subscribeToPlusEntitlement(
   return () => {
     purchases.removeCustomerInfoUpdateListener(listener);
   };
+}
+
+export async function disconnectPlusPurchasesIdentity(): Promise<void> {
+  if (!configured || getPlusPreviewMode() !== 'store') return;
+  const purchases = await purchasesModule();
+  if (!purchases || (await purchases.isAnonymous())) return;
+  await purchases.logOut();
 }
