@@ -80,7 +80,7 @@ export class PillyRepository {
       transaction
         .insert(syncOutbox)
         .values(
-          mutations.map((mutation) => ({
+          mutations.map((mutation, index) => ({
             mutationId: mutation.mutationId,
             accountId,
             type: mutation.type,
@@ -89,7 +89,7 @@ export class PillyRepository {
             payload: 'data' in mutation ? JSON.stringify(mutation.data) : null,
             attemptCount: 0,
             lastError: null,
-            createdAt: mutation.occurredAt,
+            createdAt: `${mutation.occurredAt}:${index.toString().padStart(4, '0')}`,
           })),
         )
         .run();

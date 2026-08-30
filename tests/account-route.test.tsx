@@ -4,6 +4,7 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import type { AccountSessionContextValue } from '@/providers/account-session-provider';
 import { useAccountSession } from '@/hooks/use-account-session';
+import { useCloudSync } from '@/hooks/use-cloud-sync';
 
 import AccountRoute from '@/app/account';
 
@@ -20,6 +21,7 @@ jest.mock('expo-router', () => ({
   },
 }));
 jest.mock('@/hooks/use-account-session', () => ({ useAccountSession: jest.fn() }));
+jest.mock('@/hooks/use-cloud-sync', () => ({ useCloudSync: jest.fn() }));
 jest.mock('@/ui/components/apple-sign-in-button', () => {
   const { Pressable } = jest.requireActual<typeof import('react-native')>('react-native');
   return {
@@ -41,6 +43,7 @@ jest.mock('react-native-reanimated', () => {
 });
 
 const mockedUseAccountSession = jest.mocked(useAccountSession);
+const mockedUseCloudSync = jest.mocked(useCloudSync);
 const initialMetrics = {
   frame: { x: 0, y: 0, width: 390, height: 844 },
   insets: { top: 47, left: 0, right: 0, bottom: 34 },
@@ -66,6 +69,14 @@ function localAccount(
 }
 
 describe('account route', () => {
+  beforeEach(() => {
+    mockedUseCloudSync.mockReturnValue({
+      configured: true,
+      status: { kind: 'local' },
+      chooseSetup: jest.fn(),
+      retry: jest.fn(),
+    });
+  });
   afterEach(async () => {
     await cleanup();
     jest.clearAllMocks();

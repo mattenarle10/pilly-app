@@ -8,6 +8,7 @@ import { migrateDatabase } from '@/storage/migrate-database';
 import { colors } from '@/ui/tokens';
 
 import { AccountSessionProvider } from './account-session-provider';
+import { CloudSyncProvider } from './cloud-sync-provider';
 import { PlusEntitlementSync } from './plus-entitlement-sync';
 import { WidgetSync } from './widget-sync';
 
@@ -31,12 +32,19 @@ export function AppProviders({ children }: PropsWithChildren) {
         </View>
       }
     >
-      <SQLiteProvider databaseName="pilly.db" onInit={migrateDatabase} useSuspense>
+      <SQLiteProvider
+        databaseName="pilly.db"
+        options={{ enableChangeListener: true }}
+        onInit={migrateDatabase}
+        useSuspense
+      >
         <QueryClientProvider client={queryClient}>
           <AccountSessionProvider>
-            <PlusEntitlementSync />
-            <WidgetSync />
-            {children}
+            <CloudSyncProvider>
+              <PlusEntitlementSync />
+              <WidgetSync />
+              {children}
+            </CloudSyncProvider>
           </AccountSessionProvider>
         </QueryClientProvider>
       </SQLiteProvider>
