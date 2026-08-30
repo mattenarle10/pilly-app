@@ -76,15 +76,11 @@ describe('account route', () => {
     mockedUseAccountSession.mockReturnValue(account);
     const screen = await render(<AccountRoute />, { wrapper });
 
-    expect(screen.getByText('Connect Pilly Plus.')).toBeOnTheScreen();
+    expect(screen.getByText('Connect your account.')).toBeOnTheScreen();
     expect(
-      screen.getByText(
-        'Use Apple or Google to prepare secure backup and recovery across your devices.',
-      ),
+      screen.getByText('Use Apple or Google for private backup and recovery with Pilly Plus.'),
     ).toBeOnTheScreen();
-    expect(
-      screen.getByText('Choose Apple or Google. Your free tracker stays local.'),
-    ).toBeOnTheScreen();
+    expect(screen.getByText('Signing in does not upload your medicine data.')).toBeOnTheScreen();
 
     await act(async () => {
       fireEvent.press(screen.getByLabelText('Sign in with Apple'));
@@ -101,7 +97,7 @@ describe('account route', () => {
     mockedUseAccountSession.mockReturnValue(localAccount());
     const screen = await render(<AccountRoute />, { wrapper });
 
-    fireEvent.press(screen.getByText('Not now'));
+    fireEvent.press(screen.getByText('Keep using Pilly locally'));
     expect(mockBack).toHaveBeenCalledTimes(1);
   });
 
@@ -120,9 +116,10 @@ describe('account route', () => {
     mockedUseAccountSession.mockReturnValue(account);
     const screen = await render(<AccountRoute />, { wrapper });
 
-    expect(screen.getByText('You’re connected.')).toBeOnTheScreen();
+    expect(screen.getByText('Your account.')).toBeOnTheScreen();
     expect(screen.getByText('Apple connected')).toBeOnTheScreen();
     expect(screen.getByText('matt@example.com')).toBeOnTheScreen();
+    expect(screen.getByText('account-1')).toBeOnTheScreen();
     fireEvent.press(screen.getByText('Sign out'));
     expect(account.signOut).toHaveBeenCalledTimes(1);
   });

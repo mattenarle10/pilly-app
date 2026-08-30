@@ -9,7 +9,7 @@ import { PillyButton } from '@/ui/components/pilly-button';
 import { PillyText } from '@/ui/components/pilly-text';
 import { Screen } from '@/ui/components/screen';
 import { PillyIcon } from '@/ui/icons';
-import { colors, radii, shadows, spacing } from '@/ui/tokens';
+import { colors, spacing } from '@/ui/tokens';
 
 export default function AccountRoute() {
   const account = useAccountSession();
@@ -27,12 +27,12 @@ export default function AccountRoute() {
     >
       <View style={styles.intro}>
         <PillyText role="large-title" accessibilityRole="header" style={styles.title}>
-          {account.state.kind === 'signed-in' ? 'You’re connected.' : 'Connect Pilly Plus.'}
+          {account.state.kind === 'signed-in' ? 'Your account.' : 'Connect your account.'}
         </PillyText>
         <PillyText muted style={styles.introCopy}>
           {account.state.kind === 'signed-in'
-            ? 'Your Plus account is ready. Cloud sync is not enabled yet.'
-            : 'Use Apple or Google to prepare secure backup and recovery across your devices.'}
+            ? 'Connected for Pilly Plus. Cloud backup remains off until you choose it.'
+            : 'Use Apple or Google for private backup and recovery with Pilly Plus.'}
         </PillyText>
       </View>
 
@@ -46,6 +46,14 @@ export default function AccountRoute() {
       ) : account.state.kind === 'signed-in' ? (
         <View style={styles.connectedSection}>
           <ConnectedAccountSummary user={account.state.user} />
+          <View style={styles.supportId}>
+            <PillyText role="caption" muted>
+              Support ID
+            </PillyText>
+            <PillyText role="caption" selectable numberOfLines={1}>
+              {account.state.user.id}
+            </PillyText>
+          </View>
           {account.error === 'sign-out' ? (
             <PillyBanner kind="error" message="Couldn’t securely sign out. Try again." compact />
           ) : null}
@@ -60,16 +68,11 @@ export default function AccountRoute() {
         </View>
       ) : (
         <View style={styles.localSection}>
-          <View style={styles.accountSurface}>
-            <View style={styles.accountIcon}>
-              <PillyIcon name="private" size={24} color={colors.brand} />
-            </View>
-            <View style={styles.accountCopy}>
-              <PillyText role="headline">Pilly Plus account</PillyText>
-              <PillyText role="caption" muted>
-                Choose Apple or Google. Your free tracker stays local.
-              </PillyText>
-            </View>
+          <View style={styles.localPromise}>
+            <PillyIcon name="private" size={20} color={colors.brand} />
+            <PillyText role="caption" muted style={styles.localPromiseCopy}>
+              Signing in does not upload your medicine data.
+            </PillyText>
           </View>
           {!account.configured ? (
             <PillyBanner
@@ -92,7 +95,7 @@ export default function AccountRoute() {
               onSignIn={(provider) => void account.signIn(provider)}
             />
             <PillyButton
-              label="Not now"
+              label="Keep using Pilly locally"
               variant="quiet"
               size="medium"
               disabled={account.busy}
@@ -104,8 +107,7 @@ export default function AccountRoute() {
       )}
 
       <PillyText role="caption" muted style={styles.boundary}>
-        Free tracking never requires an account. Signing in does not upload medicine data until
-        cloud sync is ready and you choose to use it.
+        Free tracking never requires an account or network connection.
       </PillyText>
     </Screen>
   );
@@ -123,24 +125,16 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
   },
   connectedSection: { gap: spacing.md },
-  localSection: { gap: spacing.md },
-  accountSurface: {
-    minHeight: 88,
+  supportId: { gap: spacing.xs, paddingHorizontal: spacing.xs },
+  localSection: { gap: spacing.lg },
+  localPromise: {
+    minHeight: 44,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing.md,
-    borderRadius: radii.lg,
-    padding: spacing.lg,
-    backgroundColor: colors.glass,
-    ...shadows.soft,
+    gap: spacing.sm,
+    paddingHorizontal: spacing.xs,
   },
-  accountIcon: {
-    width: 40,
-    height: 40,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  accountCopy: { flex: 1, gap: spacing.xs },
+  localPromiseCopy: { flex: 1 },
   actions: { alignItems: 'center', gap: spacing.xs },
-  boundary: { marginTop: 'auto', paddingHorizontal: spacing.xs, paddingTop: spacing.xl },
+  boundary: { paddingHorizontal: spacing.xs, paddingTop: spacing.sm },
 });

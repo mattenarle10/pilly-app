@@ -48,7 +48,7 @@ export default function RootLayout() {
         />
         <Stack.Screen
           name="account/index"
-          options={{ ...standardHeaderOptions, title: 'Pilly Plus account' }}
+          options={{ ...standardHeaderOptions, title: 'Account' }}
         />
         <Stack.Screen
           name="plus/index"
