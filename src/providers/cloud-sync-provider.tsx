@@ -13,7 +13,11 @@ import { useQueryClient } from '@tanstack/react-query';
 
 import { useAccountSession } from '@/hooks/use-account-session';
 import type { BootstrapResponse } from '@/models/sync';
-import { fetchCloudBootstrap, isCloudSyncConfigured } from '@/services/cloud-sync-api';
+import {
+  CloudSyncApiError,
+  fetchCloudBootstrap,
+  isCloudSyncConfigured,
+} from '@/services/cloud-sync-api';
 import { synchronizeCloudState } from '@/services/cloud-sync';
 import { reconcileLocalReminders } from '@/services/notifications';
 import { PillyRepository } from '@/storage/repository';
@@ -67,6 +71,10 @@ export function CloudSyncProvider({ children }: PropsWithChildren) {
         if (result.changeCount > 0) await refreshAfterRemoteChanges();
         setStatus({ kind: 'active', syncing: false, lastError: null });
       } catch (error) {
+        if (error instanceof CloudSyncApiError && error.code === 'plus-required') {
+          setStatus({ kind: 'entitlement-required' });
+          return;
+        }
         const message = error instanceof Error ? error.message : 'Cloud backup is unavailable.';
         store.recordError(accountId, message);
         setStatus({ kind: 'active', syncing: false, lastError: message });
@@ -79,7 +87,11 @@ export function CloudSyncProvider({ children }: PropsWithChildren) {
   }, [account.state, refreshAfterRemoteChanges, store]);
 
   const check = useCallback(async () => {
-    if (account.state.kind !== 'signed-in') {
+    if (account.state.kind === 'loading') {
+      setStatus({ kind: 'checking' });
+      return;
+    }
+    if (account.state.kind === 'local') {
       bootstrapRef.current = null;
       store.disconnect();
       setStatus({ kind: 'local' });

@@ -56,4 +56,21 @@ describe('cloud sync coordinator', () => {
     });
     expect(store.applySyncResponse).toHaveBeenCalledWith('account-1', response);
   });
+
+  test('leaves the durable outbox untouched when the network fails', async () => {
+    const store = {
+      getOrCreateState: jest.fn(() => ({
+        accountId: 'account-1',
+        migrationState: 'active',
+        deviceId: 'e2c5a082-488c-455f-9d2f-6ce5c66d7228',
+        cursor: 1,
+      })),
+      listPendingMutations: jest.fn(() => []),
+      applySyncResponse: jest.fn(),
+    } as unknown as PillySyncStore;
+    mockedPush.mockRejectedValue(new Error('offline'));
+
+    await expect(synchronizeCloudState(store, 'account-1')).rejects.toThrow('offline');
+    expect(store.applySyncResponse).not.toHaveBeenCalled();
+  });
 });

@@ -368,7 +368,13 @@ export class PillySyncStore {
       const pending = transaction
         .select({ mutationId: syncOutbox.mutationId })
         .from(syncOutbox)
-        .where(and(eq(syncOutbox.accountId, accountId), eq(syncOutbox.entityId, change.entityId)))
+        .where(
+          and(
+            eq(syncOutbox.accountId, accountId),
+            eq(syncOutbox.entityId, change.entityId),
+            like(syncOutbox.type, `${change.entityType}.%`),
+          ),
+        )
         .get();
       if (pending) return;
       if (change.deletedAt) this.applyDelete(transaction, change);

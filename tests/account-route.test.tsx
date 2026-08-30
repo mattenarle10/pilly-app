@@ -133,4 +133,31 @@ describe('account route', () => {
     fireEvent.press(screen.getByText('Sign out'));
     expect(account.signOut).toHaveBeenCalledTimes(1);
   });
+
+  test('requires an explicit first backup for existing local data', async () => {
+    const chooseSetup = jest.fn().mockResolvedValue(undefined);
+    mockedUseCloudSync.mockReturnValue({
+      configured: true,
+      status: { kind: 'pending-backup' },
+      chooseSetup,
+      retry: jest.fn(),
+    });
+    mockedUseAccountSession.mockReturnValue(
+      localAccount({
+        state: {
+          kind: 'signed-in',
+          user: {
+            id: 'account-1',
+            email: 'matt@example.com',
+            displayName: 'Matthew',
+            provider: 'apple',
+          },
+        },
+      }),
+    );
+    const screen = await render(<AccountRoute />, { wrapper });
+
+    fireEvent.press(screen.getByText('Back up this iPhone'));
+    expect(chooseSetup).toHaveBeenCalledWith('backup');
+  });
 });
