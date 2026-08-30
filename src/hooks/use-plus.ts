@@ -9,6 +9,7 @@ import {
   restorePlus,
   type PlusActionResult,
   type PlusOffer,
+  type PlusPlan,
 } from '@/services/purchases';
 
 import { queryKeys } from './query-keys';
@@ -20,7 +21,12 @@ export type PlusState =
   | { kind: 'loading'; active: false; canRestore: false }
   | { kind: 'preview'; active: boolean; canRestore: false }
   | { kind: 'active'; active: true; canRestore: boolean; offline: boolean }
-  | { kind: 'available'; active: false; canRestore: true; offer: PlusOffer }
+  | {
+      kind: 'available';
+      active: false;
+      canRestore: true;
+      offers: Record<PlusPlan, PlusOffer | null>;
+    }
   | { kind: 'unavailable'; active: false; canRestore: boolean; reason: 'gate' | 'store' }
   | { kind: 'error'; active: false; canRestore: true };
 
@@ -57,7 +63,9 @@ export function usePlus() {
     await queryClient.invalidateQueries({ queryKey: queryKeys.plus.root });
     return result;
   };
-  const purchase = useMutation({ mutationFn: async () => acceptResult(await purchasePlus()) });
+  const purchase = useMutation({
+    mutationFn: async (plan: PlusPlan) => acceptResult(await purchasePlus(plan)),
+  });
   const restore = useMutation({ mutationFn: async () => acceptResult(await restorePlus()) });
   const cachedActive = isPlusPurchasesSupported() && cachedEntitlement.data === 'true';
 
@@ -78,14 +86,18 @@ export function usePlus() {
     state = { kind: 'active', active: true, canRestore: false, offline: true };
   } else if (store.data?.kind === 'ready' && store.data.active) {
     state = { kind: 'active', active: true, canRestore: true, offline: false };
-  } else if (store.data?.kind === 'ready' && store.data.offer && arePlusPurchasesEnabled()) {
-    state = { kind: 'available', active: false, canRestore: true, offer: store.data.offer };
+  } else if (
+    store.data?.kind === 'ready' &&
+    Object.values(store.data.offers).some(Boolean) &&
+    arePlusPurchasesEnabled()
+  ) {
+    state = { kind: 'available', active: false, canRestore: true, offers: store.data.offers };
   } else if (store.data?.kind === 'ready') {
     state = {
       kind: 'unavailable',
       active: false,
       canRestore: true,
-      reason: store.data.offer ? 'gate' : 'store',
+      reason: Object.values(store.data.offers).some(Boolean) ? 'gate' : 'store',
     };
   } else {
     state = { kind: 'unavailable', active: false, canRestore: false, reason: 'store' };

@@ -70,15 +70,28 @@ describe('usePlus', () => {
     expect(mockedLoadSnapshot).not.toHaveBeenCalled();
   });
 
-  test('uses the localized lifetime offer only when checkout is enabled', async () => {
+  test('uses localized annual and monthly offers only when checkout is enabled', async () => {
     mockedPurchasesEnabled.mockReturnValue(true);
     mockedLoadSnapshot.mockResolvedValue({
       kind: 'ready',
       active: false,
-      offer: {
-        packageIdentifier: '$rc_lifetime',
-        productIdentifier: 'pilly_plus_lifetime',
-        localizedPrice: '₱299.00',
+      offers: {
+        annual: {
+          plan: 'annual',
+          packageIdentifier: '$rc_annual',
+          productIdentifier: 'pilly_plus_annual',
+          localizedPrice: '₱1,499.00',
+          localizedPricePerMonth: '₱124.92',
+          introductoryOffer: null,
+        },
+        monthly: {
+          plan: 'monthly',
+          packageIdentifier: '$rc_monthly',
+          productIdentifier: 'pilly_plus_monthly',
+          localizedPrice: '₱149.00',
+          localizedPricePerMonth: '₱149.00',
+          introductoryOffer: null,
+        },
       },
     });
     const { result } = await setup();
@@ -86,18 +99,27 @@ describe('usePlus', () => {
     await waitFor(() => expect(result.current.state.kind).toBe('available'));
     expect(result.current.state).toMatchObject({
       kind: 'available',
-      offer: { localizedPrice: '₱299.00' },
+      offers: {
+        annual: { localizedPrice: '₱1,499.00' },
+        monthly: { localizedPrice: '₱149.00' },
+      },
     });
   });
 
-  test('keeps a real lifetime offer visible but gated before device purchase QA', async () => {
+  test('keeps real subscription offers gated before device purchase QA', async () => {
     mockedLoadSnapshot.mockResolvedValue({
       kind: 'ready',
       active: false,
-      offer: {
-        packageIdentifier: '$rc_lifetime',
-        productIdentifier: 'pilly_plus_lifetime',
-        localizedPrice: '₱299.00',
+      offers: {
+        annual: {
+          plan: 'annual',
+          packageIdentifier: '$rc_annual',
+          productIdentifier: 'pilly_plus_annual',
+          localizedPrice: '₱1,499.00',
+          localizedPricePerMonth: '₱124.92',
+          introductoryOffer: null,
+        },
+        monthly: null,
       },
     });
     const { result } = await setup();
@@ -164,10 +186,16 @@ describe('usePlus', () => {
     mockedLoadSnapshot.mockResolvedValue({
       kind: 'ready',
       active: false,
-      offer: {
-        packageIdentifier: '$rc_lifetime',
-        productIdentifier: 'pilly_plus_lifetime',
-        localizedPrice: '$4.99',
+      offers: {
+        annual: {
+          plan: 'annual',
+          packageIdentifier: '$rc_annual',
+          productIdentifier: 'pilly_plus_annual',
+          localizedPrice: '$49.99',
+          localizedPricePerMonth: '$4.17',
+          introductoryOffer: null,
+        },
+        monthly: null,
       },
     });
     mockedPurchase.mockResolvedValue({ kind: 'cancelled' });
@@ -177,16 +205,21 @@ describe('usePlus', () => {
     repository.setSetting.mockClear();
     let outcome;
     await act(async () => {
-      outcome = await result.current.purchase.mutateAsync();
+      outcome = await result.current.purchase.mutateAsync('annual');
     });
 
     expect(outcome).toEqual({ kind: 'cancelled' });
+    expect(mockedPurchase).toHaveBeenCalledWith('annual');
     expect(repository.setSetting).not.toHaveBeenCalled();
     expect(mockedRestore).not.toHaveBeenCalled();
   });
 
   test('keeps a failed restore retryable without changing cached access', async () => {
-    mockedLoadSnapshot.mockResolvedValue({ kind: 'ready', active: false, offer: null });
+    mockedLoadSnapshot.mockResolvedValue({
+      kind: 'ready',
+      active: false,
+      offers: { annual: null, monthly: null },
+    });
     mockedRestore.mockRejectedValue(new Error('restore unavailable'));
     const { repository, result } = await setup();
 

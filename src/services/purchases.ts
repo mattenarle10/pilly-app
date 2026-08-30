@@ -1,6 +1,15 @@
 import { Platform } from 'react-native';
-import type { CustomerInfoUpdateListener, PurchasesPackage } from 'react-native-purchases';
+import type { CustomerInfoUpdateListener, IntroEligibility } from 'react-native-purchases';
 import { z } from 'zod';
+
+import {
+  normalizePlusOffers,
+  plusPackageForPlan,
+  type PlusOffer,
+  type PlusPlan,
+} from './plus-offers';
+
+export type { PlusOffer, PlusPlan } from './plus-offers';
 
 const purchaseEnvironmentSchema = z.object({
   EXPO_PUBLIC_REVENUECAT_IOS_KEY: z.string().min(1).optional(),
@@ -20,14 +29,13 @@ let configured = false;
 
 export type PlusPreviewMode = 'store' | 'free' | 'active';
 
-export type PlusOffer = {
-  packageIdentifier: string;
-  productIdentifier: string;
-  localizedPrice: string;
-};
-
 export type PlusStoreSnapshot =
-  { kind: 'unconfigured' } | { kind: 'ready'; active: boolean; offer: PlusOffer | null };
+  | { kind: 'unconfigured' }
+  | {
+      kind: 'ready';
+      active: boolean;
+      offers: Record<PlusPlan, PlusOffer | null>;
+    };
 
 export type PlusActionResult = { kind: 'active' } | { kind: 'inactive' } | { kind: 'cancelled' };
 
@@ -43,15 +51,6 @@ async function purchasesModule() {
 
 function hasPlus(customerInfo: { entitlements: { active: Record<string, unknown> } }): boolean {
   return customerInfo.entitlements.active[plusEntitlementIdentifier] !== undefined;
-}
-
-function toOffer(offer: PurchasesPackage | null): PlusOffer | null {
-  if (!offer) return null;
-  return {
-    packageIdentifier: offer.identifier,
-    productIdentifier: offer.product.identifier,
-    localizedPrice: offer.product.priceString,
-  };
 }
 
 export function getPlusPreviewMode(): PlusPreviewMode {
@@ -78,15 +77,34 @@ export async function loadPlusStoreSnapshot(): Promise<PlusStoreSnapshot> {
     purchases.getCustomerInfo(),
     purchases.getOfferings(),
   ]);
+  const packages = {
+    annual: plusPackageForPlan(offerings.current, 'annual'),
+    monthly: plusPackageForPlan(offerings.current, 'monthly'),
+  };
+  const productIdentifiers = Object.values(packages).flatMap((offer) =>
+    offer ? [offer.product.identifier] : [],
+  );
+  let eligibility: Record<string, IntroEligibility> = {};
+  if (productIdentifiers.length > 0) {
+    try {
+      eligibility = await purchases.checkTrialOrIntroductoryPriceEligibility(productIdentifiers);
+    } catch {
+      // An eligibility lookup must not hide otherwise valid store products.
+    }
+  }
 
   return {
     kind: 'ready',
     active: hasPlus(customerInfo),
-    offer: toOffer(offerings.current?.lifetime ?? null),
+    offers: normalizePlusOffers(
+      offerings.current,
+      eligibility,
+      purchases.INTRO_ELIGIBILITY_STATUS.INTRO_ELIGIBILITY_STATUS_ELIGIBLE,
+    ),
   };
 }
 
-export async function purchasePlus(): Promise<PlusActionResult> {
+export async function purchasePlus(plan: PlusPlan): Promise<PlusActionResult> {
   if (!arePlusPurchasesEnabled()) {
     throw new Error('Purchases are not enabled in this build yet.');
   }
@@ -95,11 +113,11 @@ export async function purchasePlus(): Promise<PlusActionResult> {
   if (!purchases) throw new Error('Store setup is not available in this build.');
 
   const offerings = await purchases.getOfferings();
-  const lifetime = offerings.current?.lifetime;
-  if (!lifetime) throw new Error('Pilly Plus is not available in the store yet.');
+  const offer = plusPackageForPlan(offerings.current, plan);
+  if (!offer) throw new Error('That Pilly Plus plan is not available in the store yet.');
 
   try {
-    const result = await purchases.purchasePackage(lifetime);
+    const result = await purchases.purchasePackage(offer);
     return { kind: hasPlus(result.customerInfo) ? 'active' : 'inactive' };
   } catch (cause) {
     if (
