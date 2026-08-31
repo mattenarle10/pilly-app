@@ -1,6 +1,10 @@
 import type { IntroEligibility, PurchasesOffering, PurchasesPackage } from 'react-native-purchases';
 
-import { normalizePlusOffers, plusPackageForPlan } from '@/services/plus-offers';
+import {
+  introductoryOfferLabel,
+  normalizePlusOffers,
+  plusPackageForPlan,
+} from '@/services/plus-offers';
 
 function product(identifier: string, priceString: string, introPrice: object | null = null) {
   return {
@@ -19,6 +23,7 @@ describe('Pilly Plus offering normalization', () => {
   const annual = purchasePackage(
     '$rc_annual',
     product('pilly_plus_annual', '$49.99', {
+      price: 0,
       priceString: '$0.00',
       period: 'P1W',
       cycles: 1,
@@ -47,7 +52,7 @@ describe('Pilly Plus offering normalization', () => {
         productIdentifier: 'pilly_plus_annual',
         localizedPrice: '$49.99',
         localizedPricePerMonth: '$49.99',
-        introductoryOffer: { localizedPrice: '$0.00', period: 'P1W', cycles: 1 },
+        introductoryOffer: { price: 0, localizedPrice: '$0.00', period: 'P1W', cycles: 1 },
       },
       monthly: {
         plan: 'monthly',
@@ -71,5 +76,17 @@ describe('Pilly Plus offering normalization', () => {
     expect(plusPackageForPlan(offering, 'monthly')).toBe(monthly);
     expect(plusPackageForPlan(offering, 'annual')).toBe(annual);
     expect(plusPackageForPlan({ annual: null, monthly: null }, 'annual')).not.toBe(lifetime);
+  });
+
+  test('derives concise trial copy from live introductory period data', () => {
+    expect(
+      introductoryOfferLabel({ price: 0, localizedPrice: '$0.00', period: 'P1W', cycles: 1 }),
+    ).toBe('1 week free');
+    expect(
+      introductoryOfferLabel({ price: 1.99, localizedPrice: '$1.99', period: 'P1M', cycles: 3 }),
+    ).toBe('3 months at $1.99');
+    expect(
+      introductoryOfferLabel({ price: 0, localizedPrice: '$0.00', period: 'unknown', cycles: 1 }),
+    ).toBeNull();
   });
 });
