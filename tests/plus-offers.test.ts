@@ -4,6 +4,8 @@ import {
   introductoryOfferLabel,
   normalizePlusOffers,
   plusPackageForPlan,
+  plusPurchaseCtaLabel,
+  plusPurchaseDisclosure,
 } from '@/services/plus-offers';
 
 function product(identifier: string, priceString: string, introPrice: object | null = null) {
@@ -88,5 +90,27 @@ describe('Pilly Plus offering normalization', () => {
     expect(
       introductoryOfferLabel({ price: 0, localizedPrice: '$0.00', period: 'unknown', cycles: 1 }),
     ).toBeNull();
+  });
+
+  test('derives purchase actions and renewal disclosure from the selected live offer', () => {
+    const offers = normalizePlusOffers(
+      offering,
+      {
+        pilly_plus_annual: {
+          status: 2 as IntroEligibility['status'],
+          description: 'eligible',
+        },
+      },
+      2,
+    );
+
+    expect(plusPurchaseCtaLabel(offers.annual!)).toBe('Start 1-week free trial');
+    expect(plusPurchaseDisclosure(offers.annual!)).toBe(
+      'Then $49.99 per year. Auto-renews until canceled.',
+    );
+    expect(plusPurchaseCtaLabel(offers.monthly!)).toBe('Subscribe');
+    expect(plusPurchaseDisclosure(offers.monthly!)).toBe(
+      '$4.99 per month. Auto-renews until canceled.',
+    );
   });
 });

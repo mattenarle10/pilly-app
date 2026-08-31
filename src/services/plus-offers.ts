@@ -45,7 +45,20 @@ export function introductoryOfferLabel(offer: PlusIntroductoryOffer): string | n
   return offer.price === 0 ? `${duration} free` : `${duration} at ${offer.localizedPrice}`;
 }
 
-function subscriptionPeriodLabel(period: string, cycles: number): string | null {
+export function plusPurchaseCtaLabel(offer: PlusOffer): string {
+  const intro = offer.introductoryOffer;
+  if (!intro || intro.price !== 0) return 'Subscribe';
+  const duration = subscriptionPeriodLabel(intro.period, intro.cycles);
+  return duration ? `Start ${duration.replace(' ', '-')} free trial` : 'Start free trial';
+}
+
+export function plusPurchaseDisclosure(offer: PlusOffer): string {
+  const interval = offer.plan === 'annual' ? 'year' : 'month';
+  const prefix = offer.introductoryOffer?.price === 0 ? 'Then ' : '';
+  return `${prefix}${offer.localizedPrice} per ${interval}. Auto-renews until canceled.`;
+}
+
+export function subscriptionPeriodLabel(period: string, cycles: number): string | null {
   if (!Number.isSafeInteger(cycles) || cycles < 1) return null;
   const match = /^P(?:(\d+)Y)?(?:(\d+)M)?(?:(\d+)W)?(?:(\d+)D)?$/.exec(period);
   if (!match) return null;

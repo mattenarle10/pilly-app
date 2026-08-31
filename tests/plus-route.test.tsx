@@ -2,18 +2,23 @@ import type { PropsWithChildren } from 'react';
 import { cleanup, fireEvent, render, waitFor } from '@testing-library/react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
-import type { AccountSessionContextValue } from '@/providers/account-session-provider';
+import PlusRoute from '@/app/plus';
 import { useAccountSession } from '@/hooks/use-account-session';
 import { usePlus, type PlusState } from '@/hooks/use-plus';
+import type { AccountSessionContextValue } from '@/providers/account-session-provider';
 import type { PlusOffer } from '@/services/plus-offers';
 
-import PlusRoute from '@/app/plus';
-
 const mockPush = jest.fn();
+const mockSetParams = jest.fn();
+let mockSearchParams: Record<string, string | undefined> = {};
 
 jest.mock('expo-router', () => ({
   Stack: { Screen: () => null },
-  router: { push: (route: string) => mockPush(route) },
+  router: {
+    push: (route: unknown) => mockPush(route),
+    setParams: (params: unknown) => mockSetParams(params),
+  },
+  useLocalSearchParams: () => mockSearchParams,
 }));
 jest.mock('@/hooks/use-account-session', () => ({ useAccountSession: jest.fn() }));
 jest.mock('@/hooks/use-plus', () => ({ usePlus: jest.fn() }));
@@ -54,6 +59,20 @@ function account(overrides: Partial<AccountSessionContextValue> = {}): AccountSe
   };
 }
 
+function signedInAccount(): AccountSessionContextValue {
+  return account({
+    state: {
+      kind: 'signed-in',
+      user: {
+        id: 'account-1',
+        email: 'matt@example.com',
+        displayName: 'Matthew',
+        provider: 'apple',
+      },
+    },
+  });
+}
+
 type PlusHookValue = ReturnType<typeof usePlus>;
 
 function mutation(overrides: Record<string, unknown> = {}) {
@@ -74,13 +93,10 @@ function plusState(
     state,
     purchase: mutation() as unknown as PlusHookValue['purchase'],
     restore: mutation() as unknown as PlusHookValue['restore'],
+    manage: mutation() as unknown as PlusHookValue['manage'],
     retry: jest.fn(),
     ...overrides,
   } as PlusHookValue;
-}
-
-function plus(active: boolean): PlusHookValue {
-  return plusState({ kind: 'preview', active, canRestore: false });
 }
 
 const annualOffer: PlusOffer = {
@@ -101,189 +117,168 @@ const monthlyOffer: PlusOffer = {
   plan: 'monthly',
   packageIdentifier: '$rc_monthly',
   productIdentifier: 'dev.sidequests.pilly.plus.monthly',
-  localizedPrice: '$4.99',
-  localizedPricePerMonth: '$4.99',
+  localizedPrice: '$2.99',
+  localizedPricePerMonth: '$2.99',
   introductoryOffer: null,
 };
 
+function available(overrides: Partial<Omit<PlusHookValue, 'state'>> = {}): PlusHookValue {
+  return plusState(
+    {
+      kind: 'available',
+      active: false,
+      canRestore: true,
+      offers: { annual: annualOffer, monthly: monthlyOffer },
+    },
+    overrides,
+  );
+}
+
 describe('Pilly Plus route', () => {
+  beforeEach(() => {
+    mockSearchParams = {};
+  });
+
   afterEach(async () => {
     await cleanup();
     jest.clearAllMocks();
   });
 
-  test('explains Plus and sends local users to the account route', async () => {
-    const localAccount = account();
-    mockedUseAccountSession.mockReturnValue(localAccount);
-    mockedUsePlus.mockReturnValue(plus(false));
+  test('shows live pricing before account connection and preserves the selected plan', async () => {
+    mockedUseAccountSession.mockReturnValue(account());
+    mockedUsePlus.mockReturnValue(available());
 
     const screen = await render(<PlusRoute />, { wrapper });
 
-    expect(screen.getByText('Private backup')).toBeOnTheScreen();
-    expect(screen.getByText('Medicine photos')).toBeOnTheScreen();
+    expect(screen.getByText('Your routine follows you.')).toBeOnTheScreen();
+    expect(screen.getByText('$19.99')).toBeOnTheScreen();
+    expect(screen.getByText('1 week free')).toBeOnTheScreen();
+    expect(screen.queryByText(/connected/i)).toBeNull();
+    expect(screen.queryByText('matt@example.com')).toBeNull();
+
+    fireEvent.press(screen.getByLabelText(/Monthly, \$2\.99/));
+    await waitFor(() => {
+      expect(screen.getByLabelText(/Monthly, \$2\.99/).props.accessibilityState.checked).toBe(true);
+    });
+    fireEvent.press(screen.getByText('Continue'));
+
+    expect(mockPush).toHaveBeenCalledWith({
+      pathname: '/account',
+      params: { returnTo: 'plus', plan: 'monthly' },
+    });
+  });
+
+  test('keeps provider controls on Account when store plans are unavailable', async () => {
+    mockedUseAccountSession.mockReturnValue(account());
+    mockedUsePlus.mockReturnValue(plusState({ kind: 'preview', active: false, canRestore: false }));
+
+    const screen = await render(<PlusRoute />, { wrapper });
+
     expect(screen.getByText('Preview')).toBeOnTheScreen();
     expect(screen.getByText('Connect account')).toBeOnTheScreen();
     expect(screen.queryByLabelText('Continue with Apple')).toBeNull();
     expect(screen.queryByLabelText('Continue with Google')).toBeNull();
-    expect(screen.queryByText(/lifetime/i)).toBeNull();
-    fireEvent.press(screen.getByText('Connect account'));
-    expect(mockPush).toHaveBeenCalledWith('/account');
-    expect(localAccount.signIn).not.toHaveBeenCalled();
   });
 
-  test('requires a connected account before showing active Plus access', async () => {
-    mockedUseAccountSession.mockReturnValue(account());
-    mockedUsePlus.mockReturnValue(plus(true));
+  test('shows active access without exposing provider identity', async () => {
+    mockedUseAccountSession.mockReturnValue(signedInAccount());
+    mockedUsePlus.mockReturnValue(
+      plusState({ kind: 'active', active: true, canRestore: true, offline: false }),
+    );
 
     const screen = await render(<PlusRoute />, { wrapper });
 
-    expect(screen.getByText('Preview')).toBeOnTheScreen();
-    expect(screen.getByText('Connect account')).toBeOnTheScreen();
-    expect(screen.queryByText('Pilly Plus preview is active')).toBeNull();
+    expect(screen.getByText('Pilly Plus is active.')).toBeOnTheScreen();
+    expect(screen.getByText('Manage subscription')).toBeOnTheScreen();
+    expect(screen.getByText('Manage account')).toBeOnTheScreen();
+    expect(screen.queryByText('Apple connected')).toBeNull();
+    expect(screen.queryByText('matt@example.com')).toBeNull();
+    expect(screen.queryByText('Choose your plan')).toBeNull();
   });
 
-  test('shows simulated access after the Plus account is connected', async () => {
-    mockedUseAccountSession.mockReturnValue(
-      account({
-        state: {
-          kind: 'signed-in',
-          user: {
-            id: 'account-1',
-            email: 'matt@example.com',
-            displayName: 'Matthew',
-            provider: 'google',
-          },
-        },
-      }),
-    );
-    mockedUsePlus.mockReturnValue(plus(true));
-
-    const screen = await render(<PlusRoute />, { wrapper });
-
-    expect(screen.getByText('Pilly Plus preview is active')).toBeOnTheScreen();
-    expect(screen.getByText('matt@example.com')).toBeOnTheScreen();
-    expect(screen.getByText('Preview')).toBeOnTheScreen();
-    expect(screen.getByText('Preview access only. Cloud backup remains off.')).toBeOnTheScreen();
-    fireEvent.press(screen.getByLabelText('Pilly Plus preview is active, matt@example.com'));
-    expect(mockPush).toHaveBeenCalledWith('/account');
-  });
-
-  test('defaults to the annual offer and purchases the selected live plan', async () => {
-    mockedUseAccountSession.mockReturnValue(
-      account({
-        state: {
-          kind: 'signed-in',
-          user: {
-            id: 'account-1',
-            email: 'matt@example.com',
-            displayName: 'Matthew',
-            provider: 'apple',
-          },
-        },
-      }),
-    );
+  test('defaults to annual and purchases only after an explicit signed-in tap', async () => {
+    mockedUseAccountSession.mockReturnValue(signedInAccount());
     const purchase = mutation();
     mockedUsePlus.mockReturnValue(
-      plusState(
-        {
-          kind: 'available',
-          active: false,
-          canRestore: true,
-          offers: { annual: annualOffer, monthly: monthlyOffer },
-        },
-        { purchase: purchase as unknown as PlusHookValue['purchase'] },
-      ),
+      available({ purchase: purchase as unknown as PlusHookValue['purchase'] }),
     );
 
     const screen = await render(<PlusRoute />, { wrapper });
 
-    expect(screen.getByText('1 week free')).toBeOnTheScreen();
-    expect(screen.getByText('$19.99')).toBeOnTheScreen();
-    expect(screen.getByText('$1.66 per month')).toBeOnTheScreen();
-    expect(screen.getByLabelText('Annual, $19.99').props.accessibilityState).toEqual({
+    expect(screen.getByLabelText(/Annual, \$19\.99/).props.accessibilityState).toEqual({
       checked: true,
     });
+    expect(screen.getByText('Start 1-week free trial')).toBeOnTheScreen();
+    expect(screen.getByText('Then $19.99 per year. Auto-renews until canceled.')).toBeOnTheScreen();
 
-    fireEvent.press(screen.getByLabelText('Monthly, $4.99'));
+    fireEvent.press(screen.getByLabelText(/Monthly, \$2\.99/));
     await waitFor(() => {
-      expect(screen.getByLabelText('Monthly, $4.99').props.accessibilityState.checked).toBe(true);
+      expect(screen.getByLabelText(/Monthly, \$2\.99/).props.accessibilityState.checked).toBe(true);
     });
-    fireEvent.press(screen.getByText('Continue with Monthly'));
+    fireEvent.press(screen.getByText('Subscribe'));
 
     expect(purchase.mutateAsync).toHaveBeenCalledWith('monthly');
   });
 
-  test('restores purchases without changing free local tracking', async () => {
-    mockedUseAccountSession.mockReturnValue(
-      account({
-        state: {
-          kind: 'signed-in',
-          user: {
-            id: 'account-1',
-            email: 'matt@example.com',
-            displayName: 'Matthew',
-            provider: 'google',
-          },
-        },
-      }),
-    );
+  test('restores directly for a connected account', async () => {
+    mockedUseAccountSession.mockReturnValue(signedInAccount());
     const restore = mutation();
     mockedUsePlus.mockReturnValue(
-      plusState(
-        {
-          kind: 'available',
-          active: false,
-          canRestore: true,
-          offers: { annual: annualOffer, monthly: monthlyOffer },
-        },
-        { restore: restore as unknown as PlusHookValue['restore'] },
-      ),
+      available({ restore: restore as unknown as PlusHookValue['restore'] }),
     );
 
     const screen = await render(<PlusRoute />, { wrapper });
     fireEvent.press(screen.getByText('Restore purchases'));
 
     expect(restore.mutateAsync).toHaveBeenCalledTimes(1);
-    expect(screen.getByText('Core tracking stays free')).toBeOnTheScreen();
+    expect(screen.getByText('Pilly’s free tracker stays free.')).toBeOnTheScreen();
   });
 
-  test('keeps access unchanged and dismisses a recoverable purchase error', async () => {
-    mockedUseAccountSession.mockReturnValue(
-      account({
-        state: {
-          kind: 'signed-in',
-          user: {
-            id: 'account-1',
-            email: 'matt@example.com',
-            displayName: 'Matthew',
-            provider: 'apple',
-          },
-        },
-      }),
+  test('resumes a user-requested restore after account connection', async () => {
+    mockSearchParams = { plan: 'annual', intent: 'restore' };
+    mockedUseAccountSession.mockReturnValue(signedInAccount());
+    const restore = mutation();
+    mockedUsePlus.mockReturnValue(
+      available({ restore: restore as unknown as PlusHookValue['restore'] }),
     );
+
+    await render(<PlusRoute />, { wrapper });
+
+    await waitFor(() => expect(restore.mutateAsync).toHaveBeenCalledTimes(1));
+    expect(mockSetParams).toHaveBeenCalledWith({ intent: undefined });
+  });
+
+  test('opens native subscription management for an active subscriber', async () => {
+    mockedUseAccountSession.mockReturnValue(signedInAccount());
+    const manage = mutation({ mutateAsync: jest.fn(async () => undefined) });
+    mockedUsePlus.mockReturnValue(
+      plusState(
+        { kind: 'active', active: true, canRestore: true, offline: false },
+        { manage: manage as unknown as PlusHookValue['manage'] },
+      ),
+    );
+
+    const screen = await render(<PlusRoute />, { wrapper });
+    fireEvent.press(screen.getByText('Manage subscription'));
+
+    expect(manage.mutateAsync).toHaveBeenCalledTimes(1);
+  });
+
+  test('keeps access unchanged when purchase fails', async () => {
+    mockedUseAccountSession.mockReturnValue(signedInAccount());
     const purchase = mutation({ isError: true });
     const restore = mutation();
     mockedUsePlus.mockReturnValue(
-      plusState(
-        {
-          kind: 'available',
-          active: false,
-          canRestore: true,
-          offers: { annual: annualOffer, monthly: monthlyOffer },
-        },
-        {
-          purchase: purchase as unknown as PlusHookValue['purchase'],
-          restore: restore as unknown as PlusHookValue['restore'],
-        },
-      ),
+      available({
+        purchase: purchase as unknown as PlusHookValue['purchase'],
+        restore: restore as unknown as PlusHookValue['restore'],
+      }),
     );
 
     const screen = await render(<PlusRoute />, { wrapper });
 
     expect(screen.getByText('Purchase not completed')).toBeOnTheScreen();
-    expect(
-      screen.getByText('Your current access is unchanged. Please try again.'),
-    ).toBeOnTheScreen();
+    expect(screen.getByText('Your current access is unchanged.')).toBeOnTheScreen();
     fireEvent.press(screen.getByText('Dismiss'));
 
     expect(purchase.reset).toHaveBeenCalledTimes(1);
