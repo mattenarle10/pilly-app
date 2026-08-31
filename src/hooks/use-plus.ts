@@ -5,6 +5,7 @@ import {
   getPlusPreviewMode,
   isPlusPurchasesSupported,
   loadPlusStoreSnapshot,
+  managePlusSubscription,
   purchasePlus,
   restorePlus,
   type PlusActionResult,
@@ -33,12 +34,17 @@ export type PlusState =
   | { kind: 'unavailable'; active: false; canRestore: boolean; reason: 'gate' | 'store' }
   | { kind: 'error'; active: false; canRestore: true };
 
-export function usePlus() {
+type UsePlusOptions = {
+  loadAnonymousOffers?: boolean;
+};
+
+export function usePlus({ loadAnonymousOffers = false }: UsePlusOptions = {}) {
   const account = useAccountSession();
   const repository = useRepository();
   const queryClient = useQueryClient();
   const previewMode = getPlusPreviewMode();
   const accountId = account.state.kind === 'signed-in' ? account.state.user.id : null;
+  const shouldLoadStore = previewMode === 'store' && (accountId !== null || loadAnonymousOffers);
   const entitlementSettingKey = accountId ? plusEntitlementSettingKey(accountId) : null;
   const cachedEntitlement = useQuery({
     queryKey: queryKeys.setting(entitlementSettingKey ?? 'plusEntitled:local'),
@@ -50,15 +56,14 @@ export function usePlus() {
   const store = useQuery({
     queryKey: queryKeys.plus.store(accountId ?? 'local'),
     queryFn: async () => {
-      if (!accountId || !entitlementSettingKey) return { kind: 'unconfigured' } as const;
-      const snapshot = await loadPlusStoreSnapshot(accountId);
-      if (snapshot.kind === 'ready') {
+      const snapshot = await loadPlusStoreSnapshot(accountId ?? undefined);
+      if (snapshot.kind === 'ready' && entitlementSettingKey) {
         await repository.setSetting(entitlementSettingKey, `${snapshot.active}`);
         queryClient.setQueryData(queryKeys.setting(entitlementSettingKey), `${snapshot.active}`);
       }
       return snapshot;
     },
-    enabled: previewMode === 'store' && accountId !== null,
+    enabled: shouldLoadStore,
     networkMode: 'always',
   });
 
@@ -82,15 +87,21 @@ export function usePlus() {
       return acceptResult(await restorePlus(accountId));
     },
   });
+  const manage = useMutation({
+    mutationFn: async () => {
+      if (!accountId) throw new Error('Sign in before managing Pilly Plus.');
+      await managePlusSubscription(accountId);
+    },
+  });
   const cachedActive =
     accountId !== null && isPlusPurchasesSupported() && cachedEntitlement.data === 'true';
 
   let state: PlusState;
   if (previewMode !== 'store') {
     state = { kind: 'preview', active: previewMode === 'active', canRestore: false };
-  } else if (!accountId) {
+  } else if (!accountId && !loadAnonymousOffers) {
     state = { kind: 'unavailable', active: false, canRestore: false, reason: 'store' };
-  } else if (cachedEntitlement.isPending) {
+  } else if (accountId && cachedEntitlement.isPending) {
     state = { kind: 'loading', active: false, canRestore: false };
   } else if (store.isPending && cachedActive) {
     state = { kind: 'active', active: true, canRestore: false, offline: true };
@@ -102,7 +113,7 @@ export function usePlus() {
       : { kind: 'error', active: false, canRestore: true };
   } else if (store.data?.kind === 'unconfigured' && cachedActive) {
     state = { kind: 'active', active: true, canRestore: false, offline: true };
-  } else if (store.data?.kind === 'ready' && store.data.active) {
+  } else if (accountId && store.data?.kind === 'ready' && store.data.active) {
     state = { kind: 'active', active: true, canRestore: true, offline: false };
   } else if (
     store.data?.kind === 'ready' &&
@@ -125,7 +136,12 @@ export function usePlus() {
     state,
     purchase,
     restore,
+    manage,
     retry: () =>
-      accountId ? Promise.all([cachedEntitlement.refetch(), store.refetch()]) : Promise.resolve([]),
+      accountId
+        ? Promise.all([cachedEntitlement.refetch(), store.refetch()])
+        : shouldLoadStore
+          ? Promise.all([store.refetch()])
+          : Promise.resolve([]),
   };
 }

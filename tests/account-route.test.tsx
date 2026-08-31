@@ -11,14 +11,16 @@ import AccountRoute from '@/app/account';
 const mockBack = jest.fn();
 const mockReplace = jest.fn();
 const mockCanGoBack = jest.fn();
+let mockSearchParams: Record<string, string | undefined> = {};
 
 jest.mock('expo-router', () => ({
   Stack: { Screen: () => null },
   router: {
     back: () => mockBack(),
     canGoBack: () => mockCanGoBack(),
-    replace: (route: string) => mockReplace(route),
+    replace: (route: unknown) => mockReplace(route),
   },
+  useLocalSearchParams: () => mockSearchParams,
 }));
 jest.mock('@/hooks/use-account-session', () => ({ useAccountSession: jest.fn() }));
 jest.mock('@/hooks/use-cloud-sync', () => ({ useCloudSync: jest.fn() }));
@@ -70,6 +72,7 @@ function localAccount(
 
 describe('account route', () => {
   beforeEach(() => {
+    mockSearchParams = {};
     mockedUseCloudSync.mockReturnValue({
       configured: true,
       status: { kind: 'local' },
@@ -108,6 +111,22 @@ describe('account route', () => {
 
     fireEvent.press(screen.getByText('Not now'));
     expect(mockBack).toHaveBeenCalledTimes(1);
+  });
+
+  test('returns to Plus with the selected plan after successful connection', async () => {
+    mockSearchParams = { returnTo: 'plus', plan: 'monthly' };
+    const account = localAccount();
+    mockedUseAccountSession.mockReturnValue(account);
+    const screen = await render(<AccountRoute />, { wrapper });
+
+    await act(async () => {
+      fireEvent.press(screen.getByLabelText('Continue with Apple'));
+    });
+
+    expect(mockReplace).toHaveBeenCalledWith({
+      pathname: '/plus',
+      params: { plan: 'monthly' },
+    });
   });
 
   test('shows the connected identity and supports sign out', async () => {

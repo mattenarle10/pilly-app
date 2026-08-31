@@ -9,6 +9,7 @@ import {
   getPlusPreviewMode,
   isPlusPurchasesSupported,
   loadPlusStoreSnapshot,
+  managePlusSubscription,
   purchasePlus,
   restorePlus,
 } from '@/services/purchases';
@@ -27,6 +28,7 @@ const mockedPreviewMode = jest.mocked(getPlusPreviewMode);
 const mockedPurchasesEnabled = jest.mocked(arePlusPurchasesEnabled);
 const mockedPurchasesSupported = jest.mocked(isPlusPurchasesSupported);
 const mockedLoadSnapshot = jest.mocked(loadPlusStoreSnapshot);
+const mockedManageSubscription = jest.mocked(managePlusSubscription);
 const mockedPurchase = jest.mocked(purchasePlus);
 const mockedRestore = jest.mocked(restorePlus);
 const queryClients = new Set<QueryClient>();
@@ -51,7 +53,10 @@ function signedInAccount(): AccountSessionContextValue {
   };
 }
 
-async function setup(cachedEntitlement: string | null = null) {
+async function setup(
+  cachedEntitlement: string | null = null,
+  options?: Parameters<typeof usePlus>[0],
+) {
   const repository = {
     getSetting: jest.fn().mockResolvedValue(cachedEntitlement),
     setSetting: jest.fn().mockResolvedValue(undefined),
@@ -68,7 +73,7 @@ async function setup(cachedEntitlement: string | null = null) {
     <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
   );
 
-  return { repository, queryClient, ...(await renderHook(() => usePlus(), { wrapper })) };
+  return { repository, queryClient, ...(await renderHook(() => usePlus(options), { wrapper })) };
 }
 
 describe('usePlus', () => {
@@ -226,6 +231,35 @@ describe('usePlus', () => {
     expect(repository.getSetting).not.toHaveBeenCalled();
   });
 
+  test('loads anonymous offers without inheriting anonymous paid access', async () => {
+    mockedUseAccountSession.mockReturnValue({
+      ...signedInAccount(),
+      state: { kind: 'local', user: null },
+    });
+    mockedPurchasesEnabled.mockReturnValue(true);
+    mockedLoadSnapshot.mockResolvedValue({
+      kind: 'ready',
+      active: true,
+      offers: {
+        annual: {
+          plan: 'annual',
+          packageIdentifier: '$rc_annual',
+          productIdentifier: 'pilly_plus_annual',
+          localizedPrice: '$19.99',
+          localizedPricePerMonth: '$1.66',
+          introductoryOffer: null,
+        },
+        monthly: null,
+      },
+    });
+    const { repository, result } = await setup('true', { loadAnonymousOffers: true });
+
+    await waitFor(() => expect(result.current.state.kind).toBe('available'));
+    expect(mockedLoadSnapshot).toHaveBeenCalledWith(undefined);
+    expect(repository.getSetting).not.toHaveBeenCalled();
+    expect(result.current.state.active).toBe(false);
+  });
+
   test('does not turn a cancelled checkout into an error or entitlement', async () => {
     mockedPurchasesEnabled.mockReturnValue(true);
     mockedLoadSnapshot.mockResolvedValue({
@@ -273,5 +307,17 @@ describe('usePlus', () => {
 
     await expect(result.current.restore.mutateAsync()).rejects.toThrow('restore unavailable');
     expect(repository.setSetting).not.toHaveBeenCalled();
+  });
+
+  test('opens native subscription management for the connected account', async () => {
+    mockedPreviewMode.mockReturnValue('active');
+    mockedManageSubscription.mockResolvedValue(undefined);
+    const { result } = await setup();
+
+    await act(async () => {
+      await result.current.manage.mutateAsync();
+    });
+
+    expect(mockedManageSubscription).toHaveBeenCalledWith('cognito-sub-1');
   });
 });

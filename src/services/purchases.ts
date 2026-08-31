@@ -74,7 +74,7 @@ export function isPlusPurchasesSupported(): boolean {
   );
 }
 
-export async function loadPlusStoreSnapshot(appUserId: string): Promise<PlusStoreSnapshot> {
+export async function loadPlusStoreSnapshot(appUserId?: string): Promise<PlusStoreSnapshot> {
   const purchases = await purchasesModule(appUserId);
   if (!purchases) return { kind: 'unconfigured' };
 
@@ -141,6 +141,12 @@ export async function restorePlus(appUserId: string): Promise<PlusActionResult> 
   const purchases = await purchasesModule(appUserId);
   if (!purchases) throw new Error('Store setup is not available in this build.');
   return { kind: hasPlus(await purchases.restorePurchases()) ? 'active' : 'inactive' };
+}
+
+export async function managePlusSubscription(appUserId: string): Promise<void> {
+  const purchases = await purchasesModule(appUserId);
+  if (!purchases) throw new Error('Subscription management is not available in this build.');
+  await purchases.showManageSubscriptions();
 }
 
 export async function subscribeToPlusEntitlement(

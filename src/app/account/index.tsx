@@ -1,6 +1,8 @@
 import { ActivityIndicator, StyleSheet, View } from 'react-native';
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 
+import type { AccountProvider } from '@/models/account';
+import type { PlusPlan } from '@/services/plus-offers';
 import { useAccountSession } from '@/hooks/use-account-session';
 import { useCloudSync } from '@/hooks/use-cloud-sync';
 import { AccountProviderActions } from '@/ui/components/account-provider-actions';
@@ -14,10 +16,29 @@ import { colors, spacing } from '@/ui/tokens';
 export default function AccountRoute() {
   const account = useAccountSession();
   const cloud = useCloudSync();
+  const params = useLocalSearchParams<{
+    returnTo?: string | string[];
+    plan?: string | string[];
+    intent?: string | string[];
+  }>();
+  const returnsToPlus = firstParam(params.returnTo) === 'plus';
+  const plan = plusPlan(firstParam(params.plan));
+  const intent = firstParam(params.intent) === 'restore' ? 'restore' : null;
 
   const leaveAccount = () => {
     if (router.canGoBack()) router.back();
     else router.replace('/profile');
+  };
+  const connect = async (provider: AccountProvider) => {
+    const connected = await account.signIn(provider);
+    if (!connected || !returnsToPlus) return;
+    router.replace({
+      pathname: '/plus',
+      params: {
+        ...(plan ? { plan } : {}),
+        ...(intent ? { intent } : {}),
+      },
+    });
   };
 
   return (
@@ -88,7 +109,7 @@ export default function AccountRoute() {
               configured={account.configured}
               busy={account.busy}
               signingInWith={account.signingInWith}
-              onSignIn={(provider) => void account.signIn(provider)}
+              onSignIn={(provider) => void connect(provider)}
             />
             <PillyText role="caption" muted>
               Medicine data stays local.
@@ -107,6 +128,14 @@ export default function AccountRoute() {
       )}
     </Screen>
   );
+}
+
+function firstParam(value: string | string[] | undefined): string | undefined {
+  return Array.isArray(value) ? value[0] : value;
+}
+
+function plusPlan(value: string | undefined): PlusPlan | null {
+  return value === 'annual' || value === 'monthly' ? value : null;
 }
 
 function CloudSetup({ cloud }: { cloud: ReturnType<typeof useCloudSync> }) {
