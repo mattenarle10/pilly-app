@@ -1,6 +1,6 @@
 import type { SQLiteDatabase } from 'expo-sqlite';
 
-const databaseVersion = 7;
+const databaseVersion = 8;
 
 export async function migrateDatabase(database: SQLiteDatabase): Promise<void> {
   await database.execAsync('PRAGMA journal_mode = WAL; PRAGMA foreign_keys = ON;');
@@ -179,6 +179,25 @@ export async function migrateDatabase(database: SQLiteDatabase): Promise<void> {
             'blockedAccount'
           )),
         last_successful_sync_at TEXT,
+        last_error TEXT
+      );
+    `);
+  }
+  if (currentVersion < 8) {
+    await database.execAsync(`
+      CREATE TABLE IF NOT EXISTS medication_images (
+        medication_id TEXT PRIMARY KEY NOT NULL
+          REFERENCES medications(id) ON DELETE CASCADE,
+        image_id TEXT NOT NULL,
+        cache_key TEXT NOT NULL,
+        sha256 TEXT NOT NULL,
+        byte_count INTEGER NOT NULL CHECK(byte_count > 0 AND byte_count <= 1048576),
+        width INTEGER NOT NULL CHECK(width > 0 AND width <= 1024),
+        height INTEGER NOT NULL CHECK(height > 0 AND height <= 1024),
+        remote_version TEXT,
+        transfer_state TEXT NOT NULL
+          CHECK(transfer_state IN ('pendingUpload', 'uploaded', 'failed', 'pendingDelete')),
+        updated_at TEXT NOT NULL,
         last_error TEXT
       );
     `);

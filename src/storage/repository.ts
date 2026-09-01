@@ -8,6 +8,7 @@ import {
   cloudState,
   doseEvents,
   doseRecords,
+  medicationImages,
   medications,
   schedules,
   settings,
@@ -41,6 +42,11 @@ import type {
 import { supplyAdjustment } from '@/models/supply';
 import { profileDisplayName, profileSettingKeys } from '@/models/profile';
 import { syncMutationSchema, type SyncMutation } from '@/models/sync';
+import {
+  medicationImageSchema,
+  type MedicationImage,
+  type MedicationImageTransferState,
+} from '@/models/medication-image';
 
 export type CreatedMedication = {
   medicationId: string;
@@ -193,6 +199,71 @@ export class PillyRepository {
       medication: medicationSchema.parse(medication),
       schedules: medicationSchedules.map((schedule) => scheduleSchema.parse(schedule)),
     };
+  }
+
+  async getMedicationImage(medicationId: string): Promise<MedicationImage | null> {
+    const row = this.db
+      .select()
+      .from(medicationImages)
+      .where(eq(medicationImages.medicationId, medicationId))
+      .get();
+    return row ? medicationImageSchema.parse(row) : null;
+  }
+
+  async saveMedicationImage(image: MedicationImage): Promise<void> {
+    const validated = medicationImageSchema.parse(image);
+    this.db
+      .insert(medicationImages)
+      .values(validated)
+      .onConflictDoUpdate({
+        target: medicationImages.medicationId,
+        set: {
+          imageId: validated.imageId,
+          cacheKey: validated.cacheKey,
+          sha256: validated.sha256,
+          byteCount: validated.byteCount,
+          width: validated.width,
+          height: validated.height,
+          remoteVersion: validated.remoteVersion,
+          transferState: validated.transferState,
+          updatedAt: validated.updatedAt,
+          lastError: validated.lastError,
+        },
+      })
+      .run();
+  }
+
+  async updateMedicationImageTransfer(input: {
+    medicationId: string;
+    state: MedicationImageTransferState;
+    remoteVersion?: string | null;
+    lastError?: string | null;
+  }): Promise<void> {
+    this.db
+      .update(medicationImages)
+      .set({
+        transferState: input.state,
+        remoteVersion: input.remoteVersion,
+        lastError: input.lastError ?? null,
+        updatedAt: new Date().toISOString(),
+      })
+      .where(eq(medicationImages.medicationId, input.medicationId))
+      .run();
+  }
+
+  async removeMedicationImage(medicationId: string): Promise<MedicationImage | null> {
+    const image = await this.getMedicationImage(medicationId);
+    if (!image) return null;
+    this.db.delete(medicationImages).where(eq(medicationImages.medicationId, medicationId)).run();
+    return image;
+  }
+
+  async listMedicationImages(): Promise<MedicationImage[]> {
+    return this.db
+      .select()
+      .from(medicationImages)
+      .all()
+      .map((row) => medicationImageSchema.parse(row));
   }
 
   async updateMedication(

@@ -15,6 +15,24 @@ export const medications = sqliteTable('medications', {
   timeZoneIdentifier: text('time_zone_identifier').notNull(),
 });
 
+export const medicationImages = sqliteTable('medication_images', {
+  medicationId: text('medication_id')
+    .primaryKey()
+    .references(() => medications.id, { onDelete: 'cascade' }),
+  imageId: text('image_id').notNull(),
+  cacheKey: text('cache_key').notNull(),
+  sha256: text('sha256').notNull(),
+  byteCount: integer('byte_count').notNull(),
+  width: integer('width').notNull(),
+  height: integer('height').notNull(),
+  remoteVersion: text('remote_version'),
+  transferState: text('transfer_state', {
+    enum: ['pendingUpload', 'uploaded', 'failed', 'pendingDelete'],
+  }).notNull(),
+  updatedAt: text('updated_at').notNull(),
+  lastError: text('last_error'),
+});
+
 export const schedules = sqliteTable('schedules', {
   id: text('id').primaryKey(),
   medicationId: text('medication_id')
