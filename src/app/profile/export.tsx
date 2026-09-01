@@ -65,7 +65,9 @@ export default function ExportDataRoute() {
           headerStyle: { backgroundColor: colors.background },
           headerTitleAlign: 'center',
           headerTitleStyle: { color: colors.textPrimary, fontWeight: '600' },
-          headerLeft: () => <PillyIconButton icon="back" label="Back" onPress={leave} />,
+          headerLeft: () => (
+            <PillyIconButton icon="back" label="Back" testID="BackButton" onPress={leave} />
+          ),
           title: 'Export data',
         }}
       />

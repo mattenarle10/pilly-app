@@ -11,6 +11,8 @@ const standardHeaderOptions = {
   headerShown: true,
   headerBackButtonDisplayMode: 'minimal' as const,
   headerBackButtonMenuEnabled: false,
+  headerBackAccessibilityLabel: 'Back',
+  headerBackTestID: 'BackButton',
   headerShadowVisible: false,
   headerStyle: { backgroundColor: colors.background },
   headerTintColor: colors.textPrimary,
