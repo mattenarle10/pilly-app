@@ -3,8 +3,11 @@ name: Edit archive restore and delete a medicine
 ---
 - launchApp:
     clearState: true
+    clearKeychain: true
     permissions:
       notifications: allow
+- openLink: 'pilly-app:///'
+- runFlow: ../subflows/accept-app-link.yaml
 - runFlow: ../subflows/create-medicine.yaml
 - tapOn: 'Medicines'
 - tapOn: 'Open Test Medicine'

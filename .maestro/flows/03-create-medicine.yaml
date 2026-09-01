@@ -3,8 +3,11 @@ name: Create medicine with appearance and reminder
 ---
 - launchApp:
     clearState: true
+    clearKeychain: true
     permissions:
       notifications: allow
+- openLink: 'pilly-app:///'
+- runFlow: ../subflows/accept-app-link.yaml
 - runFlow: ../subflows/create-medicine.yaml
 - tapOn: 'Medicines'
 - assertVisible: 'Open Test Medicine'

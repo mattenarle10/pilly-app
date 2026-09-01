@@ -3,6 +3,9 @@ name: Empty onboarding and primary navigation
 ---
 - launchApp:
     clearState: true
+    clearKeychain: true
+- openLink: 'pilly-app:///'
+- runFlow: ../subflows/accept-app-link.yaml
 - assertVisible: 'What’s next. What’s left.'
 - runFlow: ../subflows/finish-empty-onboarding.yaml
 - tapOn: 'Week'
@@ -13,5 +16,6 @@ name: Empty onboarding and primary navigation
 - tapOn: 'Profile'
 - assertVisible: 'Profile'
 - assertVisible: 'Your data'
-- tapOn: 'Back'
+- tapOn:
+    id: 'BackButton'
 - assertVisible: 'Today'

@@ -3,8 +3,11 @@ name: Start and adjust medicine supply
 ---
 - launchApp:
     clearState: true
+    clearKeychain: true
     permissions:
       notifications: allow
+- openLink: 'pilly-app:///'
+- runFlow: ../subflows/accept-app-link.yaml
 - runFlow: ../subflows/create-medicine.yaml
 - tapOn: 'Open details for Test Medicine'
 - assertVisible: 'Not tracked'

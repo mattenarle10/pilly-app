@@ -3,6 +3,9 @@ name: Recover from an incomplete medicine form
 ---
 - launchApp:
     clearState: true
+    clearKeychain: true
+- openLink: 'pilly-app:///'
+- runFlow: ../subflows/accept-app-link.yaml
 - retry:
     maxRetries: 3
     commands:

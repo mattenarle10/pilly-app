@@ -3,13 +3,17 @@ name: Optional Plus branch and profile name
 ---
 - launchApp:
     clearState: true
+    clearKeychain: true
+- openLink: 'pilly-app:///'
+- runFlow: ../subflows/accept-app-link.yaml
 - runFlow:
     when:
       visible: 'See Pilly Plus'
     commands:
       - tapOn: 'See Pilly Plus'
-      - assertVisible: 'Clear records, ready to share.'
-      - tapOn: 'Back'
+      - assertVisible: 'Your routine follows you.'
+      - tapOn:
+          id: 'BackButton'
       - assertVisible: 'What’s next. What’s left.'
 - retry:
     maxRetries: 3

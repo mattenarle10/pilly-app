@@ -3,8 +3,11 @@ name: Explain a denied reminder permission
 ---
 - launchApp:
     clearState: true
+    clearKeychain: true
     permissions:
       notifications: deny
+- openLink: 'pilly-app:///'
+- runFlow: ../subflows/accept-app-link.yaml
 - runFlow: ../subflows/create-medicine.yaml
 - assertVisible: 'Reminder is off'
 - assertVisible: 'Allow notifications in iPhone Settings.'
