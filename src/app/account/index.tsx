@@ -1,4 +1,4 @@
-import { ActivityIndicator, StyleSheet, View } from 'react-native';
+import { ActivityIndicator, Alert, StyleSheet, View } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 
 import type { AccountProvider } from '@/models/account';
@@ -40,6 +40,24 @@ export default function AccountRoute() {
       },
     });
   };
+  const confirmAccountDeletion = () => {
+    Alert.alert(
+      'Delete Pilly Plus account?',
+      'This deletes your cloud backup and private medicine photos. Medicines stay on this iPhone. Your App Store subscription is managed separately.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete account',
+          style: 'destructive',
+          onPress: () => {
+            void account.deleteAccount().then((deleted) => {
+              if (deleted) router.replace('/profile');
+            });
+          },
+        },
+      ],
+    );
+  };
 
   return (
     <Screen
@@ -79,6 +97,12 @@ export default function AccountRoute() {
           </View>
           {account.error === 'sign-out' ? (
             <PillyBanner kind="error" message="Couldn’t securely sign out. Try again." compact />
+          ) : account.error === 'delete' ? (
+            <PillyBanner
+              kind="error"
+              message="Account not deleted. Your medicines are unchanged. Try again."
+              compact
+            />
           ) : null}
           <PillyButton
             label="Sign out"
@@ -86,6 +110,15 @@ export default function AccountRoute() {
             size="medium"
             loading={account.busy}
             onPress={() => void account.signOut()}
+            fullWidth
+          />
+          <PillyButton
+            label="Delete Pilly Plus account"
+            variant="danger"
+            size="medium"
+            disabled={account.busy}
+            accessibilityHint="Deletes cloud backup and account data but keeps medicines on this iPhone"
+            onPress={confirmAccountDeletion}
             fullWidth
           />
         </View>

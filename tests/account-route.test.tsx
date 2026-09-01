@@ -1,5 +1,6 @@
 import type { PropsWithChildren } from 'react';
 import { act, cleanup, fireEvent, render } from '@testing-library/react-native';
+import { Alert } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import type { AccountSessionContextValue } from '@/providers/account-session-provider';
@@ -66,6 +67,7 @@ function localAccount(
     error: null,
     signIn: jest.fn(async () => true),
     signOut: jest.fn(async () => undefined),
+    deleteAccount: jest.fn(async () => true),
     ...overrides,
   };
 }
@@ -151,6 +153,37 @@ describe('account route', () => {
     expect(screen.getByText('account-1')).toBeOnTheScreen();
     fireEvent.press(screen.getByText('Sign out'));
     expect(account.signOut).toHaveBeenCalledTimes(1);
+  });
+
+  test('deletes only after explaining the local-data and subscription boundaries', async () => {
+    const account = localAccount({
+      state: {
+        kind: 'signed-in',
+        user: {
+          id: 'account-1',
+          email: 'matt@example.com',
+          displayName: 'Matthew',
+          provider: 'apple',
+        },
+      },
+    });
+    mockedUseAccountSession.mockReturnValue(account);
+    const alert = jest.spyOn(Alert, 'alert').mockImplementation(() => undefined);
+    const screen = await render(<AccountRoute />, { wrapper });
+
+    fireEvent.press(screen.getByText('Delete Pilly Plus account'));
+    expect(alert).toHaveBeenCalledWith(
+      'Delete Pilly Plus account?',
+      expect.stringMatching(/Medicines stay on this iPhone.*subscription is managed separately/),
+      expect.any(Array),
+    );
+
+    expect(alert.mock.calls[0]?.[2]).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ text: 'Cancel', style: 'cancel' }),
+        expect.objectContaining({ text: 'Delete account', style: 'destructive' }),
+      ]),
+    );
   });
 
   test('requires an explicit first backup for existing local data', async () => {
