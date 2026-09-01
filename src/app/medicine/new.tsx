@@ -7,11 +7,13 @@ import { usePreventRemove } from 'expo-router/react-navigation';
 import Storage from 'expo-sqlite/kv-store';
 
 import { AppearanceStep } from '@/ui/components/medicine-appearance-field';
+import { MedicinePhotoField } from '@/ui/components/medicine-photo-field';
 import { DetailsStep, NameStep, ScheduleStep } from '@/ui/components/medicine-form-sections';
 import { MedicineFormShell } from '@/ui/components/medicine-form-shell';
 import { PillyBanner } from '@/ui/components/pilly-banner';
 import { PillyModal } from '@/ui/components/pilly-modal';
 import { useMedicationValidation } from '@/hooks/use-medication-validation';
+import { useMedicinePhoto } from '@/hooks/use-medicine-photo';
 import { useRepository } from '@/hooks/use-repository';
 import {
   assertMedicationDraft,
@@ -30,6 +32,7 @@ export default function NewMedicationRoute() {
   const repository = useRepository();
   const queryClient = useQueryClient();
   const validation = useMedicationValidation();
+  const photo = useMedicinePhoto();
   const formScroll = useRef<ScrollView>(null);
   const [created, setCreated] = useState(false);
   const [pendingNavigation, setPendingNavigation] = useState<(() => void) | null>(null);
@@ -43,7 +46,7 @@ export default function NewMedicationRoute() {
     networkMode: 'always',
     mutationFn: async (value: MedicationDraft) => {
       assertMedicationDraft(value);
-      await repository.createMedication({
+      const createdMedication = await repository.createMedication({
         name: value.name.trim(),
         instructions: value.instructions.trim(),
         supplyCount: supplyValue(value.supply),
@@ -53,6 +56,7 @@ export default function NewMedicationRoute() {
         appearanceSecondaryColor: value.appearanceSecondaryColor,
         schedules: scheduleConfigurationFromDraft(value),
       });
+      await photo.attachToMedication(createdMedication.medicationId);
       return { reminderNotice: await reconcileLocalReminders(repository) };
     },
     onSuccess: async () => {
@@ -168,6 +172,15 @@ export default function NewMedicationRoute() {
         onShapeChange={(shape) => form.setFieldValue('appearanceShape', shape)}
         onColorChange={(color) => form.setFieldValue('appearanceColor', color)}
         onSecondaryColorChange={(color) => form.setFieldValue('appearanceSecondaryColor', color)}
+      />
+      <MedicinePhotoField
+        uri={photo.uri}
+        available={photo.available}
+        busy={photo.isBusy}
+        error={photo.error}
+        onSelect={() => void photo.select()}
+        onRemove={() => void photo.remove()}
+        onOpenPlus={() => router.push('/plus')}
       />
       <ScheduleStep
         selectedDays={values.selectedDays}

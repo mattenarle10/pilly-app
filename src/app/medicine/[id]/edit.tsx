@@ -5,6 +5,7 @@ import { useForm, useSelector, type AnyFormApi } from '@tanstack/react-form';
 
 import type { MedicationDetail } from '@/models/medication';
 import { AppearanceStep } from '@/ui/components/medicine-appearance-field';
+import { MedicinePhotoField } from '@/ui/components/medicine-photo-field';
 import { DetailsStep, NameStep, ScheduleStep } from '@/ui/components/medicine-form-sections';
 import { MedicineFormShell } from '@/ui/components/medicine-form-shell';
 import { EmptyState } from '@/ui/components/empty-state';
@@ -13,6 +14,7 @@ import { PillyModal } from '@/ui/components/pilly-modal';
 import { Screen } from '@/ui/components/screen';
 import { schedulesMatch } from '@/models/schedule';
 import { useEditMedicine } from '@/hooks/use-edit-medicine';
+import { useMedicinePhoto } from '@/hooks/use-medicine-photo';
 import {
   medicationDraftsMatch,
   scheduleConfigurationFromDraft,
@@ -26,6 +28,7 @@ import { friendlySaveError } from '@/models/medicine-form-errors';
 export default function EditMedicineRoute() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const edit = useEditMedicine(id);
+  const photo = useMedicinePhoto(id);
 
   if (edit.query.isLoading) return <EditState message="Loading medicine…" />;
   if (edit.query.isError)
@@ -38,15 +41,19 @@ export default function EditMedicineRoute() {
     );
   if (!edit.query.data) return <EditState kind="missing" message="Medicine not found" />;
 
-  return <EditMedicineForm detail={edit.query.data} saveMutation={edit.saveMutation} />;
+  return (
+    <EditMedicineForm detail={edit.query.data} saveMutation={edit.saveMutation} photo={photo} />
+  );
 }
 
 function EditMedicineForm({
   detail,
   saveMutation,
+  photo,
 }: {
   detail: MedicationDetail;
   saveMutation: ReturnType<typeof useEditMedicine>['saveMutation'];
+  photo: ReturnType<typeof useMedicinePhoto>;
 }) {
   const navigation = useNavigation();
   const schedule = detail.schedules[0];
@@ -133,6 +140,16 @@ function EditMedicineForm({
       ) : null}
       <EditNameSection form={form} issue={issue} setFieldValue={setFieldValue} />
       <EditAppearanceSection form={form} setFieldValue={setFieldValue} />
+      <MedicinePhotoField
+        uri={photo.uri}
+        available={photo.available}
+        busy={photo.isBusy}
+        error={photo.error}
+        onSelect={() => void photo.select()}
+        onRemove={() => void photo.remove()}
+        onRetry={() => void photo.retry()}
+        onOpenPlus={() => router.push('/plus')}
+      />
       <EditScheduleSection form={form} issue={issue} setFieldValue={setFieldValue} />
       <EditDetailsSection form={form} issue={issue} setFieldValue={setFieldValue} />
       <ScheduleChangedBanner form={form} initialSchedules={detail.schedules} />

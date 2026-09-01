@@ -1,5 +1,6 @@
 export const queryKeys = {
   medication: (id: string) => ['medication', id] as const,
+  medicationImage: (id: string) => ['medication-image', id] as const,
   medications: {
     root: ['medications'] as const,
     all: ['medications', 'all'] as const,

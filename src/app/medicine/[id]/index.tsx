@@ -1,4 +1,4 @@
-import { Pressable, StyleSheet, View } from 'react-native';
+import { Image, Pressable, StyleSheet, View } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import Animated, { FadeInDown, ReduceMotion } from 'react-native-reanimated';
 
@@ -17,6 +17,7 @@ import { colors, spacing } from '@/ui/tokens';
 import { formatTime } from '@/models/schedule';
 import { estimateSupply } from '@/models/supply';
 import { useMedicineDetail } from '@/hooks/use-medicine-detail';
+import { useMedicinePhoto } from '@/hooks/use-medicine-photo';
 
 const dayNames = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 const scheduleDays = (mask: number) =>
@@ -34,6 +35,7 @@ const enter = (delay: number) =>
 export default function MedicineDetailRoute() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const detail = useMedicineDetail(id);
+  const photo = useMedicinePhoto(id);
   const { query } = detail;
   if (query.isLoading) return <DetailState message="Loading medicine…" />;
   if (query.isError)
@@ -73,12 +75,21 @@ export default function MedicineDetailRoute() {
       </View>
 
       <Animated.View entering={enter(0)} style={styles.medicineHero}>
-        <MedicationAppearance
-          shape={medication.appearanceShape}
-          size={medication.appearanceSize}
-          color={medication.appearanceColor}
-          secondaryColor={medication.appearanceSecondaryColor}
-        />
+        {photo.available && photo.uri ? (
+          <Image
+            source={{ uri: photo.uri }}
+            accessibilityLabel={`${medication.name} recognition photo`}
+            resizeMode="cover"
+            style={styles.medicinePhoto}
+          />
+        ) : (
+          <MedicationAppearance
+            shape={medication.appearanceShape}
+            size={medication.appearanceSize}
+            color={medication.appearanceColor}
+            secondaryColor={medication.appearanceSecondaryColor}
+          />
+        )}
         <View style={styles.medicineCopy}>
           <PillyText role="large-title" accessibilityRole="header">
             {medication.name}
@@ -301,6 +312,7 @@ const styles = StyleSheet.create({
     alignItems: 'flex-start',
     gap: spacing.lg,
   },
+  medicinePhoto: { width: 76, height: 76, borderRadius: 20 },
   medicineCopy: { flex: 1, gap: spacing.xs, paddingTop: spacing.xs },
   appearanceLabel: { textTransform: 'capitalize' },
   section: { gap: spacing.sm },
