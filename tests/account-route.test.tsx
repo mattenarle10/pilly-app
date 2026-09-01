@@ -151,7 +151,15 @@ describe('account route', () => {
     expect(screen.getByText('matt@example.com')).toBeOnTheScreen();
     expect(screen.getByLabelText('Apple connected, matt@example.com')).toBeOnTheScreen();
     expect(screen.getByText('account-1')).toBeOnTheScreen();
+    const alert = jest.spyOn(Alert, 'alert').mockImplementation(() => undefined);
     fireEvent.press(screen.getByText('Sign out'));
+    expect(alert).toHaveBeenCalledWith(
+      'Sign out of Pilly Plus?',
+      expect.stringMatching(/removed from this iPhone.*subscription stay active/),
+      expect.any(Array),
+    );
+    const signOutAction = alert.mock.calls[0]?.[2]?.find((action) => action.text === 'Sign out');
+    signOutAction?.onPress?.();
     expect(account.signOut).toHaveBeenCalledTimes(1);
   });
 

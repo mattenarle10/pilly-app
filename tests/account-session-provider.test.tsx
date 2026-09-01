@@ -16,6 +16,7 @@ import {
 } from '@/services/medicine-image-cache';
 
 const mockClearMedicationImages = jest.fn();
+const mockClearTrackedData = jest.fn();
 const mockDeleteSetting = jest.fn();
 const mockClearAccount = jest.fn();
 
@@ -31,9 +32,11 @@ jest.mock('@/services/medicine-image-cache', () => ({
   deleteCachedMedicinePhoto: jest.fn(),
   purgeMedicinePhotoCacheForAccount: jest.fn(),
 }));
+jest.mock('@/services/notifications', () => ({ reconcileLocalReminders: jest.fn() }));
 jest.mock('@/storage/repository', () => ({
   PillyRepository: jest.fn().mockImplementation(() => ({
     clearMedicationImages: mockClearMedicationImages,
+    clearTrackedData: mockClearTrackedData,
     deleteSetting: mockDeleteSetting,
   })),
 }));
@@ -78,6 +81,9 @@ describe('account session provider', () => {
     mockClearMedicationImages.mockResolvedValue([
       { cacheKey: 'accounts/account-1/medicines/medicine-1/image-1.jpg' },
     ]);
+    mockClearTrackedData.mockResolvedValue([
+      { cacheKey: 'accounts/account-1/medicines/medicine-1/image-1.jpg' },
+    ]);
     mockDeleteSetting.mockResolvedValue(undefined);
     mockedPurgeMedicinePhotoCacheForAccount.mockResolvedValue(undefined);
   });
@@ -117,5 +123,34 @@ describe('account session provider', () => {
       'accounts/account-1/medicines/medicine-1/image-1.jpg',
     );
     expect(mockedPurgeMedicinePhotoCacheForAccount).toHaveBeenCalledWith('account-1');
+    expect(mockClearTrackedData).not.toHaveBeenCalled();
+  });
+
+  test('removes the signed-in account dataset before completing sign out', async () => {
+    const { result } = await renderHook(() => useAccountSession(), { wrapper });
+    await waitFor(() => expect(result.current.state.kind).toBe('signed-in'));
+
+    await act(async () => {
+      await result.current.signOut();
+    });
+
+    expect(mockClearTrackedData).toHaveBeenCalledTimes(1);
+    expect(mockedSignOutAccount).toHaveBeenCalledTimes(1);
+    expect(result.current.state).toEqual({ kind: 'local', user: null });
+    expect(mockClearAccount).not.toHaveBeenCalled();
+  });
+
+  test('keeps the account screen active when local privacy cleanup fails', async () => {
+    mockClearTrackedData.mockRejectedValueOnce(new Error('database busy'));
+    const { result } = await renderHook(() => useAccountSession(), { wrapper });
+    await waitFor(() => expect(result.current.state.kind).toBe('signed-in'));
+
+    await act(async () => {
+      await result.current.signOut();
+    });
+
+    expect(mockedSignOutAccount).not.toHaveBeenCalled();
+    expect(result.current.state.kind).toBe('signed-in');
+    expect(result.current.error).toBe('sign-out');
   });
 });

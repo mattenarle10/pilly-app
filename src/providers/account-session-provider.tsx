@@ -21,6 +21,7 @@ import {
   deleteCachedMedicinePhoto,
   purgeMedicinePhotoCacheForAccount,
 } from '@/services/medicine-image-cache';
+import { reconcileLocalReminders } from '@/services/notifications';
 import { PillyRepository } from '@/storage/repository';
 import { PillySyncStore } from '@/storage/sync-store';
 
@@ -53,7 +54,7 @@ export function AccountSessionProvider({ children }: PropsWithChildren) {
   const [error, setError] = useState<AccountSessionContextValue['error']>(null);
   const configured = isAccountSignInConfigured();
 
-  const clearLocalAccount = useCallback(
+  const clearAccountBoundState = useCallback(
     async (accountId: string) => {
       syncStore.clearAccount(accountId);
       const images = await repository.clearMedicationImages();
@@ -63,6 +64,18 @@ export function AccountSessionProvider({ children }: PropsWithChildren) {
       queryClient.clear();
     },
     [queryClient, repository, syncStore],
+  );
+
+  const clearSignedOutAccount = useCallback(
+    async (accountId: string) => {
+      const images = await repository.clearTrackedData();
+      images.forEach((image) => deleteCachedMedicinePhoto(image.cacheKey));
+      await purgeMedicinePhotoCacheForAccount(accountId);
+      await repository.deleteSetting(`plusEntitled:${accountId}`);
+      await reconcileLocalReminders(repository);
+      queryClient.clear();
+    },
+    [queryClient, repository],
   );
 
   useEffect(() => {
@@ -105,21 +118,15 @@ export function AccountSessionProvider({ children }: PropsWithChildren) {
     setError(null);
     try {
       const accountId = state.kind === 'signed-in' ? state.user.id : null;
+      if (accountId) await clearSignedOutAccount(accountId);
       await signOutAccount();
       setState({ kind: 'local', user: null });
-      if (accountId) {
-        try {
-          await clearLocalAccount(accountId);
-        } catch {
-          setError('sign-out');
-        }
-      }
     } catch {
       setError('sign-out');
     } finally {
       setBusy(false);
     }
-  }, [clearLocalAccount, state]);
+  }, [clearSignedOutAccount, state]);
 
   const deleteAccount = useCallback(async () => {
     if (state.kind !== 'signed-in') return false;
@@ -129,7 +136,7 @@ export function AccountSessionProvider({ children }: PropsWithChildren) {
     try {
       await deleteCloudAccount();
       setState({ kind: 'local', user: null });
-      await Promise.allSettled([signOutAccount(), clearLocalAccount(accountId)]);
+      await Promise.allSettled([signOutAccount(), clearAccountBoundState(accountId)]);
       return true;
     } catch {
       setError('delete');
@@ -137,7 +144,7 @@ export function AccountSessionProvider({ children }: PropsWithChildren) {
     } finally {
       setBusy(false);
     }
-  }, [clearLocalAccount, state]);
+  }, [clearAccountBoundState, state]);
 
   const value = useMemo(
     () => ({ state, configured, busy, signingInWith, error, signIn, signOut, deleteAccount }),

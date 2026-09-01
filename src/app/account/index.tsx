@@ -1,4 +1,4 @@
-import { ActivityIndicator, Alert, StyleSheet, View } from 'react-native';
+import { ActivityIndicator, Alert, Linking, StyleSheet, View } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 
 import type { AccountProvider } from '@/models/account';
@@ -51,10 +51,34 @@ export default function AccountRoute() {
           style: 'destructive',
           onPress: () => {
             void account.deleteAccount().then((deleted) => {
-              if (deleted) router.replace('/profile');
+              if (!deleted) return;
+              router.replace('/profile');
+              if (account.state.kind === 'signed-in' && account.state.user.provider === 'apple') {
+                Alert.alert(
+                  'Account deleted',
+                  'To remove Pilly from Sign in with Apple too, open your Apple Account and stop using Pilly. Your App Store subscription is managed separately.',
+                  [
+                    { text: 'Done', style: 'cancel' },
+                    {
+                      text: 'Open Apple Account',
+                      onPress: () => void Linking.openURL('https://account.apple.com/'),
+                    },
+                  ],
+                );
+              }
             });
           },
         },
+      ],
+    );
+  };
+  const confirmSignOut = () => {
+    Alert.alert(
+      'Sign out of Pilly Plus?',
+      'Downloaded account data will be removed from this iPhone. Your private backup and App Store subscription stay active.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        { text: 'Sign out', onPress: () => void account.signOut() },
       ],
     );
   };
@@ -109,7 +133,15 @@ export default function AccountRoute() {
             variant="secondary"
             size="medium"
             loading={account.busy}
-            onPress={() => void account.signOut()}
+            onPress={confirmSignOut}
+            fullWidth
+          />
+          <PillyButton
+            label="Manage App Store subscription"
+            variant="quiet"
+            size="medium"
+            disabled={account.busy}
+            onPress={() => void Linking.openURL('https://apps.apple.com/account/subscriptions')}
             fullWidth
           />
           <PillyButton

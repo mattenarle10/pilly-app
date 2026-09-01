@@ -272,6 +272,41 @@ export class PillyRepository {
     return images;
   }
 
+  async clearTrackedData(): Promise<MedicationImage[]> {
+    const images = await this.listMedicationImages();
+    this.db.transaction((transaction) => {
+      transaction.delete(doseEvents).run();
+      transaction.delete(doseRecords).run();
+      transaction.delete(supplyEvents).run();
+      transaction.delete(medicationImages).run();
+      transaction.delete(schedules).run();
+      transaction.delete(medications).run();
+      transaction.delete(syncOutbox).run();
+      transaction
+        .delete(settings)
+        .where(
+          inArray(settings.key, [
+            profileSettingKeys.firstName,
+            profileSettingKeys.lastName,
+            profileSettingKeys.displayName,
+          ]),
+        )
+        .run();
+      transaction
+        .update(cloudState)
+        .set({
+          accountId: null,
+          cursor: null,
+          migrationState: 'disconnected',
+          lastSuccessfulSyncAt: null,
+          lastError: null,
+        })
+        .where(eq(cloudState.id, 'current'))
+        .run();
+    });
+    return images;
+  }
+
   async updateMedication(
     medicationId: string,
     input: UpdateMedicationInput,
