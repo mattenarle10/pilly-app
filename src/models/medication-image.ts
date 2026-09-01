@@ -24,3 +24,14 @@ export const medicationImageSchema = z.object({
 export type MedicationImage = z.infer<typeof medicationImageSchema>;
 export type MedicationImageTransferState = z.infer<typeof medicationImageTransferStateSchema>;
 
+export const stagedMedicationImageSchema = medicationImageSchema
+  .omit({
+    medicationId: true,
+    remoteVersion: true,
+    transferState: true,
+    updatedAt: true,
+    lastError: true,
+  })
+  .extend({ cacheKey: z.string().startsWith('staging/') });
+
+export type StagedMedicationImage = z.infer<typeof stagedMedicationImageSchema>;
