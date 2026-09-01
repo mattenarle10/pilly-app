@@ -2,6 +2,7 @@ import { File, UploadType } from 'expo-file-system';
 import { z } from 'zod';
 
 import { medicationImageSchema, type MedicationImage } from '@/models/medication-image';
+import type { PillyRepository } from '@/storage/repository';
 
 import { requestCloudApi } from './cloud-sync-api';
 import { downloadMedicinePhotoToCache, medicinePhotoUri } from './medicine-image-cache';
@@ -101,4 +102,55 @@ export async function downloadMedicinePhoto(input: {
 
 export async function deleteRemoteMedicinePhoto(medicationId: string): Promise<void> {
   await requestCloudApi(`/v1/images/${encodeURIComponent(medicationId)}`, { method: 'DELETE' });
+}
+
+export async function retryMedicinePhotoTransfer(
+  repository: PillyRepository,
+  image: MedicationImage,
+): Promise<MedicationImage | null> {
+  if (image.transferState === 'pendingDelete') {
+    try {
+      await deleteRemoteMedicinePhoto(image.medicationId);
+      await repository.removeMedicationImage(image.medicationId);
+      return null;
+    } catch (error) {
+      await repository.updateMedicationImageTransfer({
+        medicationId: image.medicationId,
+        state: 'pendingDelete',
+        lastError: error instanceof Error ? error.message : 'Photo removal failed.',
+      });
+      throw error;
+    }
+  }
+
+  try {
+    const remoteVersion = await uploadMedicinePhoto(image);
+    await repository.updateMedicationImageTransfer({
+      medicationId: image.medicationId,
+      state: 'uploaded',
+      remoteVersion,
+    });
+    return { ...image, transferState: 'uploaded', remoteVersion, lastError: null };
+  } catch (error) {
+    await repository.updateMedicationImageTransfer({
+      medicationId: image.medicationId,
+      state: 'failed',
+      lastError: error instanceof Error ? error.message : 'Photo upload failed.',
+    });
+    throw error;
+  }
+}
+
+export async function reconcileMedicinePhotoTransfers(
+  repository: PillyRepository,
+): Promise<string[]> {
+  const pending = (await repository.listMedicationImages()).filter(
+    (image) => image.transferState !== 'uploaded',
+  );
+  const settled = await Promise.allSettled(
+    pending.map((image) => retryMedicinePhotoTransfer(repository, image)),
+  );
+  return pending.flatMap((image, index) =>
+    settled[index]?.status === 'fulfilled' ? [image.medicationId] : [],
+  );
 }

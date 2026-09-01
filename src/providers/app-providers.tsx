@@ -10,6 +10,7 @@ import { colors } from '@/ui/tokens';
 import { AccountSessionProvider } from './account-session-provider';
 import { CloudSyncProvider } from './cloud-sync-provider';
 import { PlusEntitlementSync } from './plus-entitlement-sync';
+import { MedicineImageTransferSync } from './medicine-image-transfer-sync';
 import { WidgetSync } from './widget-sync';
 
 export function AppProviders({ children }: PropsWithChildren) {
@@ -42,6 +43,7 @@ export function AppProviders({ children }: PropsWithChildren) {
           <AccountSessionProvider>
             <CloudSyncProvider>
               <PlusEntitlementSync />
+              <MedicineImageTransferSync />
               <WidgetSync />
               {children}
             </CloudSyncProvider>

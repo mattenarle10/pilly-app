@@ -12,6 +12,7 @@ import { CloudSyncApiError } from '@/services/cloud-sync-api';
 import {
   deleteRemoteMedicinePhoto,
   downloadMedicinePhoto,
+  retryMedicinePhotoTransfer,
   uploadMedicinePhoto,
 } from '@/services/medicine-image-transfer';
 
@@ -116,24 +117,7 @@ export function useMedicinePhoto(medicationId?: string) {
       if (!medicationId) throw new Error('Save the medicine before retrying its photo.');
       const image = await repository.getMedicationImage(medicationId);
       if (!image) return;
-      if (image.transferState === 'pendingDelete') {
-        await deleteRemoteMedicinePhoto(medicationId);
-        await repository.removeMedicationImage(medicationId);
-        setImageQuery(medicationId, null);
-        return;
-      }
-      const remoteVersion = await uploadMedicinePhoto(image);
-      await repository.updateMedicationImageTransfer({
-        medicationId,
-        state: 'uploaded',
-        remoteVersion,
-      });
-      setImageQuery(medicationId, {
-        ...image,
-        transferState: 'uploaded',
-        remoteVersion,
-        lastError: null,
-      });
+      setImageQuery(medicationId, await retryMedicinePhotoTransfer(repository, image));
     },
   });
 
@@ -153,7 +137,7 @@ export function useMedicinePhoto(medicationId?: string) {
       });
       setImageQuery(medicationId, null);
       try {
-        if (image.remoteVersion) await deleteRemoteMedicinePhoto(medicationId);
+        await deleteRemoteMedicinePhoto(medicationId);
         await repository.removeMedicationImage(medicationId);
       } catch (error) {
         await repository.updateMedicationImageTransfer({

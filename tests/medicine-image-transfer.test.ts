@@ -2,8 +2,11 @@ import { requestCloudApi } from '@/services/cloud-sync-api';
 import {
   deleteRemoteMedicinePhoto,
   downloadMedicinePhoto,
+  reconcileMedicinePhotoTransfers,
+  retryMedicinePhotoTransfer,
   uploadMedicinePhoto,
 } from '@/services/medicine-image-transfer';
+import type { PillyRepository } from '@/storage/repository';
 import { downloadMedicinePhotoToCache, medicinePhotoUri } from '@/services/medicine-image-cache';
 
 const mockUpload = jest.fn();
@@ -112,4 +115,42 @@ test('deletes only the encoded medicine image route', async () => {
   mockedRequest.mockResolvedValue(undefined);
   await deleteRemoteMedicinePhoto(medicationId);
   expect(mockedRequest).toHaveBeenCalledWith(`/v1/images/${medicationId}`, { method: 'DELETE' });
+});
+
+test('retries a pending deletion even when upload completion never returned a version', async () => {
+  const repository = {
+    removeMedicationImage: jest.fn().mockResolvedValue(image),
+    updateMedicationImageTransfer: jest.fn(),
+  } as unknown as PillyRepository;
+  mockedRequest.mockResolvedValue(undefined);
+
+  await expect(
+    retryMedicinePhotoTransfer(repository, { ...image, transferState: 'pendingDelete' }),
+  ).resolves.toBeNull();
+
+  expect(mockedRequest).toHaveBeenCalledWith(`/v1/images/${medicationId}`, { method: 'DELETE' });
+  expect(repository.removeMedicationImage).toHaveBeenCalledWith(medicationId);
+});
+
+test('reconciles durable failed uploads after a later app launch', async () => {
+  const repository = {
+    listMedicationImages: jest.fn().mockResolvedValue([{ ...image, transferState: 'failed' }]),
+    updateMedicationImageTransfer: jest.fn().mockResolvedValue(undefined),
+  } as unknown as PillyRepository;
+  mockedMedicinePhotoUri.mockReturnValue('file:///private/photo.jpg');
+  mockedRequest
+    .mockResolvedValueOnce({
+      uploadUrl: 'https://upload.example/photo',
+      expiresAt: '2026-09-01T00:05:00.000Z',
+      headers: {},
+    })
+    .mockResolvedValueOnce({ remoteVersion: 'version-2' });
+  mockUpload.mockResolvedValue({ status: 200, body: '', headers: {} });
+
+  await expect(reconcileMedicinePhotoTransfers(repository)).resolves.toEqual([medicationId]);
+  expect(repository.updateMedicationImageTransfer).toHaveBeenCalledWith({
+    medicationId,
+    state: 'uploaded',
+    remoteVersion: 'version-2',
+  });
 });
