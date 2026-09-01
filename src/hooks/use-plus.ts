@@ -12,6 +12,10 @@ import {
   type PlusOffer,
   type PlusPlan,
 } from '@/services/purchases';
+import {
+  hasFreshCachedPlusEntitlement,
+  serializePlusEntitlementCache,
+} from '@/services/plus-entitlement-cache';
 
 import { queryKeys } from './query-keys';
 import { useAccountSession } from './use-account-session';
@@ -58,8 +62,9 @@ export function usePlus({ loadAnonymousOffers = false }: UsePlusOptions = {}) {
     queryFn: async () => {
       const snapshot = await loadPlusStoreSnapshot(accountId ?? undefined);
       if (snapshot.kind === 'ready' && entitlementSettingKey) {
-        await repository.setSetting(entitlementSettingKey, `${snapshot.active}`);
-        queryClient.setQueryData(queryKeys.setting(entitlementSettingKey), `${snapshot.active}`);
+        const cached = serializePlusEntitlementCache(snapshot.active, snapshot.checkedAt);
+        await repository.setSetting(entitlementSettingKey, cached);
+        queryClient.setQueryData(queryKeys.setting(entitlementSettingKey), cached);
       }
       return snapshot;
     },
@@ -70,8 +75,9 @@ export function usePlus({ loadAnonymousOffers = false }: UsePlusOptions = {}) {
   const acceptResult = async (result: PlusActionResult) => {
     if (result.kind !== 'active') return result;
     if (!entitlementSettingKey) throw new Error('Sign in before using Pilly Plus.');
-    await repository.setSetting(entitlementSettingKey, 'true');
-    queryClient.setQueryData(queryKeys.setting(entitlementSettingKey), 'true');
+    const cached = serializePlusEntitlementCache(true, new Date().toISOString());
+    await repository.setSetting(entitlementSettingKey, cached);
+    queryClient.setQueryData(queryKeys.setting(entitlementSettingKey), cached);
     await queryClient.invalidateQueries({ queryKey: queryKeys.plus.root });
     return result;
   };
@@ -94,7 +100,9 @@ export function usePlus({ loadAnonymousOffers = false }: UsePlusOptions = {}) {
     },
   });
   const cachedActive =
-    accountId !== null && isPlusPurchasesSupported() && cachedEntitlement.data === 'true';
+    accountId !== null &&
+    isPlusPurchasesSupported() &&
+    hasFreshCachedPlusEntitlement(cachedEntitlement.data);
 
   let state: PlusState;
   if (previewMode !== 'store') {

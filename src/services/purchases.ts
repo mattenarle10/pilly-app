@@ -34,6 +34,7 @@ export type PlusStoreSnapshot =
   | {
       kind: 'ready';
       active: boolean;
+      checkedAt: string;
       offers: Record<PlusPlan, PlusOffer | null>;
     };
 
@@ -101,6 +102,7 @@ export async function loadPlusStoreSnapshot(appUserId?: string): Promise<PlusSto
   return {
     kind: 'ready',
     active: hasPlus(customerInfo),
+    checkedAt: customerInfo.requestDate,
     offers: normalizePlusOffers(
       offerings.current,
       eligibility,
@@ -151,13 +153,14 @@ export async function managePlusSubscription(appUserId: string): Promise<void> {
 
 export async function subscribeToPlusEntitlement(
   appUserId: string,
-  onChange: (active: boolean) => void,
+  onChange: (value: { active: boolean; checkedAt: string }) => void,
 ): Promise<() => void> {
   if (getPlusPreviewMode() !== 'store') return () => undefined;
   const purchases = await purchasesModule(appUserId);
   if (!purchases) return () => undefined;
 
-  const listener: CustomerInfoUpdateListener = (customerInfo) => onChange(hasPlus(customerInfo));
+  const listener: CustomerInfoUpdateListener = (customerInfo) =>
+    onChange({ active: hasPlus(customerInfo), checkedAt: customerInfo.requestDate });
   purchases.addCustomerInfoUpdateListener(listener);
   return () => {
     purchases.removeCustomerInfoUpdateListener(listener);

@@ -6,6 +6,7 @@ import { plusEntitlementSettingKey } from '@/hooks/use-plus';
 import { useAccountSession } from '@/hooks/use-account-session';
 import { useRepository } from '@/hooks/use-repository';
 import { disconnectPlusPurchasesIdentity, subscribeToPlusEntitlement } from '@/services/purchases';
+import { serializePlusEntitlementCache } from '@/services/plus-entitlement-cache';
 
 export function PlusEntitlementSync() {
   const repository = useRepository();
@@ -22,10 +23,11 @@ export function PlusEntitlementSync() {
     let unsubscribe: () => void = () => undefined;
     const entitlementSettingKey = plusEntitlementSettingKey(accountId);
 
-    void subscribeToPlusEntitlement(accountId, (active) => {
+    void subscribeToPlusEntitlement(accountId, ({ active, checkedAt }) => {
       if (disposed) return;
-      void repository.setSetting(entitlementSettingKey, `${active}`);
-      queryClient.setQueryData(queryKeys.setting(entitlementSettingKey), `${active}`);
+      const cached = serializePlusEntitlementCache(active, checkedAt);
+      void repository.setSetting(entitlementSettingKey, cached);
+      queryClient.setQueryData(queryKeys.setting(entitlementSettingKey), cached);
       void queryClient.invalidateQueries({ queryKey: queryKeys.plus.root });
     })
       .then((stop) => {

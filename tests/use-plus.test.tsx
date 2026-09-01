@@ -13,6 +13,7 @@ import {
   purchasePlus,
   restorePlus,
 } from '@/services/purchases';
+import { serializePlusEntitlementCache } from '@/services/plus-entitlement-cache';
 
 import { usePlus } from '@/hooks/use-plus';
 import { useAccountSession } from '@/hooks/use-account-session';
@@ -32,6 +33,11 @@ const mockedManageSubscription = jest.mocked(managePlusSubscription);
 const mockedPurchase = jest.mocked(purchasePlus);
 const mockedRestore = jest.mocked(restorePlus);
 const queryClients = new Set<QueryClient>();
+const checkedAt = '2026-09-01T00:00:00.000Z';
+
+function freshActiveCache(): string {
+  return serializePlusEntitlementCache(true, new Date().toISOString());
+}
 
 function signedInAccount(): AccountSessionContextValue {
   return {
@@ -106,6 +112,7 @@ describe('usePlus', () => {
     mockedLoadSnapshot.mockResolvedValue({
       kind: 'ready',
       active: false,
+      checkedAt,
       offers: {
         annual: {
           plan: 'annual',
@@ -141,6 +148,7 @@ describe('usePlus', () => {
     mockedLoadSnapshot.mockResolvedValue({
       kind: 'ready',
       active: false,
+      checkedAt,
       offers: {
         annual: {
           plan: 'annual',
@@ -166,7 +174,7 @@ describe('usePlus', () => {
 
   test('keeps saved access when the store cannot refresh', async () => {
     mockedLoadSnapshot.mockRejectedValue(new Error('offline'));
-    const { result } = await setup('true');
+    const { result } = await setup(freshActiveCache());
 
     await waitFor(() => expect(result.current.state.kind).toBe('active'));
     expect(result.current.state).toEqual({
@@ -179,7 +187,7 @@ describe('usePlus', () => {
 
   test('keeps cached Plus unlocked while the store refreshes', async () => {
     mockedLoadSnapshot.mockReturnValue(new Promise(() => undefined));
-    const { result } = await setup('true');
+    const { result } = await setup(freshActiveCache());
 
     await waitFor(() => expect(result.current.state.kind).toBe('active'));
     expect(result.current.state).toEqual({
@@ -192,7 +200,7 @@ describe('usePlus', () => {
 
   test('keeps saved access when store configuration is unavailable', async () => {
     mockedLoadSnapshot.mockResolvedValue({ kind: 'unconfigured' });
-    const { result } = await setup('true');
+    const { result } = await setup(freshActiveCache());
 
     await waitFor(() => expect(result.current.state.kind).toBe('active'));
     expect(result.current.state).toEqual({
@@ -206,7 +214,7 @@ describe('usePlus', () => {
   test('does not grant cached iOS access on an unsupported platform', async () => {
     mockedPurchasesSupported.mockReturnValue(false);
     mockedLoadSnapshot.mockResolvedValue({ kind: 'unconfigured' });
-    const { result } = await setup('true');
+    const { result } = await setup(freshActiveCache());
 
     await waitFor(() => expect(result.current.state.kind).toBe('unavailable'));
     expect(result.current.state.active).toBe(false);
@@ -217,7 +225,7 @@ describe('usePlus', () => {
       ...signedInAccount(),
       state: { kind: 'local', user: null },
     });
-    const { repository, result } = await setup('true');
+    const { repository, result } = await setup(freshActiveCache());
 
     expect(result.current.state).toEqual({
       kind: 'unavailable',
@@ -241,6 +249,7 @@ describe('usePlus', () => {
     mockedLoadSnapshot.mockResolvedValue({
       kind: 'ready',
       active: true,
+      checkedAt,
       offers: {
         annual: {
           plan: 'annual',
@@ -253,7 +262,7 @@ describe('usePlus', () => {
         monthly: null,
       },
     });
-    const { repository, result } = await setup('true', { loadAnonymousOffers: true });
+    const { repository, result } = await setup(freshActiveCache(), { loadAnonymousOffers: true });
 
     await waitFor(() => expect(result.current.state.kind).toBe('available'));
     expect(mockedLoadSnapshot).toHaveBeenCalledWith(undefined);
@@ -266,6 +275,7 @@ describe('usePlus', () => {
     mockedLoadSnapshot.mockResolvedValue({
       kind: 'ready',
       active: false,
+      checkedAt,
       offers: {
         annual: {
           plan: 'annual',
@@ -298,6 +308,7 @@ describe('usePlus', () => {
     mockedLoadSnapshot.mockResolvedValue({
       kind: 'ready',
       active: false,
+      checkedAt,
       offers: { annual: null, monthly: null },
     });
     mockedRestore.mockRejectedValue(new Error('restore unavailable'));

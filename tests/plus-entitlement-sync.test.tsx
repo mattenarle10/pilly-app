@@ -9,6 +9,7 @@ import { plusEntitlementSettingKey } from '@/hooks/use-plus';
 import { useAccountSession } from '@/hooks/use-account-session';
 import { useRepository } from '@/hooks/use-repository';
 import { disconnectPlusPurchasesIdentity, subscribeToPlusEntitlement } from '@/services/purchases';
+import { serializePlusEntitlementCache } from '@/services/plus-entitlement-cache';
 
 import { PlusEntitlementSync } from '@/providers/plus-entitlement-sync';
 
@@ -58,7 +59,7 @@ describe('PlusEntitlementSync', () => {
     );
     const repository = { setSetting: jest.fn().mockResolvedValue(undefined) };
     const unsubscribe = jest.fn();
-    let onChange: ((active: boolean) => void) | undefined;
+    let onChange: ((value: { active: boolean; checkedAt: string }) => void) | undefined;
     mockedUseRepository.mockReturnValue(repository as unknown as PillyRepository);
     mockedSubscribe.mockImplementation(async (_accountId, listener) => {
       onChange = listener;
@@ -76,17 +77,19 @@ describe('PlusEntitlementSync', () => {
     await waitFor(() =>
       expect(mockedSubscribe).toHaveBeenCalledWith('cognito-sub-1', expect.any(Function)),
     );
-    onChange?.(true);
+    const checkedAt = '2026-09-01T00:00:00.000Z';
+    const cached = serializePlusEntitlementCache(true, checkedAt);
+    onChange?.({ active: true, checkedAt });
 
     await waitFor(() =>
       expect(repository.setSetting).toHaveBeenCalledWith(
         plusEntitlementSettingKey('cognito-sub-1'),
-        'true',
+        cached,
       ),
     );
     expect(
       queryClient.getQueryData(queryKeys.setting(plusEntitlementSettingKey('cognito-sub-1'))),
-    ).toBe('true');
+    ).toBe(cached);
     await waitFor(() =>
       expect(queryClient.getQueryState(queryKeys.plus.store('cognito-sub-1'))?.isInvalidated).toBe(
         true,
