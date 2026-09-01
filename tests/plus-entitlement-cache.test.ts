@@ -15,13 +15,13 @@ describe('Plus entitlement cache', () => {
   });
 
   test('fails closed for inactive, legacy, malformed, and future cache values', () => {
-    expect(hasFreshCachedPlusEntitlement(serializePlusEntitlementCache(false, checkedAt), now)).toBe(
-      false,
-    );
+    expect(
+      hasFreshCachedPlusEntitlement(serializePlusEntitlementCache(false, checkedAt), now),
+    ).toBe(false);
     expect(hasFreshCachedPlusEntitlement('true', now)).toBe(false);
     expect(hasFreshCachedPlusEntitlement('{', now)).toBe(false);
-    expect(hasFreshCachedPlusEntitlement(serializePlusEntitlementCache(true, checkedAt), now - 1)).toBe(
-      false,
-    );
+    expect(
+      hasFreshCachedPlusEntitlement(serializePlusEntitlementCache(true, checkedAt), now - 1),
+    ).toBe(false);
   });
 });
