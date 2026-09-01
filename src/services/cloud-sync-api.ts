@@ -53,7 +53,7 @@ export function isCloudSyncConfigured(): boolean {
   return readEnvironment() !== null;
 }
 
-async function request(path: string, init?: RequestInit): Promise<unknown> {
+export async function requestCloudApi(path: string, init?: RequestInit): Promise<unknown> {
   const environment = readEnvironment();
   if (!environment) {
     throw new CloudSyncApiError('not-configured', 'Cloud backup is not configured in this build.');
@@ -103,7 +103,7 @@ async function request(path: string, init?: RequestInit): Promise<unknown> {
 }
 
 export async function fetchCloudBootstrap(): Promise<BootstrapResponse> {
-  return bootstrapResponseSchema.parse(await request('/v1/bootstrap'));
+  return bootstrapResponseSchema.parse(await requestCloudApi('/v1/bootstrap'));
 }
 
 export async function pushCloudMutations(input: {
@@ -113,6 +113,6 @@ export async function pushCloudMutations(input: {
 }): Promise<SyncResponse> {
   const body = syncRequestSchema.parse({ schemaVersion: 1, ...input });
   return syncResponseSchema.parse(
-    await request('/v1/sync', { method: 'POST', body: JSON.stringify(body) }),
+    await requestCloudApi('/v1/sync', { method: 'POST', body: JSON.stringify(body) }),
   );
 }

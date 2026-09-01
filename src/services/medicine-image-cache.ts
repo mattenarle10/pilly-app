@@ -127,6 +127,15 @@ async function accountNamespace(accountId: string): Promise<string> {
   return Crypto.digestStringAsync(Crypto.CryptoDigestAlgorithm.SHA256, accountId);
 }
 
+async function attachedCacheKey(input: {
+  accountId: string;
+  medicationId: string;
+  imageId: string;
+}): Promise<string> {
+  const namespace = await accountNamespace(input.accountId);
+  return `accounts/${namespace}/medicines/${input.medicationId}/${input.imageId}.jpg`;
+}
+
 export async function attachStagedMedicinePhoto(input: {
   accountId: string;
   medicationId: string;
@@ -135,16 +144,13 @@ export async function attachStagedMedicinePhoto(input: {
   const staged = stagedMedicationImageSchema.parse(input.staged);
   const source = fileForCacheKey(staged.cacheKey);
   if (!source.exists) throw new Error('The prepared medicine photo is no longer available.');
-  const namespace = await accountNamespace(input.accountId);
-  const directory = new Directory(
-    imageRoot,
-    'accounts',
-    namespace,
-    'medicines',
-    input.medicationId,
-  );
+  const cacheKey = await attachedCacheKey({
+    accountId: input.accountId,
+    medicationId: input.medicationId,
+    imageId: staged.imageId,
+  });
+  const directory = fileForCacheKey(cacheKey).parentDirectory;
   directory.create({ intermediates: true, idempotent: true });
-  const cacheKey = `accounts/${namespace}/medicines/${input.medicationId}/${staged.imageId}.jpg`;
   await source.move(fileForCacheKey(cacheKey), { overwrite: true });
   return medicationImageSchema.parse({
     ...staged,
@@ -155,6 +161,38 @@ export async function attachStagedMedicinePhoto(input: {
     updatedAt: new Date().toISOString(),
     lastError: null,
   });
+}
+
+export async function downloadMedicinePhotoToCache(input: {
+  accountId: string;
+  medicationId: string;
+  imageId: string;
+  url: string;
+  sha256: string;
+  byteCount: number;
+}): Promise<{ cacheKey: string; uri: string }> {
+  const cacheKey = await attachedCacheKey(input);
+  const destination = fileForCacheKey(cacheKey);
+  destination.parentDirectory.create({ intermediates: true, idempotent: true });
+
+  try {
+    await File.downloadFileAsync(input.url, destination, { idempotent: true });
+    const bytes = await destination.bytes();
+    if (bytes.byteLength !== input.byteCount || bytes.byteLength > maxBytes) {
+      throw new Error('The downloaded medicine photo has an unexpected size.');
+    }
+    if (containsSensitiveJpegMetadata(bytes)) {
+      throw new Error('The downloaded medicine photo is not a safe JPEG.');
+    }
+    const digest = toHex(await Crypto.digest(Crypto.CryptoDigestAlgorithm.SHA256, bytes));
+    if (digest !== input.sha256) {
+      throw new Error('The downloaded medicine photo failed its integrity check.');
+    }
+    return { cacheKey, uri: destination.uri };
+  } catch (error) {
+    if (destination.exists) destination.delete();
+    throw error;
+  }
 }
 
 export function deleteCachedMedicinePhoto(cacheKey: string): void {
