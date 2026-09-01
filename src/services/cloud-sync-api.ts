@@ -116,3 +116,7 @@ export async function pushCloudMutations(input: {
     await requestCloudApi('/v1/sync', { method: 'POST', body: JSON.stringify(body) }),
   );
 }
+
+export async function deleteCloudAccount(): Promise<void> {
+  await requestCloudApi('/v1/account', { method: 'DELETE' });
+}

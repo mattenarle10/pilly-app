@@ -266,6 +266,12 @@ export class PillyRepository {
       .map((row) => medicationImageSchema.parse(row));
   }
 
+  async clearMedicationImages(): Promise<MedicationImage[]> {
+    const images = await this.listMedicationImages();
+    this.db.delete(medicationImages).run();
+    return images;
+  }
+
   async updateMedication(
     medicationId: string,
     input: UpdateMedicationInput,
@@ -981,6 +987,10 @@ export class PillyRepository {
       .values({ key, value })
       .onConflictDoUpdate({ target: settings.key, set: { value } })
       .run();
+  }
+
+  async deleteSetting(key: string): Promise<void> {
+    this.db.delete(settings).where(eq(settings.key, key)).run();
   }
 
   async saveProfileName(firstName: string, lastName: string): Promise<void> {

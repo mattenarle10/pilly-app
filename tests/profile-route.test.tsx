@@ -55,6 +55,7 @@ function account(state: AccountSessionContextValue['state']): AccountSessionCont
     error: null,
     signIn: jest.fn(async () => true),
     signOut: jest.fn(async () => undefined),
+    deleteAccount: jest.fn(async () => true),
   };
 }
 

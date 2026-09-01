@@ -141,6 +141,25 @@ export class PillySyncStore {
     this.updateState({ migrationState: 'disconnected', lastError: null });
   }
 
+  clearAccount(accountId: string): void {
+    const current = this.getOrCreateState();
+    this.db.transaction((transaction) => {
+      transaction.delete(syncOutbox).where(eq(syncOutbox.accountId, accountId)).run();
+      if (current.accountId !== accountId) return;
+      transaction
+        .update(cloudState)
+        .set({
+          accountId: null,
+          cursor: null,
+          migrationState: 'disconnected',
+          lastSuccessfulSyncAt: null,
+          lastError: null,
+        })
+        .where(eq(cloudState.id, stateId))
+        .run();
+    });
+  }
+
   listPendingMutations(accountId: string, limit = 25): SyncMutation[] {
     return this.db
       .select()

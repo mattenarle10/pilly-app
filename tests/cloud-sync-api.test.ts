@@ -1,5 +1,6 @@
 import {
   CloudSyncApiError,
+  deleteCloudAccount,
   fetchCloudBootstrap,
   pushCloudMutations,
 } from '@/services/cloud-sync-api';
@@ -70,5 +71,21 @@ describe('cloud sync API', () => {
     ).rejects.toEqual(
       expect.objectContaining<Partial<CloudSyncApiError>>({ code: 'plus-required' }),
     );
+  });
+
+  test('deletes the authenticated cloud account without sending local identity data', async () => {
+    const fetchMock = jest
+      .spyOn(globalThis, 'fetch')
+      .mockResolvedValue(new Response(null, { status: 204 }));
+
+    await expect(deleteCloudAccount()).resolves.toBeUndefined();
+    expect(fetchMock).toHaveBeenCalledWith(
+      'https://api.pilly.test/v1/account',
+      expect.objectContaining({
+        method: 'DELETE',
+        headers: expect.objectContaining({ Authorization: 'Bearer access-token' }),
+      }),
+    );
+    expect(fetchMock.mock.calls[0]?.[1]).not.toHaveProperty('body');
   });
 });
