@@ -17,22 +17,15 @@ jest.mock('react-native-reanimated', () => {
 describe('medicine photo field', () => {
   afterEach(cleanup);
 
-  test('keeps the unavailable state quiet and routes to Pilly Plus', async () => {
-    const onOpenPlus = jest.fn();
+  test('shows a private empty state with one choose action', async () => {
+    const onSelect = jest.fn();
     const screen = await render(
-      <MedicinePhotoField
-        uri={null}
-        available={false}
-        busy={false}
-        onSelect={jest.fn()}
-        onRemove={jest.fn()}
-        onOpenPlus={onOpenPlus}
-      />,
+      <MedicinePhotoField uri={null} busy={false} onSelect={onSelect} onRemove={jest.fn()} />,
     );
 
-    expect(screen.getByText('Available with Pilly Plus.')).toBeOnTheScreen();
-    await fireEvent.press(screen.getByLabelText('See Pilly Plus'));
-    expect(onOpenPlus).toHaveBeenCalledTimes(1);
+    expect(screen.getByText('Stored privately with your Plus account.')).toBeOnTheScreen();
+    await fireEvent.press(screen.getByLabelText('Choose photo'));
+    expect(onSelect).toHaveBeenCalledTimes(1);
   });
 
   test('shows one private preview with replace and remove actions', async () => {
@@ -41,11 +34,9 @@ describe('medicine photo field', () => {
     const screen = await render(
       <MedicinePhotoField
         uri="file:///private/photo.jpg"
-        available
         busy={false}
         onSelect={onSelect}
         onRemove={onRemove}
-        onOpenPlus={jest.fn()}
       />,
     );
 

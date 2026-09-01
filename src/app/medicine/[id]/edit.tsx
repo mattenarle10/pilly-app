@@ -140,16 +140,16 @@ function EditMedicineForm({
       ) : null}
       <EditNameSection form={form} issue={issue} setFieldValue={setFieldValue} />
       <EditAppearanceSection form={form} setFieldValue={setFieldValue} />
-      <MedicinePhotoField
-        uri={photo.uri}
-        available={photo.available}
-        busy={photo.isBusy}
-        error={photo.error}
-        onSelect={() => void photo.select()}
-        onRemove={() => void photo.remove()}
-        onRetry={() => void photo.retry()}
-        onOpenPlus={() => router.push('/plus')}
-      />
+      {photo.available ? (
+        <MedicinePhotoField
+          uri={photo.uri}
+          busy={photo.isBusy}
+          error={photo.error}
+          onSelect={() => void photo.select()}
+          onRemove={() => void photo.remove()}
+          onRetry={() => void photo.retry()}
+        />
+      ) : null}
       <EditScheduleSection form={form} issue={issue} setFieldValue={setFieldValue} />
       <EditDetailsSection form={form} issue={issue} setFieldValue={setFieldValue} />
       <ScheduleChangedBanner form={form} initialSchedules={detail.schedules} />

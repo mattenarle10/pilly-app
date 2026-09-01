@@ -9,25 +9,14 @@ import { PillyText } from './pilly-text';
 
 type Props = {
   uri: string | null;
-  available: boolean;
   busy: boolean;
   error?: string | Error | null;
   onSelect: () => void;
   onRemove: () => void;
   onRetry?: () => void;
-  onOpenPlus: () => void;
 };
 
-export function MedicinePhotoField({
-  uri,
-  available,
-  busy,
-  error,
-  onSelect,
-  onRemove,
-  onRetry,
-  onOpenPlus,
-}: Props) {
+export function MedicinePhotoField({ uri, busy, error, onSelect, onRemove, onRetry }: Props) {
   const message = error instanceof Error ? error.message : error;
   return (
     <View style={styles.section}>
@@ -55,37 +44,25 @@ export function MedicinePhotoField({
         <View style={styles.copy}>
           <PillyText role="label">Recognition photo</PillyText>
           <PillyText role="caption" muted>
-            {available ? 'Stored privately with your Plus account.' : 'Available with Pilly Plus.'}
+            Stored privately with your Plus account.
           </PillyText>
           <View style={styles.actions}>
-            {available ? (
-              <>
-                <PillyButton
-                  label={uri ? 'Replace' : 'Choose photo'}
-                  variant="secondary"
-                  size="compact"
-                  loading={busy}
-                  onPress={onSelect}
-                />
-                {uri ? (
-                  <PillyButton
-                    label="Remove"
-                    variant="quiet"
-                    size="compact"
-                    disabled={busy}
-                    onPress={onRemove}
-                  />
-                ) : null}
-              </>
-            ) : (
+            <PillyButton
+              label={uri ? 'Replace' : 'Choose photo'}
+              variant="secondary"
+              size="compact"
+              loading={busy}
+              onPress={onSelect}
+            />
+            {uri ? (
               <PillyButton
-                label="See Pilly Plus"
+                label="Remove"
                 variant="quiet"
-                tone="brand"
                 size="compact"
-                onPress={onOpenPlus}
+                disabled={busy}
+                onPress={onRemove}
               />
-            )}
+            ) : null}
           </View>
         </View>
       </PillyCard>

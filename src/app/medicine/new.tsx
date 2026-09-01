@@ -173,15 +173,15 @@ export default function NewMedicationRoute() {
         onColorChange={(color) => form.setFieldValue('appearanceColor', color)}
         onSecondaryColorChange={(color) => form.setFieldValue('appearanceSecondaryColor', color)}
       />
-      <MedicinePhotoField
-        uri={photo.uri}
-        available={photo.available}
-        busy={photo.isBusy}
-        error={photo.error}
-        onSelect={() => void photo.select()}
-        onRemove={() => void photo.remove()}
-        onOpenPlus={() => router.push('/plus')}
-      />
+      {photo.available ? (
+        <MedicinePhotoField
+          uri={photo.uri}
+          busy={photo.isBusy}
+          error={photo.error}
+          onSelect={() => void photo.select()}
+          onRemove={() => void photo.remove()}
+        />
+      ) : null}
       <ScheduleStep
         selectedDays={values.selectedDays}
         schedules={values.schedules}
