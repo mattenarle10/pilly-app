@@ -62,9 +62,9 @@ export function useProfileAvatar() {
         await uploadProfileAvatar(selection.avatar);
         const uri = await storeProfileAvatar(accountId, selection.avatar.uri);
         queryClient.setQueryData(queryKeys.profileAvatar(accountId), uri);
-      } catch (error) {
+      } catch {
         deletePreparedProfileAvatar(selection.avatar.uri);
-        throw error;
+        throw new Error('Couldn’t save the profile photo. Try again.');
       }
     },
   });
@@ -78,14 +78,33 @@ export function useProfileAvatar() {
     },
   });
 
+  const errorKind = select.error
+    ? 'selection'
+    : remove.error
+      ? 'removal'
+      : query.error
+        ? 'restore'
+        : null;
+  const error =
+    errorKind === 'selection'
+      ? select.error instanceof Error
+        ? select.error.message
+        : 'Couldn’t save the profile photo.'
+      : errorKind === 'removal'
+        ? 'Couldn’t remove the profile photo. Try again.'
+        : errorKind === 'restore'
+          ? 'Couldn’t load the profile photo. Try again.'
+          : null;
+
   return {
     uri: query.data ?? null,
     canUpload,
     plusActive: plus.state.active,
     isBusy: select.isPending || remove.isPending,
-    error: select.error ?? remove.error ?? query.error,
+    error,
+    errorKind,
     select: (source: ProfileAvatarSource) => select.mutateAsync(source),
     remove: () => remove.mutateAsync(),
-    retry: () => query.refetch(),
+    retry: () => (errorKind === 'removal' ? remove.mutateAsync() : query.refetch()),
   };
 }

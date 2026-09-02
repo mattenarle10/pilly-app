@@ -147,7 +147,11 @@ function EditMedicineForm({
           error={photo.error}
           onSelect={(source) => void photo.select(source)}
           onRemove={() => void photo.remove()}
-          onRetry={() => void photo.retry()}
+          onRetry={
+            photo.errorKind === 'transfer' || photo.errorKind === 'restore'
+              ? () => void photo.retry()
+              : undefined
+          }
         />
       ) : null}
       <EditScheduleSection form={form} issue={issue} setFieldValue={setFieldValue} />

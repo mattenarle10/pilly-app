@@ -83,15 +83,15 @@ export function useMedicinePhoto(medicationId?: string) {
         const uploaded = { ...attached, remoteVersion, transferState: 'uploaded' as const };
         setImageQuery(id, uploaded);
         return uploaded;
-      } catch (error) {
-        const message = error instanceof Error ? error.message : 'Photo upload failed.';
+      } catch {
+        const message = 'Couldn’t upload the medicine photo. Try again.';
         await repository.updateMedicationImageTransfer({
           medicationId: id,
           state: 'failed',
           lastError: message,
         });
         setImageQuery(id, { ...attached, transferState: 'failed', lastError: message });
-        throw error;
+        throw new Error(message);
       }
     };
     if (waitForTransfer) return transfer();
@@ -162,6 +162,26 @@ export function useMedicinePhoto(medicationId?: string) {
 
   const image = query.data?.transferState === 'pendingDelete' ? null : query.data;
   const cacheKey = staged?.cacheKey ?? image?.cacheKey;
+  const errorKind =
+    image?.transferState === 'failed'
+      ? 'transfer'
+      : selectMutation.error
+        ? 'selection'
+        : retryMutation.error
+          ? 'transfer'
+          : query.error
+            ? 'restore'
+            : null;
+  const error =
+    errorKind === 'selection'
+      ? selectMutation.error instanceof Error
+        ? selectMutation.error.message
+        : 'Couldn’t prepare the medicine photo.'
+      : errorKind === 'transfer'
+        ? (image?.lastError ?? 'Couldn’t upload the medicine photo. Try again.')
+        : errorKind === 'restore'
+          ? 'Couldn’t load the medicine photo. Try again.'
+          : null;
 
   return {
     available,
@@ -170,14 +190,11 @@ export function useMedicinePhoto(medicationId?: string) {
     staged,
     uri: cacheKey ? medicinePhotoUri(cacheKey) : null,
     isBusy: selectMutation.isPending || removeMutation.isPending || retryMutation.isPending,
-    error:
-      selectMutation.error ??
-      retryMutation.error ??
-      query.error ??
-      (image?.transferState === 'failed' ? image.lastError : null),
+    error,
+    errorKind,
     select: (source: MedicinePhotoSource) => selectMutation.mutateAsync(source),
     remove: () => removeMutation.mutateAsync(),
-    retry: () => retryMutation.mutateAsync(),
+    retry: () => (errorKind === 'restore' ? query.refetch() : retryMutation.mutateAsync()),
     attachToMedication: (id: string) =>
       staged ? persistStaged(id, staged, false) : Promise.resolve(null),
   };

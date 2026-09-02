@@ -10,6 +10,9 @@ import {
   type StagedMedicationImage,
 } from '@/models/medication-image';
 
+import { sha256Hex } from './file-digest';
+import { asPhotoPreparationError, PhotoPreparationError } from './photo-preparation-error';
+
 const maxEdge = 1_024;
 const maxBytes = 1_048_576;
 const compressionAttempts = [0.82, 0.68, 0.54] as const;
@@ -113,10 +116,6 @@ export function sanitizeJpegMetadata(bytes: Uint8Array): Uint8Array {
   return sanitized;
 }
 
-function toHex(buffer: ArrayBuffer): string {
-  return [...new Uint8Array(buffer)].map((byte) => byte.toString(16).padStart(2, '0')).join('');
-}
-
 function ensureRoot(): void {
   imageRoot.create({ intermediates: true, idempotent: true });
 }
@@ -137,7 +136,9 @@ export function medicinePhotoUri(cacheKey: string): string | null {
 async function normalizeAsset(
   asset: ImagePicker.ImagePickerAsset,
 ): Promise<MedicinePhotoSelection> {
-  if (!asset.width || !asset.height) throw new Error('The selected image could not be read.');
+  if (!asset.width || !asset.height) {
+    throw new PhotoPreparationError('This photo couldn’t be read. Choose another and try again.');
+  }
   ensureRoot();
   const staging = new Directory(imageRoot, 'staging');
   staging.create({ intermediates: true, idempotent: true });
@@ -161,8 +162,7 @@ async function normalizeAsset(
       if (temporary.exists) temporary.delete();
       continue;
     }
-    const digestBytes = Uint8Array.from(bytes).buffer;
-    const digest = toHex(await Crypto.digest(Crypto.CryptoDigestAlgorithm.SHA256, digestBytes));
+    const digest = await sha256Hex(bytes);
     const cacheKey = `staging/${imageId}.jpg`;
     const destination = fileForCacheKey(cacheKey);
     destination.create({ overwrite: true });
@@ -178,7 +178,7 @@ async function normalizeAsset(
     });
     return { kind: 'selected', image, uri: destination.uri };
   }
-  throw new Error('Choose a smaller image and try again.');
+  throw new PhotoPreparationError('Choose a smaller photo and try again.');
 }
 
 export async function selectMedicinePhoto(
@@ -209,7 +209,7 @@ export async function selectMedicinePhoto(
       return { kind: 'permission-denied', canAskAgain: false };
     }
     if (code === 'ERR_CAMERA_UNAVAILABLE') return { kind: 'unavailable' };
-    throw error;
+    throw asPhotoPreparationError(error);
   }
 }
 
@@ -274,7 +274,7 @@ export async function downloadMedicinePhotoToCache(input: {
     if (containsSensitiveJpegMetadata(bytes)) {
       throw new Error('The downloaded medicine photo is not a safe JPEG.');
     }
-    const digest = toHex(await Crypto.digest(Crypto.CryptoDigestAlgorithm.SHA256, bytes));
+    const digest = await sha256Hex(bytes);
     if (digest !== input.sha256) {
       throw new Error('The downloaded medicine photo failed its integrity check.');
     }

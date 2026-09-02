@@ -5,7 +5,9 @@ import * as ImagePicker from 'expo-image-picker';
 
 import { preparedProfileAvatarSchema, type PreparedProfileAvatar } from '@/models/profile-avatar';
 
+import { sha256Hex } from './file-digest';
 import { containsSensitiveJpegMetadata, sanitizeJpegMetadata } from './medicine-image-cache';
+import { asPhotoPreparationError, PhotoPreparationError } from './photo-preparation-error';
 
 const maxBytes = 524_288;
 const maxEdge = 512;
@@ -20,10 +22,6 @@ export type ProfileAvatarSelection =
   | { kind: 'permission-denied'; canAskAgain: boolean }
   | { kind: 'unavailable' };
 
-function toHex(buffer: ArrayBuffer): string {
-  return [...new Uint8Array(buffer)].map((byte) => byte.toString(16).padStart(2, '0')).join('');
-}
-
 async function accountNamespace(accountId: string): Promise<string> {
   return Crypto.digestStringAsync(Crypto.CryptoDigestAlgorithm.SHA256, accountId);
 }
@@ -35,7 +33,9 @@ async function avatarFile(accountId: string): Promise<File> {
 async function normalizeAvatar(
   asset: ImagePicker.ImagePickerAsset,
 ): Promise<PreparedProfileAvatar> {
-  if (!asset.width || !asset.height) throw new Error('The selected image could not be read.');
+  if (!asset.width || !asset.height) {
+    throw new PhotoPreparationError('This photo couldn’t be read. Choose another and try again.');
+  }
   stagingRoot.create({ intermediates: true, idempotent: true });
   const imageId = Crypto.randomUUID();
   const side = Math.min(asset.width, asset.height);
@@ -56,9 +56,7 @@ async function normalizeAvatar(
     try {
       const bytes = sanitizeJpegMetadata(await temporary.bytes());
       if (bytes.byteLength > maxBytes) continue;
-      const digest = toHex(
-        await Crypto.digest(Crypto.CryptoDigestAlgorithm.SHA256, Uint8Array.from(bytes).buffer),
-      );
+      const digest = await sha256Hex(bytes);
       const destination = new File(stagingRoot, `${imageId}.jpg`);
       destination.create({ overwrite: true });
       destination.write(bytes);
@@ -74,7 +72,7 @@ async function normalizeAvatar(
       if (temporary.exists) temporary.delete();
     }
   }
-  throw new Error('Choose a smaller image and try again.');
+  throw new PhotoPreparationError('Choose a smaller photo and try again.');
 }
 
 export async function selectProfileAvatar(
@@ -106,7 +104,7 @@ export async function selectProfileAvatar(
       return { kind: 'permission-denied', canAskAgain: false };
     }
     if (code === 'ERR_CAMERA_UNAVAILABLE') return { kind: 'unavailable' };
-    throw error;
+    throw asPhotoPreparationError(error);
   }
 }
 
@@ -141,9 +139,7 @@ export async function downloadProfileAvatarToCache(input: {
     if (containsSensitiveJpegMetadata(bytes)) {
       throw new Error('The downloaded profile photo is not a safe JPEG.');
     }
-    const digest = toHex(
-      await Crypto.digest(Crypto.CryptoDigestAlgorithm.SHA256, Uint8Array.from(bytes).buffer),
-    );
+    const digest = await sha256Hex(bytes);
     if (digest !== input.sha256) {
       throw new Error('The downloaded profile photo failed its integrity check.');
     }
