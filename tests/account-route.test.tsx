@@ -163,6 +163,29 @@ describe('account route', () => {
     expect(account.signOut).toHaveBeenCalledTimes(1);
   });
 
+  test('keeps long relay identity and support values readable', async () => {
+    const relayEmail = `${'a'.repeat(48)}@privaterelay.appleid.com`;
+    const supportId = '198ae56c-0061-7063-ea5d-153a6fbe4a9b';
+    mockedUseAccountSession.mockReturnValue(
+      localAccount({
+        state: {
+          kind: 'signed-in',
+          user: {
+            id: supportId,
+            email: relayEmail,
+            displayName: 'Matthew',
+            provider: 'apple',
+          },
+        },
+      }),
+    );
+
+    const screen = await render(<AccountRoute />, { wrapper });
+    expect(screen.getByText(relayEmail)).not.toHaveProp('numberOfLines');
+    expect(screen.getByText(supportId)).not.toHaveProp('numberOfLines');
+    expect(screen.getByText('Manage your private backup and account.')).toBeOnTheScreen();
+  });
+
   test('deletes only after explaining the local-data and subscription boundaries', async () => {
     const account = localAccount({
       state: {

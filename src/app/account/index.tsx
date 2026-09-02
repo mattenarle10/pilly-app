@@ -95,7 +95,7 @@ export default function AccountRoute() {
         </PillyText>
         <PillyText muted style={styles.introCopy}>
           {account.state.kind === 'signed-in'
-            ? 'Backup stays off until you choose it.'
+            ? 'Manage your private backup and account.'
             : 'Choose Apple or Google.'}
         </PillyText>
       </View>
@@ -115,7 +115,7 @@ export default function AccountRoute() {
             <PillyText role="caption" muted>
               Support ID
             </PillyText>
-            <PillyText role="caption" selectable numberOfLines={1}>
+            <PillyText role="caption" selectable style={styles.supportValue}>
               {account.state.user.id}
             </PillyText>
           </View>
@@ -301,6 +301,7 @@ const styles = StyleSheet.create({
   cloudChecking: { minHeight: 44, flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
   cloudAction: { gap: spacing.sm },
   supportId: { gap: spacing.xs, paddingHorizontal: spacing.xs },
+  supportValue: { flexShrink: 1 },
   localSection: { gap: spacing.md },
   actions: { alignItems: 'center', gap: spacing.xs },
 });
