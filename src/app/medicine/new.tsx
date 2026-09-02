@@ -11,7 +11,7 @@ import { MedicinePhotoField } from '@/ui/components/medicine-photo-field';
 import { DetailsStep, NameStep, ScheduleStep } from '@/ui/components/medicine-form-sections';
 import { MedicineFormShell } from '@/ui/components/medicine-form-shell';
 import { PillyBanner } from '@/ui/components/pilly-banner';
-import { PillyModal } from '@/ui/components/pilly-modal';
+import { PillyConfirmationSheet } from '@/ui/components/pilly-confirmation-sheet';
 import { useMedicationValidation } from '@/hooks/use-medication-validation';
 import { useMedicinePhoto } from '@/hooks/use-medicine-photo';
 import { useRepository } from '@/hooks/use-repository';
@@ -119,7 +119,7 @@ export default function NewMedicationRoute() {
       onAction={() => submit(values)}
       scrollRef={formScroll}
       modal={
-        <PillyModal
+        <PillyConfirmationSheet
           visible={showExit}
           title="Leave setup?"
           message="Your draft stays on this iPhone."

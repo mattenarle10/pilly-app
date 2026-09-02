@@ -10,7 +10,7 @@ import { DetailsStep, NameStep, ScheduleStep } from '@/ui/components/medicine-fo
 import { MedicineFormShell } from '@/ui/components/medicine-form-shell';
 import { EmptyState } from '@/ui/components/empty-state';
 import { PillyBanner } from '@/ui/components/pilly-banner';
-import { PillyModal } from '@/ui/components/pilly-modal';
+import { PillyConfirmationSheet } from '@/ui/components/pilly-confirmation-sheet';
 import { Screen } from '@/ui/components/screen';
 import { schedulesMatch } from '@/models/schedule';
 import { useEditMedicine } from '@/hooks/use-edit-medicine';
@@ -114,7 +114,7 @@ function EditMedicineForm({
       actionDisabled={!isDirty || issue !== null}
       onAction={() => void form.handleSubmit()}
       modal={
-        <PillyModal
+        <PillyConfirmationSheet
           visible={pendingNavigation !== null}
           title="Discard changes?"
           message="Your edits haven’t been saved."

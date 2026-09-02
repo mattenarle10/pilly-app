@@ -7,7 +7,7 @@ import { MedicationAppearance } from '@/ui/components/medication-appearance';
 import { PillyBanner } from '@/ui/components/pilly-banner';
 import { PillyCard } from '@/ui/components/pilly-card';
 import { PillyIconButton } from '@/ui/components/pilly-icon-button';
-import { PillyModal } from '@/ui/components/pilly-modal';
+import { PillyConfirmationSheet } from '@/ui/components/pilly-confirmation-sheet';
 import { PillyNumberPicker } from '@/ui/components/pilly-number-picker';
 import { PillyText } from '@/ui/components/pilly-text';
 import { PillyToggle } from '@/ui/components/pilly-toggle';
@@ -214,7 +214,7 @@ export default function MedicineDetailRoute() {
         ) : null}
       </Animated.View>
 
-      <PillyModal
+      <PillyConfirmationSheet
         visible={detail.confirmArchive}
         title="Archive?"
         message="Hide it from Today and Week. History stays saved."
@@ -223,7 +223,7 @@ export default function MedicineDetailRoute() {
         onConfirm={() => detail.archiveMutation.mutate(true)}
         onClose={() => detail.setConfirmArchive(false)}
       />
-      <PillyModal
+      <PillyConfirmationSheet
         visible={detail.confirmDelete}
         title="Delete medicine?"
         message="Deletes this medicine and its history. This can’t be undone."

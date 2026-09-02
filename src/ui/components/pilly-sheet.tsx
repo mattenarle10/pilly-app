@@ -11,18 +11,34 @@ type Props = PropsWithChildren<{
   visible: boolean;
   title: string;
   message?: string;
+  dismissible?: boolean;
   onClose: () => void;
 }>;
 
-export function PillySheet({ visible, title, message, onClose, children }: Props) {
+export function PillySheet({
+  visible,
+  title,
+  message,
+  dismissible = true,
+  onClose,
+  children,
+}: Props) {
   const insets = useSafeAreaInsets();
   return (
-    <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
+    <Modal
+      visible={visible}
+      transparent
+      animationType="fade"
+      onRequestClose={() => {
+        if (dismissible) onClose();
+      }}
+    >
       <View style={styles.backdrop}>
         <Pressable
           accessibilityRole="button"
           accessibilityLabel="Close sheet"
           style={StyleSheet.absoluteFill}
+          disabled={!dismissible}
           onPress={onClose}
         />
         <Animated.View
@@ -41,7 +57,7 @@ export function PillySheet({ visible, title, message, onClose, children }: Props
                 </PillyText>
               ) : null}
             </View>
-            <PillyIconButton icon="close" label="Close" onPress={onClose} />
+            <PillyIconButton icon="close" label="Close" disabled={!dismissible} onPress={onClose} />
           </View>
           <ScrollView
             automaticallyAdjustKeyboardInsets
