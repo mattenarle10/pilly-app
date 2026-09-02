@@ -59,4 +59,20 @@ describe('medicine photo field', () => {
     expect(onSelect).toHaveBeenCalledWith('library');
     expect(onRemove).toHaveBeenCalledTimes(1);
   });
+
+  test('keeps the preview stable and replaces actions with quiet progress while busy', async () => {
+    const screen = await render(
+      <MedicinePhotoField
+        uri="file:///private/photo.jpg"
+        busy
+        onSelect={jest.fn()}
+        onRemove={jest.fn()}
+      />,
+    );
+
+    expect(screen.getByLabelText('Medicine recognition photo')).toBeOnTheScreen();
+    expect(screen.getByLabelText('Updating medicine photo')).toBeOnTheScreen();
+    expect(screen.queryByLabelText('Change photo')).toBeNull();
+    expect(screen.queryByLabelText('Remove')).toBeNull();
+  });
 });

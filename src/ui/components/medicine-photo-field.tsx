@@ -1,6 +1,6 @@
-import { Image, StyleSheet, View } from 'react-native';
+import { ActivityIndicator, Image, StyleSheet, View } from 'react-native';
 
-import { colors, radii, spacing } from '@/ui/tokens';
+import { colors, controlHeights, radii, spacing } from '@/ui/tokens';
 import type { MedicinePhotoSource } from '@/services/medicine-image-cache';
 
 import { PillyBanner } from './pilly-banner';
@@ -47,22 +47,29 @@ export function MedicinePhotoField({ uri, busy, error, onSelect, onRemove, onRet
         <View style={styles.copy}>
           <PillyText role="label">{uri ? 'Photo added' : 'No photo yet'}</PillyText>
           <View style={styles.actions}>
-            <PillyButton
-              label={uri ? 'Change photo' : 'Add photo'}
-              variant="secondary"
-              size="compact"
-              loading={busy}
-              onPress={chooseSource}
-            />
-            {uri ? (
-              <PillyButton
-                label="Remove"
-                variant="quiet"
-                size="compact"
-                disabled={busy}
-                onPress={onRemove}
-              />
-            ) : null}
+            {busy ? (
+              <View
+                accessible
+                accessibilityLabel="Updating medicine photo"
+                accessibilityRole="progressbar"
+                accessibilityState={{ busy: true }}
+                style={styles.progress}
+              >
+                <ActivityIndicator color={colors.brand} />
+              </View>
+            ) : (
+              <>
+                <PillyButton
+                  label={uri ? 'Change photo' : 'Add photo'}
+                  variant="secondary"
+                  size="compact"
+                  onPress={chooseSource}
+                />
+                {uri ? (
+                  <PillyButton label="Remove" variant="quiet" size="compact" onPress={onRemove} />
+                ) : null}
+              </>
+            )}
           </View>
         </View>
       </PillyCard>
@@ -93,5 +100,16 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surfaceSubtle,
   },
   copy: { flex: 1, gap: spacing.xs },
-  actions: { flexDirection: 'row', alignItems: 'center', marginTop: spacing.xs },
+  actions: {
+    minHeight: controlHeights.compact,
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: spacing.xs,
+  },
+  progress: {
+    minWidth: controlHeights.compact,
+    minHeight: controlHeights.compact,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
 });
