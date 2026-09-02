@@ -20,7 +20,10 @@ export function MedicinePreviewStack({
     >
       <View style={styles.stack}>
         {previews.map((preview, index) => (
-          <View key={`${preview.id}:${index}`} style={[styles.preview, index > 0 && styles.overlap]}>
+          <View
+            key={`${preview.id}:${index}`}
+            style={[styles.preview, index > 0 && styles.overlap]}
+          >
             <MedicationAppearance
               shape={preview.shape}
               size={preview.size}

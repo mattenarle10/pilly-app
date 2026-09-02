@@ -60,8 +60,7 @@ export function buildDoseTimePacks(
       recorded: taken + skipped,
       unresolved,
     });
-    const actionable =
-      interactive && unresolved > 0 && scheduledAt.getTime() <= now.getTime();
+    const actionable = interactive && unresolved > 0 && scheduledAt.getTime() <= now.getTime();
     const previews = groupDoses.slice(0, 3).map(toRecognitionPreview);
     const time = formatTime(groupDoses[0]!.schedule.hour, groupDoses[0]!.schedule.minute);
 
@@ -143,7 +142,7 @@ function packAccessibilityLabel({
   const parts = [
     time,
     `${total} ${total === 1 ? 'medicine' : 'medicines'}`,
-    unresolved === 0 ? 'Complete' : `${unresolved} ${unresolved === 1 ? 'due' : 'due'}`,
+    unresolved === 0 ? 'Complete' : `${unresolved} due`,
   ];
   if (taken > 0) parts.push(`${taken} taken`);
   if (skipped > 0) parts.push(`${skipped} skipped`);

@@ -123,10 +123,7 @@ export default function WeekRoute() {
               </PillyText>
             </View>
           ) : (
-            <WeekAgenda
-              packs={packs}
-              onOpenPack={(pack) => setSelectedPackKey(pack.key)}
-            />
+            <WeekAgenda packs={packs} onOpenPack={(pack) => setSelectedPackKey(pack.key)} />
           )}
         </View>
       ) : null}

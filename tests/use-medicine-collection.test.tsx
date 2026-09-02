@@ -50,12 +50,12 @@ describe('medicine collection hooks', () => {
 
   test('loads and saves free local collection preferences', async () => {
     const repository = {
-      getSetting: jest.fn((key: string) => Promise.resolve(key.endsWith('View') ? 'list' : 'recent')),
+      getSetting: jest.fn((key: string) =>
+        Promise.resolve(key.endsWith('View') ? 'list' : 'recent'),
+      ),
       setSetting: jest.fn().mockResolvedValue(undefined),
     };
-    mockedUseRepository.mockReturnValue(
-      repository as unknown as ReturnType<typeof useRepository>,
-    );
+    mockedUseRepository.mockReturnValue(repository as unknown as ReturnType<typeof useRepository>);
     const client = new QueryClient({
       defaultOptions: {
         queries: { retry: false, gcTime: 0 },
@@ -83,9 +83,7 @@ describe('medicine collection hooks', () => {
         { medicationId: 'two', cacheKey: 'medicines/two.jpg', transferState: 'pendingDelete' },
       ]),
     };
-    mockedUseRepository.mockReturnValue(
-      repository as unknown as ReturnType<typeof useRepository>,
-    );
+    mockedUseRepository.mockReturnValue(repository as unknown as ReturnType<typeof useRepository>);
     mockedUseAccountSession.mockReturnValue({
       state: { kind: 'signed-in', user: { id: 'account' } },
     } as unknown as ReturnType<typeof useAccountSession>);

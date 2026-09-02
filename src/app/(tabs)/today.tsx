@@ -112,10 +112,7 @@ export default function Today() {
       </View>
       {progress.total > 0 ? (
         <View
-          style={[
-            styles.summary,
-            progress.recorded === progress.total && styles.completedSummary,
-          ]}
+          style={[styles.summary, progress.recorded === progress.total && styles.completedSummary]}
         >
           <TodayCompanion recorded={progress.recorded} total={progress.total} size="compact" />
           <View style={styles.summaryCopy}>

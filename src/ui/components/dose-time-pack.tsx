@@ -6,13 +6,7 @@ import { colors, radii, shadows, spacing } from '@/ui/tokens';
 import { MedicinePreviewStack } from './medicine-preview-stack';
 import { PillyText } from './pilly-text';
 
-export function DoseTimePack({
-  pack,
-  onPress,
-}: {
-  pack: DoseTimePackModel;
-  onPress: () => void;
-}) {
+export function DoseTimePack({ pack, onPress }: { pack: DoseTimePackModel; onPress: () => void }) {
   const state = packStateCopy(pack);
   return (
     <Pressable
