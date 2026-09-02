@@ -1,8 +1,8 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useState, type ReactNode } from 'react';
 import {
   ActivityIndicator,
-  FlatList,
   Pressable,
+  ScrollView,
   StyleSheet,
   useWindowDimensions,
   View,
@@ -31,6 +31,7 @@ type MedicinesHeaderProps = {
 };
 
 type MedicinesContentProps = {
+  header?: ReactNode;
   medicines: Medication[] | undefined;
   photoUris?: Readonly<Record<string, string | null | undefined>>;
   view: MedicineCollectionView;
@@ -65,6 +66,7 @@ export function MedicinesHeader({ onAdd, showAdd = true }: MedicinesHeaderProps)
 }
 
 export function MedicinesContent({
+  header,
   medicines,
   photoUris,
   view,
@@ -100,86 +102,84 @@ export function MedicinesContent({
 
   if (isLoading && !medicines) {
     return (
-      <PillyCard tone="lavender" padding="medium" style={styles.loadingState}>
-        <ActivityIndicator color={colors.brand} />
-        <PillyText role="caption" muted>
-          Loading medicines…
-        </PillyText>
-      </PillyCard>
+      <MedicineCollectionScroll header={header}>
+        <PillyCard tone="lavender" padding="medium" style={styles.loadingState}>
+          <ActivityIndicator color={colors.brand} />
+          <PillyText role="caption" muted>
+            Loading medicines…
+          </PillyText>
+        </PillyCard>
+      </MedicineCollectionScroll>
     );
   }
 
   if (isError && !medicines) {
     return (
-      <EmptyState
-        icon="error"
-        title="Couldn’t load medicines"
-        message="Your saved data is still on this iPhone."
-        actionLabel="Try again"
-        actionIcon="refresh"
-        onAction={onRetry}
-      />
+      <MedicineCollectionScroll header={header}>
+        <EmptyState
+          icon="error"
+          title="Couldn’t load medicines"
+          message="Your saved data is still on this iPhone."
+          actionLabel="Try again"
+          actionIcon="refresh"
+          onAction={onRetry}
+        />
+      </MedicineCollectionScroll>
     );
   }
 
   if (!archived && (!medicines || medicines.length === 0)) {
     return (
-      <EmptyState
-        illustration={<StarterOrganizer />}
-        title="Your medicines live here"
-        message="Add the first one from the label in front of you."
-        actionLabel="Add medicine"
-        onAction={onAdd}
-      />
+      <MedicineCollectionScroll header={header}>
+        <EmptyState
+          illustration={<StarterOrganizer />}
+          title="Your medicines live here"
+          message="Add the first one from the label in front of you."
+          actionLabel="Add medicine"
+          onAction={onAdd}
+        />
+      </MedicineCollectionScroll>
     );
   }
 
   if (archived && sectionCount === 0) {
     return (
-      <EmptyState
-        icon="archive"
-        title="No archived medicines"
-        message="Medicines you archive will stay available here."
-      />
+      <MedicineCollectionScroll header={header}>
+        <EmptyState
+          icon="archive"
+          title="No archived medicines"
+          message="Medicines you archive will stay available here."
+        />
+      </MedicineCollectionScroll>
     );
   }
 
   return (
-    <FlatList
-      key={`${view}-${columns}`}
+    <MedicineCollectionScroll
       accessibilityLabel={archived ? 'Archived medicines' : 'Active medicines'}
-      data={items}
-      numColumns={columns}
-      keyExtractor={(item) => item.id}
-      keyboardShouldPersistTaps="handled"
-      keyboardDismissMode="on-drag"
-      showsVerticalScrollIndicator={false}
-      contentContainerStyle={styles.collectionContent}
-      columnWrapperStyle={columns === 2 ? styles.columns : undefined}
-      ItemSeparatorComponent={() => <View style={styles.itemGap} />}
-      ListHeaderComponent={
-        <View style={styles.collectionHeader}>
-          {isError ? (
-            <PillyBanner
-              kind="error"
-              title="Couldn’t refresh medicines"
-              message="Showing the last saved list."
-              actionLabel="Try again"
-              onAction={onRetry}
-              compact
-            />
-          ) : null}
-          <MedicineCollectionToolbar
-            query={query}
-            view={view}
-            sort={sort}
-            onQueryChange={setQuery}
-            onViewChange={onViewChange}
-            onSortChange={onSortChange}
+      header={header}
+    >
+      <View style={styles.collectionHeader}>
+        {isError ? (
+          <PillyBanner
+            kind="error"
+            title="Couldn’t refresh medicines"
+            message="Showing the last saved list."
+            actionLabel="Try again"
+            onAction={onRetry}
+            compact
           />
-        </View>
-      }
-      ListEmptyComponent={
+        ) : null}
+        <MedicineCollectionToolbar
+          query={query}
+          view={view}
+          sort={sort}
+          onQueryChange={setQuery}
+          onViewChange={onViewChange}
+          onSortChange={onSortChange}
+        />
+      </View>
+      {items.length === 0 ? (
         <View style={styles.emptyCollection}>
           <PillyText role="headline">{query ? 'No matches' : 'No active medicines'}</PillyText>
           <PillyText role="caption" muted>
@@ -188,18 +188,48 @@ export function MedicinesContent({
               : 'Add a medicine or open the archived shelf.'}
           </PillyText>
         </View>
-      }
-      ListFooterComponent={
-        !archived && archivedCount > 0 && onOpenArchived ? (
-          <ArchivedShelf count={archivedCount} onPress={onOpenArchived} />
-        ) : null
-      }
-      renderItem={({ item }) => (
-        <View style={[styles.item, columns === 2 && styles.gridItem]}>
-          <MedicineCabinetTile item={item} layout={view} onPress={() => onOpenMedicine(item.id)} />
+      ) : (
+        <View style={[styles.items, columns === 2 && styles.columns]}>
+          {items.map((item) => (
+            <View key={item.id} style={[styles.item, columns === 2 && styles.gridItem]}>
+              <MedicineCabinetTile
+                item={item}
+                layout={view}
+                onPress={() => onOpenMedicine(item.id)}
+              />
+            </View>
+          ))}
         </View>
       )}
-    />
+      {!archived && archivedCount > 0 && onOpenArchived ? (
+        <ArchivedShelf count={archivedCount} onPress={onOpenArchived} />
+      ) : null}
+    </MedicineCollectionScroll>
+  );
+}
+
+function MedicineCollectionScroll({
+  header,
+  accessibilityLabel,
+  children,
+}: {
+  header?: ReactNode;
+  accessibilityLabel?: string;
+  children: ReactNode;
+}) {
+  return (
+    <ScrollView
+      accessibilityLabel={accessibilityLabel}
+      automaticallyAdjustKeyboardInsets
+      contentInsetAdjustmentBehavior="automatic"
+      contentContainerStyle={styles.collectionContent}
+      keyboardShouldPersistTaps="handled"
+      keyboardDismissMode="on-drag"
+      showsVerticalScrollIndicator={false}
+    >
+      {header ? <View style={styles.routeHeader}>{header}</View> : null}
+      {children}
+    </ScrollView>
   );
 }
 
@@ -238,11 +268,12 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
   },
   collectionContent: { flexGrow: 1, paddingBottom: spacing.xxxl },
+  routeHeader: { marginBottom: spacing.xl },
   collectionHeader: { gap: spacing.md, marginBottom: spacing.md },
-  columns: { gap: spacing.md },
-  item: { flex: 1 },
-  gridItem: { maxWidth: '48%' },
-  itemGap: { height: spacing.md },
+  items: { gap: spacing.md },
+  columns: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.md },
+  item: { width: '100%' },
+  gridItem: { flexGrow: 1, width: '47%', maxWidth: '48%' },
   emptyCollection: {
     gap: spacing.xs,
     padding: spacing.xl,

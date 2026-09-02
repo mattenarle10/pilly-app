@@ -2,7 +2,6 @@ import { router } from 'expo-router';
 
 import { MedicinesContent, MedicinesHeader } from '@/ui/components/medicines-content';
 import { Screen } from '@/ui/components/screen';
-import { spacing } from '@/ui/tokens';
 import {
   useMedicineCollectionPhotos,
   useMedicineCollectionPreferences,
@@ -17,8 +16,8 @@ export default function MedicinesRoute() {
 
   return (
     <Screen scroll={false} safeAreaEdges={['top']} contentStyle={styles.screen}>
-      <MedicinesHeader onAdd={addMedicine} showAdd={query.data?.length !== 0} />
       <MedicinesContent
+        header={<MedicinesHeader onAdd={addMedicine} showAdd={query.data?.length !== 0} />}
         medicines={query.data}
         photoUris={photos.photoUris}
         view={preferences.view}
@@ -36,4 +35,4 @@ export default function MedicinesRoute() {
   );
 }
 
-const styles = { screen: { gap: spacing.xl, paddingBottom: 0 } };
+const styles = { screen: { paddingBottom: 0 } };
