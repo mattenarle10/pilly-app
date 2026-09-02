@@ -5,6 +5,7 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import type { AccountSessionContextValue } from '@/providers/account-session-provider';
 import { useAccountSession } from '@/hooks/use-account-session';
 import { useProfile } from '@/hooks/use-profile';
+import { useProfileAvatar } from '@/hooks/use-profile-avatar';
 import { isPlusPurchasesSupported } from '@/services/purchases';
 
 import ProfileRoute from '@/app/profile';
@@ -20,6 +21,7 @@ jest.mock('expo-router', () => ({
 }));
 jest.mock('@/hooks/use-account-session', () => ({ useAccountSession: jest.fn() }));
 jest.mock('@/hooks/use-profile', () => ({ useProfile: jest.fn() }));
+jest.mock('@/hooks/use-profile-avatar', () => ({ useProfileAvatar: jest.fn() }));
 jest.mock('@/services/purchases', () => ({ isPlusPurchasesSupported: jest.fn() }));
 jest.mock('@/ui/components/pilly-modal', () => ({ PillyModal: () => null }));
 jest.mock('react-native-reanimated', () => {
@@ -36,6 +38,7 @@ jest.mock('react-native-reanimated', () => {
 
 const mockedUseAccountSession = jest.mocked(useAccountSession);
 const mockedUseProfile = jest.mocked(useProfile);
+const mockedUseProfileAvatar = jest.mocked(useProfileAvatar);
 const mockedIsPlusPurchasesSupported = jest.mocked(isPlusPurchasesSupported);
 const initialMetrics = {
   frame: { x: 0, y: 0, width: 390, height: 844 },
@@ -76,6 +79,16 @@ describe('Profile route account boundary', () => {
         mutate: jest.fn(),
       },
     } as unknown as ReturnType<typeof useProfile>);
+    mockedUseProfileAvatar.mockReturnValue({
+      uri: null,
+      canUpload: false,
+      plusActive: false,
+      isBusy: false,
+      error: null,
+      select: jest.fn(),
+      remove: jest.fn(),
+      retry: jest.fn(),
+    });
   });
 
   afterEach(async () => {
@@ -111,5 +124,35 @@ describe('Profile route account boundary', () => {
 
     expect(screen.getByText('Account')).toBeOnTheScreen();
     expect(screen.getByText('Google · matt@example.com')).toBeOnTheScreen();
+  });
+
+  test('shows one quiet active cue and profile-photo action for Plus', async () => {
+    mockedUseAccountSession.mockReturnValue(
+      account({
+        kind: 'signed-in',
+        user: {
+          id: 'account-1',
+          email: 'matt@example.com',
+          displayName: 'Matthew',
+          provider: 'apple',
+        },
+      }),
+    );
+    mockedUseProfileAvatar.mockReturnValue({
+      uri: null,
+      canUpload: true,
+      plusActive: true,
+      isBusy: false,
+      error: null,
+      select: jest.fn(),
+      remove: jest.fn(),
+      retry: jest.fn(),
+    });
+
+    const screen = await render(<ProfileRoute />, { wrapper });
+
+    expect(screen.getByText('Pilly Plus active')).toBeOnTheScreen();
+    expect(screen.getByLabelText('Add profile photo')).toBeOnTheScreen();
+    expect(screen.queryByText('Private with Plus')).toBeNull();
   });
 });

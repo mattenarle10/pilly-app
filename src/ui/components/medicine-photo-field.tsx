@@ -1,4 +1,4 @@
-import { ActionSheetIOS, Alert, Image, Platform, StyleSheet, View } from 'react-native';
+import { Image, StyleSheet, View } from 'react-native';
 
 import { colors, radii, spacing } from '@/ui/tokens';
 import type { MedicinePhotoSource } from '@/services/medicine-image-cache';
@@ -7,6 +7,7 @@ import { PillyBanner } from './pilly-banner';
 import { PillyButton } from './pilly-button';
 import { PillyCard } from './pilly-card';
 import { PillyText } from './pilly-text';
+import { showPhotoSourceMenu } from './photo-source-menu';
 
 type Props = {
   uri: string | null;
@@ -19,27 +20,7 @@ type Props = {
 
 export function MedicinePhotoField({ uri, busy, error, onSelect, onRemove, onRetry }: Props) {
   const message = error instanceof Error ? error.message : error;
-  const chooseSource = () => {
-    if (Platform.OS === 'ios') {
-      ActionSheetIOS.showActionSheetWithOptions(
-        {
-          options: ['Take photo', 'Choose from library', 'Cancel'],
-          cancelButtonIndex: 2,
-          title: 'Medicine photo',
-        },
-        (index) => {
-          if (index === 0) onSelect('camera');
-          if (index === 1) onSelect('library');
-        },
-      );
-      return;
-    }
-    Alert.alert('Medicine photo', undefined, [
-      { text: 'Take photo', onPress: () => onSelect('camera') },
-      { text: 'Choose from library', onPress: () => onSelect('library') },
-      { text: 'Cancel', style: 'cancel' },
-    ]);
-  };
+  const chooseSource = () => showPhotoSourceMenu('Medicine photo', onSelect);
   return (
     <View style={styles.section}>
       <View style={styles.heading}>

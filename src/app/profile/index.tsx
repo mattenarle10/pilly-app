@@ -12,12 +12,16 @@ import { PillyIcon, type PillyIconName } from '@/ui/icons';
 import { colors, radii, shadows, spacing } from '@/ui/tokens';
 import { useAccountSession } from '@/hooks/use-account-session';
 import { useProfile } from '@/hooks/use-profile';
+import { useProfileAvatar } from '@/hooks/use-profile-avatar';
 import { accountProviderLabel } from '@/models/account';
 import { isPlusPurchasesSupported } from '@/services/purchases';
+import { PillyAvatar } from '@/ui/components/pilly-avatar';
+import { showPhotoSourceMenu } from '@/ui/components/photo-source-menu';
 
 export default function ProfileRoute() {
   const account = useAccountSession();
   const profile = useProfile();
+  const avatar = useProfileAvatar();
   const plusSupported = isPlusPurchasesSupported();
   const [nameModalOpen, setNameModalOpen] = useState(false);
   const [firstNameDraft, setFirstNameDraft] = useState('');
@@ -52,18 +56,29 @@ export default function ProfileRoute() {
       >
         <View style={styles.identity}>
           <View style={styles.identityHeader}>
-            {profile.isLoading ? (
-              <View style={styles.loadingName}>
-                <ActivityIndicator color={colors.brand} />
-                <PillyText role="caption" muted>
-                  Loading profile…
+            <PillyAvatar
+              displayName={profile.displayName || account.state.user?.displayName || 'Pilly'}
+              uri={avatar.uri}
+              plus={avatar.plusActive}
+              size={64}
+            />
+            <View style={styles.identityCopy}>
+              {profile.isLoading ? (
+                <View style={styles.loadingName}>
+                  <ActivityIndicator color={colors.brand} />
+                  <PillyText role="caption" muted>
+                    Loading profile…
+                  </PillyText>
+                </View>
+              ) : (
+                <PillyText role="title" accessibilityRole="header" style={styles.name}>
+                  {profile.displayName || 'Your Pilly'}
                 </PillyText>
-              </View>
-            ) : (
-              <PillyText role="title" accessibilityRole="header" style={styles.name}>
-                {profile.displayName || 'Your Pilly'}
+              )}
+              <PillyText role="caption" muted>
+                {avatar.plusActive ? 'Pilly Plus active' : 'Local profile'}
               </PillyText>
-            )}
+            </View>
             <Pressable
               accessibilityRole="button"
               accessibilityLabel="Edit name"
@@ -81,10 +96,47 @@ export default function ProfileRoute() {
               </PillyText>
             </Pressable>
           </View>
-          <PillyText role="caption" muted>
-            Local profile
-          </PillyText>
+          {avatar.canUpload ? (
+            <View style={styles.avatarActions}>
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel={avatar.uri ? 'Change profile photo' : 'Add profile photo'}
+                disabled={avatar.isBusy}
+                onPress={() =>
+                  showPhotoSourceMenu('Profile photo', (source) => void avatar.select(source))
+                }
+                style={({ pressed }) => [pressed && styles.pressed]}
+              >
+                <PillyText role="label" style={styles.avatarActionLabel}>
+                  {avatar.uri ? 'Change photo' : 'Add photo'}
+                </PillyText>
+              </Pressable>
+              {avatar.uri ? (
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel="Remove profile photo"
+                  disabled={avatar.isBusy}
+                  onPress={() => void avatar.remove()}
+                  style={({ pressed }) => [pressed && styles.pressed]}
+                >
+                  <PillyText role="label" muted>
+                    Remove
+                  </PillyText>
+                </Pressable>
+              ) : null}
+            </View>
+          ) : null}
         </View>
+
+        {avatar.error ? (
+          <PillyBanner
+            kind="error"
+            message={avatar.error instanceof Error ? avatar.error.message : 'Profile photo failed.'}
+            actionLabel="Try again"
+            onAction={() => void avatar.retry()}
+            compact
+          />
+        ) : null}
 
         {profile.isError ? (
           <PillyBanner
@@ -259,12 +311,13 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.sm,
   },
   identityHeader: {
-    minHeight: 44,
+    minHeight: 64,
     flexDirection: 'row',
     alignItems: 'flex-start',
     justifyContent: 'space-between',
     gap: spacing.sm,
   },
+  identityCopy: { flex: 1, alignSelf: 'center', gap: spacing.xs },
   loadingName: {
     flex: 1,
     minHeight: 38,
@@ -272,13 +325,21 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: spacing.sm,
   },
-  name: { flex: 1, fontWeight: '600' },
+  name: { fontWeight: '600' },
   editName: {
     minHeight: 44,
     justifyContent: 'flex-start',
     paddingHorizontal: spacing.sm,
   },
   editNameLabel: { color: colors.brand },
+  avatarActions: {
+    minHeight: 44,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.lg,
+    paddingLeft: 64 + spacing.md,
+  },
+  avatarActionLabel: { color: colors.brand },
   pressed: { opacity: 0.68 },
   disabled: { opacity: 0.4 },
   section: { gap: spacing.sm },
