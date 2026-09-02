@@ -22,6 +22,7 @@ import {
   purgeMedicinePhotoCacheForAccount,
 } from '@/services/medicine-image-cache';
 import { reconcileLocalReminders } from '@/services/notifications';
+import { purgeProfileAvatarCacheForAccount } from '@/services/profile-avatar-cache';
 import { PillyRepository } from '@/storage/repository';
 import { PillySyncStore } from '@/storage/sync-store';
 
@@ -60,6 +61,7 @@ export function AccountSessionProvider({ children }: PropsWithChildren) {
       const images = await repository.clearMedicationImages();
       images.forEach((image) => deleteCachedMedicinePhoto(image.cacheKey));
       await purgeMedicinePhotoCacheForAccount(accountId);
+      await purgeProfileAvatarCacheForAccount(accountId);
       await repository.deleteSetting(`plusEntitled:${accountId}`);
       queryClient.clear();
     },
@@ -71,6 +73,7 @@ export function AccountSessionProvider({ children }: PropsWithChildren) {
       const images = await repository.clearTrackedData();
       images.forEach((image) => deleteCachedMedicinePhoto(image.cacheKey));
       await purgeMedicinePhotoCacheForAccount(accountId);
+      await purgeProfileAvatarCacheForAccount(accountId);
       await repository.deleteSetting(`plusEntitled:${accountId}`);
       await reconcileLocalReminders(repository);
       queryClient.clear();
