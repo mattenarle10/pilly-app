@@ -1,6 +1,6 @@
 import type { SQLiteDatabase } from 'expo-sqlite';
 
-const databaseVersion = 8;
+const databaseVersion = 9;
 
 export async function migrateDatabase(database: SQLiteDatabase): Promise<void> {
   await database.execAsync('PRAGMA journal_mode = WAL; PRAGMA foreign_keys = ON;');
@@ -200,6 +200,17 @@ export async function migrateDatabase(database: SQLiteDatabase): Promise<void> {
         updated_at TEXT NOT NULL,
         last_error TEXT
       );
+    `);
+  }
+  if (currentVersion < 9) {
+    await database.execAsync(`
+      ALTER TABLE medications ADD COLUMN form TEXT NOT NULL DEFAULT 'capsule'
+        CHECK(form IN ('tablet', 'capsule', 'liquid', 'injection', 'drops', 'inhaler', 'other'));
+      UPDATE medications
+      SET form = CASE
+        WHEN appearance_shape IN ('round', 'oval') THEN 'tablet'
+        ELSE 'capsule'
+      END;
     `);
   }
   await database.execAsync(`PRAGMA user_version = ${databaseVersion}`);
