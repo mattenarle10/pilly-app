@@ -2,14 +2,12 @@ import { useEffect, useRef, useState } from 'react';
 import { Pressable, StyleSheet, useWindowDimensions, View } from 'react-native';
 
 import { MedicineRecognition } from './medicine-recognition';
-import { MedicationAppearancePreview3D } from './medication-appearance-preview-3d';
 import { MedicationColorPicker } from './medication-color-picker';
 import { PillyDialog } from './pilly-dialog';
 import { PillyText } from './pilly-text';
 import { PillyIcon } from '@/ui/icons';
 import { colors, radii, shadows, spacing } from '@/ui/tokens';
 import {
-  legacyAppearanceShape,
   medicationAppearanceColorName,
   medicationFormName,
   medicationRecognitionDescription,
@@ -117,16 +115,7 @@ export function MedicineTypeStep(props: Props) {
         onClose={() => setShowEditor(false)}
       >
         <View style={styles.preview}>
-          {props.form === 'tablet' || props.form === 'capsule' ? (
-            <MedicationAppearancePreview3D
-              shape={legacyAppearanceShape(props.form, props.tabletShape)}
-              color={props.color}
-              secondaryColor={props.secondaryColor}
-              active={showEditor}
-            />
-          ) : (
-            <MedicineRecognition {...props} display="hero" />
-          )}
+          <MedicineRecognition {...props} display="hero" />
         </View>
         <FormChoices value={props.form} color={props.color} onChange={changeForm} />
         {props.form === 'tablet' ? (
@@ -372,6 +361,8 @@ const styles = StyleSheet.create({
   formChoice: {
     width: '48%',
     minHeight: 48,
+    borderWidth: 1.5,
+    borderColor: 'transparent',
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.xs,
@@ -379,7 +370,7 @@ const styles = StyleSheet.create({
     borderRadius: radii.lg,
     backgroundColor: colors.surfaceSubtle,
   },
-  formChoiceActive: { backgroundColor: colors.brandSoft },
+  formChoiceActive: { borderColor: colors.brand, backgroundColor: colors.surface },
   formChoiceLarge: { width: '100%' },
   choiceRow: { flexDirection: 'row', gap: spacing.sm },
   choice: {

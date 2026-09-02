@@ -29,7 +29,7 @@ const frameSizes = {
 
 const glyphViewBoxes: Record<Exclude<StoredMedicationForm, 'tablet' | 'capsule'>, string> = {
   liquid: '18 7 36 60',
-  injection: '14 8 44 58',
+  injection: '8 12 56 48',
   drops: '18 7 36 58',
   inhaler: '18 9 44 58',
   other: '10 10 52 54',
@@ -137,21 +137,24 @@ function MedicineFormGlyph({
       return (
         <G transform="rotate(-35 36 36)">
           <Rect
-            x="27"
-            y="18"
-            width="18"
-            height="38"
-            rx="8"
+            x="22"
+            y="27"
+            width="29"
+            height="18"
+            rx="4"
             transform="translate(0 2)"
             {...shadow}
           />
-          <Rect x="27" y="18" width="18" height="38" rx="8" {...body} />
-          <Path d="M31 22 V31" {...highlight} />
-          <Line x1="27" y1="29" x2="45" y2="29" {...detail} />
-          <Line x1="31" y1="22" x2="31" y2="15" {...detail} />
-          <Line x1="41" y1="22" x2="41" y2="15" {...detail} />
-          <Line x1="30" y1="60" x2="42" y2="60" {...detail} />
-          <Line x1="36" y1="56" x2="36" y2="63" {...detail} />
+          <Rect x="22" y="27" width="29" height="18" rx="4" {...body} />
+          <Path d="M26 31 H40" {...highlight} />
+          <Line x1="43" y1="27" x2="43" y2="45" {...detail} />
+          <Line x1="32" y1="37" x2="32" y2="42" {...detail} />
+          <Line x1="37" y1="37" x2="37" y2="42" {...detail} />
+          <Line x1="51" y1="36" x2="61" y2="36" {...detail} />
+          <Line x1="15" y1="36" x2="22" y2="36" {...detail} />
+          <Line x1="14" y1="29" x2="14" y2="43" {...detail} />
+          <Line x1="10" y1="29" x2="18" y2="29" {...detail} />
+          <Line x1="10" y1="43" x2="18" y2="43" {...detail} />
         </G>
       );
     case 'drops':
