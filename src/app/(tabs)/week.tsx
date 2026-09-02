@@ -1,7 +1,9 @@
+import { useState } from 'react';
 import { ActivityIndicator, StyleSheet, View } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 
 import { EmptyState } from '@/ui/components/empty-state';
+import { DoseTimeSheet } from '@/ui/components/dose-time-sheet';
 import { PillyBanner } from '@/ui/components/pilly-banner';
 import { PillyCard } from '@/ui/components/pilly-card';
 import { PillyText } from '@/ui/components/pilly-text';
@@ -14,23 +16,25 @@ import { useCurrentMinute } from '@/hooks/use-current-minute';
 import { useWeekData } from '@/hooks/use-week-data';
 import {
   buildWeekDays,
-  groupWeekDoses,
   resolveWeekSelection,
   weekProgress,
   weekProgressMessage,
 } from '@/models/week';
+import { buildDoseTimePacks } from '@/models/dose-time-pack';
 
 export default function WeekRoute() {
   const { date } = useLocalSearchParams<{ date?: string }>();
   const { dates, doses, medicines } = useWeekData();
   const now = useCurrentMinute();
+  const [selectedPackKey, setSelectedPackKey] = useState<string | null>(null);
   const selectedIndex = resolveWeekSelection(dates, date);
 
   const days = buildWeekDays(dates, doses.data, now);
   const progress = weekProgress(doses.data, now);
   const selectedDate = dates[selectedIndex] ?? dates[0]!;
   const selectedDoses = doses.data?.[selectedIndex] ?? [];
-  const groups = groupWeekDoses(selectedDoses);
+  const packs = buildDoseTimePacks(selectedDoses, now, false);
+  const selectedPack = packs.find((pack) => pack.key === selectedPackKey) ?? null;
   const loading = (doses.isLoading && !doses.data) || (medicines.isLoading && !medicines.data);
   const failed = (doses.isError && !doses.data) || (medicines.isError && !medicines.data);
   const selectedLabel = new Intl.DateTimeFormat(undefined, {
@@ -53,7 +57,10 @@ export default function WeekRoute() {
       <WeekStatusStrip
         days={days}
         selectedIndex={selectedIndex}
-        onDayPress={(index) => router.setParams({ date: days[index]?.key })}
+        onDayPress={(index) => {
+          setSelectedPackKey(null);
+          router.setParams({ date: days[index]?.key });
+        }}
       />
 
       {failed ? (
@@ -117,14 +124,23 @@ export default function WeekRoute() {
             </View>
           ) : (
             <WeekAgenda
-              groups={groups}
-              onOpenMedicine={(medicineId) =>
-                router.push({ pathname: '/medicine/[id]', params: { id: medicineId } })
-              }
+              packs={packs}
+              onOpenPack={(pack) => setSelectedPackKey(pack.key)}
             />
           )}
         </View>
       ) : null}
+      <DoseTimeSheet
+        pack={selectedPack}
+        visible={selectedPack !== null}
+        interactive={false}
+        busy={false}
+        onOpenMedicine={(dose) => {
+          setSelectedPackKey(null);
+          router.push({ pathname: '/medicine/[id]', params: { id: dose.medication.id } });
+        }}
+        onClose={() => setSelectedPackKey(null)}
+      />
     </Screen>
   );
 }
