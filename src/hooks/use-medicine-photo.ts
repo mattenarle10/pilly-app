@@ -192,9 +192,19 @@ export function useMedicinePhoto(medicationId?: string) {
     isBusy: selectMutation.isPending || removeMutation.isPending || retryMutation.isPending,
     error,
     errorKind,
-    select: (source: MedicinePhotoSource) => selectMutation.mutateAsync(source),
-    remove: () => removeMutation.mutateAsync(),
-    retry: () => (errorKind === 'restore' ? query.refetch() : retryMutation.mutateAsync()),
+    select: (source: MedicinePhotoSource) => {
+      retryMutation.reset();
+      return selectMutation.mutateAsync(source);
+    },
+    remove: () => {
+      selectMutation.reset();
+      retryMutation.reset();
+      return removeMutation.mutateAsync();
+    },
+    retry: () => {
+      selectMutation.reset();
+      return errorKind === 'restore' ? query.refetch() : retryMutation.mutateAsync();
+    },
     attachToMedication: (id: string) =>
       staged ? persistStaged(id, staged, false) : Promise.resolve(null),
   };
