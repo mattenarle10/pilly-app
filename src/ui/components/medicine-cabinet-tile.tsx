@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Image, Pressable, StyleSheet, View } from 'react-native';
+import { Image, Pressable, StyleSheet, useWindowDimensions, View } from 'react-native';
 
 import type { MedicineCollectionItemModel } from '@/models/medicine-collection';
 import { PillyIcon } from '@/ui/icons';
@@ -15,7 +15,9 @@ type Props = {
 
 export function MedicineCabinetTile({ item, layout, onPress }: Props) {
   const [failedPhotoUri, setFailedPhotoUri] = useState<string | null>(null);
+  const { fontScale } = useWindowDimensions();
   const showPhoto = item.photoUri !== null && item.photoUri !== failedPhotoUri;
+  const nameLineLimit = fontScale >= 1.5 ? undefined : 2;
 
   return (
     <Pressable
@@ -50,7 +52,7 @@ export function MedicineCabinetTile({ item, layout, onPress }: Props) {
         )}
       </View>
       <View style={styles.copy}>
-        <PillyText role="headline" numberOfLines={2} style={styles.name}>
+        <PillyText role="headline" numberOfLines={nameLineLimit} style={styles.name}>
           {item.name}
         </PillyText>
         {item.archived ? (

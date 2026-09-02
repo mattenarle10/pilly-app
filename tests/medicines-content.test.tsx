@@ -3,6 +3,11 @@ import { act, cleanup, fireEvent, render } from '@testing-library/react-native';
 import type { Medication } from '@/models/medication';
 import { MedicinesContent } from '@/ui/components/medicines-content';
 
+jest.mock('react-native/Libraries/Utilities/useWindowDimensions', () => ({
+  __esModule: true,
+  default: jest.fn(() => ({ width: 390, height: 844, scale: 3, fontScale: 1 })),
+}));
+
 jest.mock('react-native-reanimated', () => {
   const { View } = jest.requireActual<typeof import('react-native')>('react-native');
   return {
@@ -51,10 +56,14 @@ const baseProps = {
   onOpenArchived: jest.fn(),
 };
 
+const useWindowDimensions = jest.requireMock('react-native/Libraries/Utilities/useWindowDimensions')
+  .default as jest.Mock;
+
 describe('MedicinesContent', () => {
   afterEach(async () => {
     await cleanup();
     jest.clearAllMocks();
+    useWindowDimensions.mockReturnValue({ width: 390, height: 844, scale: 3, fontScale: 1 });
   });
 
   test('uses the organizer illustration and one clear action when empty', async () => {
@@ -116,6 +125,16 @@ describe('MedicinesContent', () => {
       fireEvent.press(screen.getByLabelText('Sort medicines by recently added')),
     );
     expect(onSortChange).toHaveBeenCalledWith('recent');
+  });
+
+  test('shows the complete medicine name at accessibility text sizes', async () => {
+    useWindowDimensions.mockReturnValue({ width: 390, height: 844, scale: 3, fontScale: 1.5 });
+    const longName = 'Very long medicine label that needs more than two lines';
+    const screen = await render(
+      <MedicinesContent {...baseProps} medicines={[{ ...activeMedicine, name: longName }]} />,
+    );
+
+    expect(screen.getByText(longName)).not.toHaveProp('numberOfLines');
   });
 
   test('shows archived medicines in their quieter dedicated collection', async () => {
