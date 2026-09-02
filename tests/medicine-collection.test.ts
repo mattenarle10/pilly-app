@@ -51,7 +51,8 @@ describe('medicine collection presentation', () => {
     expect(item).toMatchObject({
       name: 'Archived capsule',
       photoUri: 'file:///photo.jpg',
-      accessibilityLabel: 'Archived capsule. Archived medicine. capsule. Opens medicine details.',
+      accessibilityLabel:
+        'Archived capsule. Archived medicine. Saved medicine photo. Opens medicine details.',
     });
   });
 

@@ -1,15 +1,29 @@
-import { ActivityIndicator, Pressable, StyleSheet, View } from 'react-native';
+import { useMemo, useState } from 'react';
+import {
+  ActivityIndicator,
+  FlatList,
+  Pressable,
+  StyleSheet,
+  useWindowDimensions,
+  View,
+} from 'react-native';
 
+import {
+  buildMedicineCollectionItems,
+  type MedicineCollectionSort,
+  type MedicineCollectionView,
+} from '@/models/medicine-collection';
 import type { Medication } from '@/models/medication';
+import { PillyIcon } from '@/ui/icons';
+import { StarterOrganizer } from '@/ui/illustrations/starter-organizer';
+import { colors, radii, spacing } from '@/ui/tokens';
 import { EmptyState } from './empty-state';
-import { MedicationAppearance } from './medication-appearance';
+import { MedicineCabinetTile } from './medicine-cabinet-tile';
+import { MedicineCollectionToolbar } from './medicine-collection-toolbar';
 import { PillyBanner } from './pilly-banner';
 import { PillyCard } from './pilly-card';
 import { PillyIconButton } from './pilly-icon-button';
 import { PillyText } from './pilly-text';
-import { PillyIcon } from '@/ui/icons';
-import { StarterOrganizer } from '@/ui/illustrations/starter-organizer';
-import { colors, spacing } from '@/ui/tokens';
 
 type MedicinesHeaderProps = {
   onAdd: () => void;
@@ -18,11 +32,18 @@ type MedicinesHeaderProps = {
 
 type MedicinesContentProps = {
   medicines: Medication[] | undefined;
+  photoUris?: Readonly<Record<string, string | null | undefined>>;
+  view: MedicineCollectionView;
+  sort: MedicineCollectionSort;
+  archived?: boolean;
   isLoading: boolean;
   isError: boolean;
-  onAdd: () => void;
+  onAdd?: () => void;
   onRetry: () => void;
+  onViewChange: (view: MedicineCollectionView) => void;
+  onSortChange: (sort: MedicineCollectionSort) => void;
   onOpenMedicine: (medicineId: string) => void;
+  onOpenArchived?: () => void;
 };
 
 export function MedicinesHeader({ onAdd, showAdd = true }: MedicinesHeaderProps) {
@@ -45,12 +66,38 @@ export function MedicinesHeader({ onAdd, showAdd = true }: MedicinesHeaderProps)
 
 export function MedicinesContent({
   medicines,
+  photoUris,
+  view,
+  sort,
+  archived = false,
   isLoading,
   isError,
   onAdd,
   onRetry,
+  onViewChange,
+  onSortChange,
   onOpenMedicine,
+  onOpenArchived,
 }: MedicinesContentProps) {
+  const { fontScale } = useWindowDimensions();
+  const [query, setQuery] = useState('');
+  const columns = view === 'cabinet' && fontScale < 1.5 ? 2 : 1;
+  const sectionCount = (medicines ?? []).filter(
+    (medicine) => (medicine.archivedAt !== null) === archived,
+  ).length;
+  const archivedCount = (medicines ?? []).filter((medicine) => medicine.archivedAt !== null).length;
+  const items = useMemo(
+    () =>
+      buildMedicineCollectionItems({
+        medicines,
+        photoUris,
+        query,
+        sort,
+        archived,
+      }),
+    [archived, medicines, photoUris, query, sort],
+  );
+
   if (isLoading && !medicines) {
     return (
       <PillyCard tone="lavender" padding="medium" style={styles.loadingState}>
@@ -75,7 +122,7 @@ export function MedicinesContent({
     );
   }
 
-  if (!medicines || medicines.length === 0) {
+  if (!archived && (!medicines || medicines.length === 0)) {
     return (
       <EmptyState
         illustration={<StarterOrganizer />}
@@ -87,96 +134,92 @@ export function MedicinesContent({
     );
   }
 
-  const active = medicines.filter((medicine) => medicine.archivedAt === null);
-  const archived = medicines.filter((medicine) => medicine.archivedAt !== null);
+  if (archived && sectionCount === 0) {
+    return (
+      <EmptyState
+        icon="archive"
+        title="No archived medicines"
+        message="Medicines you archive will stay available here."
+      />
+    );
+  }
 
   return (
-    <View style={styles.content}>
-      {isError ? (
-        <PillyBanner
-          kind="error"
-          title="Couldn’t refresh medicines"
-          message="Showing the last saved list."
-          actionLabel="Try again"
-          onAction={onRetry}
-          compact
-        />
-      ) : null}
-
-      {active.length > 0 ? (
-        <MedicineList medicines={active} onOpenMedicine={onOpenMedicine} />
-      ) : (
-        <PillyCard tone="lavender" padding="medium" style={styles.noActiveState}>
-          <PillyText role="headline">No active medicines</PillyText>
-          <PillyText role="caption" muted>
-            Archived medicines stay available below.
-          </PillyText>
-        </PillyCard>
-      )}
-
-      {archived.length > 0 ? (
-        <View style={styles.archivedSection}>
-          <View style={styles.sectionHeading}>
-            <PillyText role="headline">Archived</PillyText>
-            <PillyText role="caption" muted>
-              {archived.length}
-            </PillyText>
-          </View>
-          <MedicineList medicines={archived} onOpenMedicine={onOpenMedicine} archived />
+    <FlatList
+      key={`${view}-${columns}`}
+      accessibilityLabel={archived ? 'Archived medicines' : 'Active medicines'}
+      data={items}
+      numColumns={columns}
+      keyExtractor={(item) => item.id}
+      keyboardShouldPersistTaps="handled"
+      keyboardDismissMode="on-drag"
+      showsVerticalScrollIndicator={false}
+      contentContainerStyle={styles.collectionContent}
+      columnWrapperStyle={columns === 2 ? styles.columns : undefined}
+      ItemSeparatorComponent={() => <View style={styles.itemGap} />}
+      ListHeaderComponent={
+        <View style={styles.collectionHeader}>
+          {isError ? (
+            <PillyBanner
+              kind="error"
+              title="Couldn’t refresh medicines"
+              message="Showing the last saved list."
+              actionLabel="Try again"
+              onAction={onRetry}
+              compact
+            />
+          ) : null}
+          <MedicineCollectionToolbar
+            query={query}
+            view={view}
+            sort={sort}
+            onQueryChange={setQuery}
+            onViewChange={onViewChange}
+            onSortChange={onSortChange}
+          />
         </View>
-      ) : null}
-    </View>
+      }
+      ListEmptyComponent={
+        <View style={styles.emptyCollection}>
+          <PillyText role="headline">{query ? 'No matches' : 'No active medicines'}</PillyText>
+          <PillyText role="caption" muted>
+            {query
+              ? `No medicine names contain “${query.trim()}”.`
+              : 'Add a medicine or open the archived shelf.'}
+          </PillyText>
+        </View>
+      }
+      ListFooterComponent={
+        !archived && archivedCount > 0 && onOpenArchived ? (
+          <ArchivedShelf count={archivedCount} onPress={onOpenArchived} />
+        ) : null
+      }
+      renderItem={({ item }) => (
+        <View style={[styles.item, columns === 2 && styles.gridItem]}>
+          <MedicineCabinetTile item={item} layout={view} onPress={() => onOpenMedicine(item.id)} />
+        </View>
+      )}
+    />
   );
 }
 
-function MedicineList({
-  medicines,
-  archived = false,
-  onOpenMedicine,
-}: {
-  medicines: Medication[];
-  archived?: boolean;
-  onOpenMedicine: (medicineId: string) => void;
-}) {
+function ArchivedShelf({ count, onPress }: { count: number; onPress: () => void }) {
   return (
-    <PillyCard padding="none" style={styles.listSurface}>
-      {medicines.map((medicine, index) => (
-        <View key={medicine.id}>
-          {index > 0 ? <View style={styles.separator} /> : null}
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel={`Open ${medicine.name}`}
-            onPress={() => onOpenMedicine(medicine.id)}
-            style={({ pressed }) => [
-              styles.row,
-              archived && styles.archivedRow,
-              pressed && styles.pressedRow,
-            ]}
-          >
-            <MedicationAppearance
-              shape={medicine.appearanceShape}
-              size={medicine.appearanceSize}
-              color={medicine.appearanceColor}
-              secondaryColor={medicine.appearanceSecondaryColor}
-              display="compact"
-            />
-            <View style={styles.copy}>
-              <PillyText role="headline" numberOfLines={2}>
-                {medicine.name}
-              </PillyText>
-              <PillyText role="caption" muted>
-                {archived
-                  ? 'Archived'
-                  : medicine.supplyCount === null
-                    ? 'Supply not tracked'
-                    : `${medicine.supplyCount} doses left`}
-              </PillyText>
-            </View>
-            <PillyIcon name="next" size={20} color={colors.textSecondary} />
-          </Pressable>
-        </View>
-      ))}
-    </PillyCard>
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={`Open archived medicines, ${count} ${count === 1 ? 'medicine' : 'medicines'}`}
+      onPress={onPress}
+      style={({ pressed }) => [styles.archivedShelf, pressed && styles.archivedShelfPressed]}
+    >
+      <PillyIcon name="archive" size={20} color={colors.textSecondary} />
+      <PillyText role="label" style={styles.archivedLabel}>
+        Archived
+      </PillyText>
+      <PillyText role="caption" muted>
+        {count}
+      </PillyText>
+      <PillyIcon name="next" size={18} color={colors.textSecondary} />
+    </Pressable>
   );
 }
 
@@ -187,7 +230,6 @@ const styles = StyleSheet.create({
     gap: spacing.lg,
   },
   headerCopy: { flex: 1, gap: spacing.xs },
-  content: { gap: spacing.xl },
   loadingState: {
     minHeight: 88,
     flexDirection: 'row',
@@ -195,29 +237,27 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: spacing.sm,
   },
-  noActiveState: { gap: spacing.xs },
-  archivedSection: { gap: spacing.md },
-  sectionHeading: {
-    flexDirection: 'row',
-    alignItems: 'baseline',
-    justifyContent: 'space-between',
-    paddingHorizontal: spacing.xs,
+  collectionContent: { flexGrow: 1, paddingBottom: spacing.xxxl },
+  collectionHeader: { gap: spacing.md, marginBottom: spacing.md },
+  columns: { gap: spacing.md },
+  item: { flex: 1 },
+  gridItem: { maxWidth: '48%' },
+  itemGap: { height: spacing.md },
+  emptyCollection: {
+    gap: spacing.xs,
+    padding: spacing.xl,
+    borderRadius: radii.lg,
+    backgroundColor: colors.surfaceSubtle,
   },
-  listSurface: { overflow: 'hidden' },
-  row: {
-    minHeight: 88,
+  archivedShelf: {
+    minHeight: 56,
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.sm,
+    marginTop: spacing.lg,
     paddingHorizontal: spacing.md,
-    paddingVertical: spacing.md,
+    borderRadius: radii.lg,
   },
-  archivedRow: { opacity: 0.58 },
-  pressedRow: { backgroundColor: colors.surfaceSubtle },
-  copy: { flex: 1, gap: spacing.xs },
-  separator: {
-    height: 1,
-    marginLeft: 96,
-    backgroundColor: colors.surfaceSubtle,
-  },
+  archivedShelfPressed: { backgroundColor: colors.surfaceSubtle },
+  archivedLabel: { flex: 1 },
 });

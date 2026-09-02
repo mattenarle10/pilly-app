@@ -1,4 +1,4 @@
-import type { Medication } from './medication';
+import { medicationAppearanceColorName, type Medication } from './medication';
 
 export type MedicineCollectionView = 'cabinet' | 'list';
 export type MedicineCollectionSort = 'name' | 'recent';
@@ -36,8 +36,7 @@ export function buildMedicineCollectionItems({
     .filter((medicine) => archived === undefined || (medicine.archivedAt !== null) === archived)
     .filter(
       (medicine) =>
-        normalizedQuery.length === 0 ||
-        medicine.name.toLocaleLowerCase().includes(normalizedQuery),
+        normalizedQuery.length === 0 || medicine.name.toLocaleLowerCase().includes(normalizedQuery),
     )
     .map((medication) => ({
       id: medication.id,
@@ -46,7 +45,7 @@ export function buildMedicineCollectionItems({
       createdAt: medication.createdAt,
       medication,
       photoUri: photoUris[medication.id] ?? null,
-      accessibilityLabel: medicineAccessibilityLabel(medication),
+      accessibilityLabel: medicineAccessibilityLabel(medication, photoUris[medication.id] != null),
     }))
     .sort((left, right) =>
       sort === 'recent'
@@ -63,10 +62,13 @@ export function parseMedicineCollectionSort(value: string | null): MedicineColle
   return value === 'recent' ? 'recent' : 'name';
 }
 
-function medicineAccessibilityLabel(medication: Medication): string {
+function medicineAccessibilityLabel(medication: Medication, hasPhoto: boolean): string {
   const shape = medication.appearanceShape;
   const archiveState = medication.archivedAt ? 'Archived medicine' : 'Medicine';
-  return `${medication.name}. ${archiveState}. ${shape}. Opens medicine details.`;
+  const recognition = hasPhoto
+    ? 'Saved medicine photo.'
+    : `${medicationAppearanceColorName(medication.appearanceColor)} ${shape} medicine.`;
+  return `${medication.name}. ${archiveState}. ${recognition} Opens medicine details.`;
 }
 
 function compareNames(left: string, right: string): number {
