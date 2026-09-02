@@ -100,6 +100,7 @@ describe('useProfileAvatar', () => {
 
     await waitFor(() => expect(result.current.uri).toBe('file:///remote-avatar.jpg'));
     expect(result.current.canUpload).toBe(false);
+    expect(result.current.canRemove).toBe(true);
     expect(mockedDownload).toHaveBeenCalledWith('account-1');
     queryClient.clear();
   });

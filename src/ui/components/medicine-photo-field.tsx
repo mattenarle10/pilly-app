@@ -20,7 +20,7 @@ type Props = {
 
 export function MedicinePhotoField({ uri, busy, error, onSelect, onRemove, onRetry }: Props) {
   const message = error instanceof Error ? error.message : error;
-  const chooseSource = () => showPhotoSourceMenu('Medicine photo', onSelect);
+  const chooseSource = () => showPhotoSourceMenu({ title: 'Medicine photo', onSelect });
   return (
     <View style={styles.section}>
       <View style={styles.heading}>

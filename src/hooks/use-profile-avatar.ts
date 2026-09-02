@@ -99,6 +99,7 @@ export function useProfileAvatar() {
   return {
     uri: query.data ?? null,
     canUpload,
+    canRemove: accountId !== null && query.data !== null && query.data !== undefined,
     plusActive: plus.state.active,
     isBusy: select.isPending || remove.isPending,
     error,

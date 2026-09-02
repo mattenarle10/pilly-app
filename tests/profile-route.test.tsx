@@ -24,7 +24,6 @@ jest.mock('@/hooks/use-account-session', () => ({ useAccountSession: jest.fn() }
 jest.mock('@/hooks/use-profile', () => ({ useProfile: jest.fn() }));
 jest.mock('@/hooks/use-profile-avatar', () => ({ useProfileAvatar: jest.fn() }));
 jest.mock('@/services/purchases', () => ({ isPlusPurchasesSupported: jest.fn() }));
-jest.mock('@/ui/components/pilly-modal', () => ({ PillyModal: () => null }));
 jest.mock('react-native-reanimated', () => {
   const { View } = jest.requireActual<typeof import('react-native')>('react-native');
   return {
@@ -83,6 +82,7 @@ describe('Profile route account boundary', () => {
     mockedUseProfileAvatar.mockReturnValue({
       uri: null,
       canUpload: false,
+      canRemove: false,
       plusActive: false,
       isBusy: false,
       error: null,
@@ -107,6 +107,45 @@ describe('Profile route account boundary', () => {
     expect(screen.getByText('Pilly Plus')).toBeOnTheScreen();
     expect(screen.queryByText('Pilly Plus account')).toBeNull();
     expect(screen.queryByText('Account')).toBeNull();
+  });
+
+  test('opens name editing from the identity and submits the local draft', async () => {
+    const saveName = jest.fn();
+    mockedUseAccountSession.mockReturnValue(account({ kind: 'local', user: null }));
+    mockedUseProfile.mockReturnValue({
+      ...mockedUseProfile(),
+      name: { firstName: 'Ada', lastName: 'Lovelace' },
+      displayName: 'Ada Lovelace',
+      saveName: {
+        isPending: false,
+        isError: false,
+        reset: jest.fn(),
+        mutate: saveName,
+      },
+    } as unknown as ReturnType<typeof useProfile>);
+
+    const screen = await render(<ProfileRoute />, { wrapper });
+    await fireEvent.press(screen.getByLabelText('Edit name'));
+    await fireEvent.changeText(screen.getByLabelText('First name'), 'Grace');
+    await fireEvent.press(screen.getByLabelText('Save'));
+
+    expect(saveName).toHaveBeenCalledWith(
+      { firstName: 'Grace', lastName: 'Lovelace' },
+      expect.objectContaining({ onSuccess: expect.any(Function) }),
+    );
+  });
+
+  test('keeps a long local name visible without truncation', async () => {
+    const longName = `${'A'.repeat(40)} ${'B'.repeat(40)}`;
+    mockedUseAccountSession.mockReturnValue(account({ kind: 'local', user: null }));
+    mockedUseProfile.mockReturnValue({
+      ...mockedUseProfile(),
+      name: { firstName: 'A'.repeat(40), lastName: 'B'.repeat(40) },
+      displayName: longName,
+    } as unknown as ReturnType<typeof useProfile>);
+
+    const screen = await render(<ProfileRoute />, { wrapper });
+    expect(screen.getByText(longName)).not.toHaveProp('numberOfLines');
   });
 
   test('shows provider-neutral account management only after connection', async () => {
@@ -144,6 +183,7 @@ describe('Profile route account boundary', () => {
     mockedUseProfileAvatar.mockReturnValue({
       uri: null,
       canUpload: true,
+      canRemove: false,
       plusActive: true,
       isBusy: false,
       error: null,
@@ -181,6 +221,7 @@ describe('Profile route account boundary', () => {
     mockedUseProfileAvatar.mockReturnValue({
       uri: 'file:///profile.jpg',
       canUpload: true,
+      canRemove: true,
       plusActive: true,
       isBusy: false,
       error: null,
@@ -198,5 +239,40 @@ describe('Profile route account boundary', () => {
 
     expect(removeAvatar).toHaveBeenCalledTimes(1);
     expect(screen.queryByText('Remove')).toBeNull();
+  });
+
+  test('keeps an existing avatar removable after Plus expires', async () => {
+    const removeAvatar = jest.fn();
+    mockedUseAccountSession.mockReturnValue(
+      account({
+        kind: 'signed-in',
+        user: {
+          id: 'account-1',
+          email: 'matt@example.com',
+          displayName: 'Matthew',
+          provider: 'apple',
+        },
+      }),
+    );
+    mockedUseProfileAvatar.mockReturnValue({
+      uri: 'file:///profile.jpg',
+      canUpload: false,
+      canRemove: true,
+      plusActive: false,
+      isBusy: false,
+      error: null,
+      errorKind: null,
+      select: jest.fn(),
+      remove: removeAvatar,
+      retry: jest.fn(),
+    });
+    jest
+      .spyOn(ActionSheetIOS, 'showActionSheetWithOptions')
+      .mockImplementation((_options, callback) => callback(0));
+
+    const screen = await render(<ProfileRoute />, { wrapper });
+    await fireEvent.press(screen.getByLabelText('Remove profile photo'));
+
+    expect(removeAvatar).toHaveBeenCalledTimes(1);
   });
 });

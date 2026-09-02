@@ -2,36 +2,45 @@ import { ActionSheetIOS, Alert, Platform } from 'react-native';
 
 export type PhotoSource = 'camera' | 'library';
 
-export function showPhotoSourceMenu(
-  title: string,
-  onSelect: (source: PhotoSource) => void,
-  onRemove?: () => void,
-): void {
+type PhotoSourceMenuOptions = {
+  title: string;
+  onSelect?: (source: PhotoSource) => void;
+  onRemove?: () => void;
+};
+
+export function showPhotoSourceMenu({ title, onSelect, onRemove }: PhotoSourceMenuOptions): void {
+  const actions = [
+    ...(onSelect
+      ? [
+          { label: 'Take photo', onPress: () => onSelect('camera') },
+          { label: 'Choose from library', onPress: () => onSelect('library') },
+        ]
+      : []),
+    ...(onRemove ? [{ label: 'Remove photo', onPress: onRemove, destructive: true }] : []),
+  ];
+
   if (Platform.OS === 'ios') {
-    const options = onRemove
-      ? ['Take photo', 'Choose from library', 'Remove photo', 'Cancel']
-      : ['Take photo', 'Choose from library', 'Cancel'];
+    const options = [...actions.map((action) => action.label), 'Cancel'];
+    const destructiveButtonIndex = actions.findIndex((action) => action.destructive);
     ActionSheetIOS.showActionSheetWithOptions(
       {
         options,
         cancelButtonIndex: options.length - 1,
-        destructiveButtonIndex: onRemove ? 2 : undefined,
+        destructiveButtonIndex: destructiveButtonIndex >= 0 ? destructiveButtonIndex : undefined,
         title,
       },
       (index) => {
-        if (index === 0) onSelect('camera');
-        if (index === 1) onSelect('library');
-        if (index === 2 && onRemove) onRemove();
+        actions[index]?.onPress();
       },
     );
     return;
   }
   Alert.alert(title, undefined, [
-    { text: 'Take photo', onPress: () => onSelect('camera') },
-    { text: 'Choose from library', onPress: () => onSelect('library') },
-    ...(onRemove
-      ? [{ text: 'Remove photo', style: 'destructive' as const, onPress: onRemove }]
-      : []),
+    ...actions.map((action) => ({
+      text: action.label,
+      style: action.destructive ? ('destructive' as const) : ('default' as const),
+      onPress: action.onPress,
+    })),
     { text: 'Cancel', style: 'cancel' },
   ]);
 }

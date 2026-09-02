@@ -1,11 +1,11 @@
 import { useState, type ReactNode } from 'react';
-import { ActivityIndicator, Linking, Pressable, StyleSheet, View } from 'react-native';
+import { Linking, Pressable, StyleSheet, View } from 'react-native';
 import Constants from 'expo-constants';
 import { router } from 'expo-router';
 
 import { PillyBanner } from '@/ui/components/pilly-banner';
-import { PillyField } from '@/ui/components/pilly-field';
-import { PillyModal } from '@/ui/components/pilly-modal';
+import { ProfileIdentity } from '@/ui/components/profile-identity';
+import { ProfileNameDialog } from '@/ui/components/profile-name-dialog';
 import { PillyText } from '@/ui/components/pilly-text';
 import { Screen } from '@/ui/components/screen';
 import { PillyIcon, type PillyIconName } from '@/ui/icons';
@@ -15,7 +15,6 @@ import { useProfile } from '@/hooks/use-profile';
 import { useProfileAvatar } from '@/hooks/use-profile-avatar';
 import { accountProviderLabel } from '@/models/account';
 import { isPlusPurchasesSupported } from '@/services/purchases';
-import { PillyAvatar } from '@/ui/components/pilly-avatar';
 import { showPhotoSourceMenu } from '@/ui/components/photo-source-menu';
 
 export default function ProfileRoute() {
@@ -24,8 +23,6 @@ export default function ProfileRoute() {
   const avatar = useProfileAvatar();
   const plusSupported = isPlusPurchasesSupported();
   const [nameModalOpen, setNameModalOpen] = useState(false);
-  const [firstNameDraft, setFirstNameDraft] = useState('');
-  const [lastNameDraft, setLastNameDraft] = useState('');
   const [websiteError, setWebsiteError] = useState(false);
   const websiteUrl = process.env.EXPO_PUBLIC_WEBSITE_URL?.startsWith('https://')
     ? process.env.EXPO_PUBLIC_WEBSITE_URL
@@ -33,8 +30,6 @@ export default function ProfileRoute() {
   const archivedMessage = `${profile.archivedCount} ${profile.archivedCount === 1 ? 'medicine' : 'medicines'}`;
 
   const openNameEditor = () => {
-    setFirstNameDraft(profile.name.firstName);
-    setLastNameDraft(profile.name.lastName);
     profile.saveName.reset();
     setNameModalOpen(true);
   };
@@ -48,11 +43,11 @@ export default function ProfileRoute() {
     }
   };
   const showAvatarMenu = () =>
-    showPhotoSourceMenu(
-      'Profile photo',
-      (source) => void avatar.select(source),
-      avatar.uri ? () => void avatar.remove() : undefined,
-    );
+    showPhotoSourceMenu({
+      title: 'Profile photo',
+      onSelect: avatar.canUpload ? (source) => void avatar.select(source) : undefined,
+      onRemove: avatar.canRemove ? () => void avatar.remove() : undefined,
+    });
   const displayName = profile.displayName || account.state.user?.displayName || 'Pilly';
   return (
     <>
@@ -61,78 +56,18 @@ export default function ProfileRoute() {
         contentInsetAdjustmentBehavior="never"
         contentStyle={styles.screen}
       >
-        <View style={styles.identity}>
-          <View style={styles.identityHeader}>
-            {avatar.canUpload ? (
-              <Pressable
-                accessibilityRole="button"
-                accessibilityLabel={avatar.uri ? 'Change profile photo' : 'Add profile photo'}
-                accessibilityHint="Opens camera and photo library options"
-                disabled={avatar.isBusy}
-                onPress={showAvatarMenu}
-                style={({ pressed }) => [
-                  styles.avatarControl,
-                  pressed && styles.pressed,
-                  avatar.isBusy && styles.disabled,
-                ]}
-              >
-                <PillyAvatar
-                  displayName={displayName}
-                  uri={avatar.uri}
-                  size={64}
-                  accessible={false}
-                />
-                <View style={styles.avatarIcon} pointerEvents="none">
-                  {avatar.isBusy ? (
-                    <ActivityIndicator color={colors.brand} size="small" />
-                  ) : (
-                    <PillyIcon name="photo" size={15} color={colors.brand} />
-                  )}
-                </View>
-              </Pressable>
-            ) : (
-              <PillyAvatar
-                displayName={displayName}
-                uri={avatar.uri}
-                plus={avatar.plusActive}
-                size={64}
-              />
-            )}
-            <View style={styles.identityCopy}>
-              {profile.isLoading ? (
-                <View style={styles.loadingName}>
-                  <ActivityIndicator color={colors.brand} />
-                  <PillyText role="caption" muted>
-                    Loading profile…
-                  </PillyText>
-                </View>
-              ) : (
-                <PillyText role="title" accessibilityRole="header" style={styles.name}>
-                  {profile.displayName || 'Your Pilly'}
-                </PillyText>
-              )}
-              <PillyText role="caption" muted>
-                {avatar.plusActive ? 'Pilly Plus active' : 'Local profile'}
-              </PillyText>
-            </View>
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel="Edit name"
-              disabled={profile.isLoading}
-              hitSlop={6}
-              onPress={openNameEditor}
-              style={({ pressed }) => [
-                styles.editName,
-                pressed && styles.pressed,
-                profile.isLoading && styles.disabled,
-              ]}
-            >
-              <PillyText role="label" style={styles.editNameLabel}>
-                Edit name
-              </PillyText>
-            </Pressable>
-          </View>
-        </View>
+        <ProfileIdentity
+          displayName={displayName}
+          profileName={profile.displayName}
+          avatarUri={avatar.uri}
+          plusActive={avatar.plusActive}
+          profileLoading={profile.isLoading}
+          avatarBusy={avatar.isBusy}
+          canUploadAvatar={avatar.canUpload}
+          canRemoveAvatar={avatar.canRemove}
+          onEditName={openNameEditor}
+          onManageAvatar={showAvatarMenu}
+        />
 
         {avatar.error ? (
           <PillyBanner
@@ -216,43 +151,18 @@ export default function ProfileRoute() {
         </PillyText>
       </Screen>
 
-      <PillyModal
-        visible={nameModalOpen}
-        title="Edit name"
-        confirmLabel="Save"
-        confirmLoading={profile.saveName.isPending}
-        onConfirm={() =>
-          profile.saveName.mutate(
-            { firstName: firstNameDraft, lastName: lastNameDraft },
-            { onSuccess: () => setNameModalOpen(false) },
-          )
-        }
-        onClose={() => setNameModalOpen(false)}
-      >
-        <View style={styles.nameFields}>
-          <PillyField
-            testID="profile-first-name"
-            label="First name"
-            value={firstNameDraft}
-            onChangeText={setFirstNameDraft}
-            placeholder="First name"
-            autoCapitalize="words"
-            maxLength={40}
-          />
-          <PillyField
-            label="Last name"
-            optional
-            value={lastNameDraft}
-            onChangeText={setLastNameDraft}
-            placeholder="Last name"
-            autoCapitalize="words"
-            maxLength={40}
-          />
-          {profile.saveName.isError ? (
-            <PillyBanner kind="error" message="Couldn’t save your name." compact />
-          ) : null}
-        </View>
-      </PillyModal>
+      {nameModalOpen ? (
+        <ProfileNameDialog
+          name={profile.name}
+          saving={profile.saveName.isPending}
+          saveError={profile.saveName.isError}
+          onResetError={profile.saveName.reset}
+          onSave={(name) =>
+            profile.saveName.mutate(name, { onSuccess: () => setNameModalOpen(false) })
+          }
+          onClose={() => setNameModalOpen(false)}
+        />
+      ) : null}
     </>
   );
 }
@@ -311,52 +221,6 @@ function ProfileRow({
 
 const styles = StyleSheet.create({
   screen: { gap: spacing.lg, paddingTop: spacing.lg, paddingBottom: spacing.xxxl },
-  identity: {
-    gap: spacing.xs,
-    paddingHorizontal: spacing.xs,
-    paddingVertical: spacing.sm,
-  },
-  identityHeader: {
-    minHeight: 64,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: spacing.sm,
-  },
-  identityCopy: { flex: 1, alignSelf: 'center', gap: spacing.xs },
-  loadingName: {
-    flex: 1,
-    minHeight: 38,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
-  },
-  name: { fontWeight: '600' },
-  editName: {
-    minHeight: 44,
-    justifyContent: 'center',
-    paddingHorizontal: spacing.sm,
-  },
-  editNameLabel: { color: colors.brand },
-  avatarControl: {
-    width: 64,
-    height: 64,
-  },
-  avatarIcon: {
-    position: 'absolute',
-    right: -2,
-    bottom: -2,
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    borderWidth: 2,
-    borderColor: colors.background,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: colors.surface,
-  },
-  pressed: { opacity: 0.68 },
-  disabled: { opacity: 0.4 },
   section: { gap: spacing.sm },
   surface: {
     overflow: 'hidden',
@@ -382,5 +246,4 @@ const styles = StyleSheet.create({
   rowCopy: { flex: 1, gap: spacing.xs },
   separator: { height: StyleSheet.hairlineWidth, marginLeft: 60, backgroundColor: colors.border },
   boundary: { paddingHorizontal: spacing.xs, paddingTop: spacing.sm },
-  nameFields: { gap: spacing.lg },
 });
