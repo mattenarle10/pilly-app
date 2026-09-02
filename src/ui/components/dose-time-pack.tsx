@@ -45,11 +45,11 @@ export function DoseTimePack({ pack, onPress }: { pack: DoseTimePackModel; onPre
           <PillyText role={pack.focal ? 'title' : 'headline'} style={styles.time}>
             {pack.time}
           </PillyText>
-          <View style={styles.stateRow}>
-            {pack.state === 'complete' ? (
-              <PillyIcon name="success" size={18} color={colors.success} />
-            ) : null}
-            <View style={styles.stateCopy}>
+          <View style={styles.stateCopy}>
+            <View style={styles.stateHeadline}>
+              {pack.state === 'complete' ? (
+                <PillyIcon name="success" size={18} color={colors.success} />
+              ) : null}
               <PillyText
                 role="caption"
                 style={[
@@ -60,12 +60,12 @@ export function DoseTimePack({ pack, onPress }: { pack: DoseTimePackModel; onPre
               >
                 {state.primary}
               </PillyText>
-              {state.secondary ? (
-                <PillyText role="caption" muted style={styles.stateSecondary}>
-                  {state.secondary}
-                </PillyText>
-              ) : null}
             </View>
+            {state.secondary ? (
+              <PillyText role="caption" muted style={styles.stateSecondary}>
+                {state.secondary}
+              </PillyText>
+            ) : null}
           </View>
         </View>
         <MedicinePreviewStack previews={pack.previews} overflowCount={pack.overflowCount} />
@@ -122,14 +122,19 @@ const styles = StyleSheet.create({
   copy: { zIndex: 1, flex: 1, gap: spacing.xs },
   titleRow: {
     flexDirection: 'row',
-    alignItems: 'baseline',
+    alignItems: 'flex-start',
     justifyContent: 'space-between',
     flexWrap: 'wrap',
     gap: spacing.sm,
   },
   time: { color: colors.textPrimary },
-  stateRow: { flexDirection: 'row', alignItems: 'flex-start', gap: spacing.xs },
-  stateCopy: { alignItems: 'flex-end' },
+  stateCopy: { flexShrink: 1, alignItems: 'flex-end' },
+  stateHeadline: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'flex-end',
+    gap: spacing.xs,
+  },
   state: { color: colors.textSecondary, fontWeight: '600', textAlign: 'right' },
   stateSecondary: { textAlign: 'right' },
   focalState: { color: colors.brandStrong },
