@@ -5,6 +5,7 @@ import Animated, { FadeInRight, FadeOutRight, ReduceMotion } from 'react-native-
 
 import type { ScheduledDose } from '@/models/dose';
 import { DoseStatusSheet } from '@/ui/components/dose-status-sheet';
+import { DoseTimeSheet } from '@/ui/components/dose-time-sheet';
 import { PillyBanner } from '@/ui/components/pilly-banner';
 import { PillyCard } from '@/ui/components/pilly-card';
 import { PillyIconButton } from '@/ui/components/pilly-icon-button';
@@ -24,12 +25,12 @@ import { useProfileAvatar } from '@/hooks/use-profile-avatar';
 import { PillyAvatar } from '@/ui/components/pilly-avatar';
 import {
   buildOrganizerDays,
-  groupTodayDoses,
   greetingFor,
   todayProgress,
   todayProgressDetail,
   todayProgressHeadline,
 } from '@/models/today';
+import { buildDoseTimePacks } from '@/models/dose-time-pack';
 
 export default function Today() {
   const account = useAccountSession();
@@ -40,8 +41,10 @@ export default function Today() {
   const { mutation, recentAction, recordDose, undoRecent } = useDoseActions();
   const [correction, setCorrection] = useState<ScheduledDose | null>(null);
   const [correctionVisible, setCorrectionVisible] = useState(false);
+  const [selectedPackKey, setSelectedPackKey] = useState<string | null>(null);
   const organizerDays = buildOrganizerDays(dates, weekDoses.data, today);
-  const doseGroups = groupTodayDoses(doses.data);
+  const dosePacks = buildDoseTimePacks(doses.data, now, true);
+  const selectedPack = dosePacks.find((pack) => pack.key === selectedPackKey) ?? null;
   const progress = todayProgress(doses.data, now);
   const nextScheduledDay = organizerDays.slice(1).find((day) => day.state !== 'empty');
 
@@ -108,7 +111,9 @@ export default function Today() {
         )}
       </View>
       {progress.total > 0 ? (
-        <View style={styles.summary}>
+        <View
+          style={[styles.summary, progress.recorded === progress.total && styles.completedSummary]}
+        >
           <TodayCompanion recorded={progress.recorded} total={progress.total} size="compact" />
           <View style={styles.summaryCopy}>
             <PillyText role="title">{todayProgressHeadline(progress)}</PillyText>
@@ -180,18 +185,40 @@ export default function Today() {
         </PillyCard>
       ) : null}
       <TodayDoseList
-        groups={doseGroups}
+        packs={dosePacks}
         now={now}
         busy={mutation.isPending}
         pendingOccurrenceId={mutation.variables?.dose.occurrenceId}
+        pendingStatus={mutation.variables?.status}
         onRecord={recordDose}
         onCorrect={(dose) => {
+          setSelectedPackKey(null);
           setCorrection(dose);
           setCorrectionVisible(true);
         }}
         onOpenMedicine={(dose) =>
           router.push({ pathname: '/medicine/[id]', params: { id: dose.medication.id } })
         }
+        onOpenPack={(pack) => setSelectedPackKey(pack.key)}
+      />
+      <DoseTimeSheet
+        pack={selectedPack}
+        visible={selectedPack !== null}
+        interactive
+        busy={mutation.isPending}
+        pendingOccurrenceId={mutation.variables?.dose.occurrenceId}
+        pendingStatus={mutation.variables?.status}
+        onRecord={recordDose}
+        onCorrect={(dose) => {
+          setSelectedPackKey(null);
+          setCorrection(dose);
+          setCorrectionVisible(true);
+        }}
+        onOpenMedicine={(dose) => {
+          setSelectedPackKey(null);
+          router.push({ pathname: '/medicine/[id]', params: { id: dose.medication.id } });
+        }}
+        onClose={() => setSelectedPackKey(null)}
       />
       <DoseStatusSheet
         dose={correction}
@@ -227,6 +254,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.lavenderSoft,
   },
   summaryCopy: { flex: 1, gap: spacing.xs },
+  completedSummary: { backgroundColor: colors.successSoft },
   weekSection: { gap: spacing.sm },
   restDay: { minHeight: 76, flexDirection: 'row', alignItems: 'center', gap: spacing.md },
   restCopy: { flex: 1, gap: spacing.xs },

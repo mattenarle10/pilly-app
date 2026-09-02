@@ -45,6 +45,10 @@ export default function RootLayout() {
           }}
         />
         <Stack.Screen
+          name="medicines/archived"
+          options={{ ...standardHeaderOptions, title: 'Archived medicines' }}
+        />
+        <Stack.Screen
           name="profile/index"
           options={{ ...standardHeaderOptions, title: 'Profile' }}
         />

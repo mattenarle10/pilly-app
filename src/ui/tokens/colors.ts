@@ -18,4 +18,5 @@ export const colors = {
   danger: '#a13e3e',
   dangerSoft: '#f7dede',
   success: '#356a4f',
+  successSoft: '#e3f2ea',
 } as const;

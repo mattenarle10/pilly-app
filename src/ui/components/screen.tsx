@@ -23,7 +23,11 @@ export function Screen({
   contentInsetAdjustmentBehavior = 'automatic',
 }: ScreenProps) {
   const insets = useSafeAreaInsets();
-  const content = <View style={[styles.content, contentStyle]}>{children}</View>;
+  const content = (
+    <View collapsable={false} style={[styles.content, contentStyle]}>
+      {children}
+    </View>
+  );
   return (
     <SafeAreaView collapsable={false} edges={safeAreaEdges} style={styles.safeArea}>
       {scroll ? (

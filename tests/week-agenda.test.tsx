@@ -1,8 +1,8 @@
 import { cleanup, fireEvent, render } from '@testing-library/react-native';
 
 import type { ScheduledDose } from '@/models/dose';
+import { buildDoseTimePacks } from '@/models/dose-time-pack';
 import { WeekAgenda } from '@/ui/components/week-agenda';
-import { groupWeekDoses } from '@/models/week';
 
 jest.mock('react-native-reanimated', () => {
   const { View } = jest.requireActual<typeof import('react-native')>('react-native');
@@ -52,18 +52,22 @@ function dose(occurrenceId: string, name: string, status: ScheduledDose['status'
 describe('WeekAgenda', () => {
   afterEach(cleanup);
 
-  test('keeps dense doses in one time group and opens medicine detail', async () => {
-    const onOpenMedicine = jest.fn();
-    const groups = groupWeekDoses([
-      dose('first-medicine', 'Morning capsule', 'taken'),
-      dose('second-medicine', 'Long companion medicine', 'notRecorded'),
-    ]);
-    const screen = await render(<WeekAgenda groups={groups} onOpenMedicine={onOpenMedicine} />);
+  test('summarizes dense doses into one read-only time pack', async () => {
+    const packs = buildDoseTimePacks(
+      [
+        dose('first-medicine', 'Morning capsule', 'taken'),
+        dose('second-medicine', 'Long companion medicine', 'notRecorded'),
+      ],
+      new Date(2026, 7, 10, 12, 0),
+      false,
+    );
+    const onOpenPack = jest.fn();
+    const screen = await render(<WeekAgenda packs={packs} onOpenPack={onOpenPack} />);
 
     expect(screen.getAllByText('9:00 AM')).toHaveLength(1);
-    expect(screen.getByText('Morning capsule')).toBeOnTheScreen();
-    expect(screen.getByText('Long companion medicine')).toBeOnTheScreen();
-    fireEvent.press(screen.getByLabelText('Open Long companion medicine'));
-    expect(onOpenMedicine).toHaveBeenCalledWith('second-medicine');
+    expect(screen.queryByText('Morning capsule')).toBeNull();
+    expect(screen.queryByText('Long companion medicine')).toBeNull();
+    fireEvent.press(screen.getByLabelText(packs[0]!.accessibilityLabel));
+    expect(onOpenPack).toHaveBeenCalledWith(packs[0]);
   });
 });

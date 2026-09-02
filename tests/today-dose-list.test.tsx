@@ -2,6 +2,7 @@ import { cleanup, fireEvent, render } from '@testing-library/react-native';
 
 import type { ScheduledDose } from '@/models/dose';
 import { TodayDoseList } from '@/ui/components/today-dose-list';
+import { buildDoseTimePacks } from '@/models/dose-time-pack';
 import { buildScheduledDose } from './support/builders';
 
 jest.mock('react-native-reanimated', () => {
@@ -26,7 +27,7 @@ const dose: ScheduledDose = buildScheduledDose({
   medication: { name: 'Evening capsule' },
 });
 
-const groups = [{ key: '21:0', time: '9:00 PM', doses: [dose] }];
+const packs = buildDoseTimePacks([dose], new Date('2026-08-10T08:10:00.000Z'), true);
 
 describe('TodayDoseList future actions', () => {
   afterEach(cleanup);
@@ -34,11 +35,12 @@ describe('TodayDoseList future actions', () => {
   test('replaces actions with a quiet upcoming state until the scheduled time', async () => {
     const onRecord = jest.fn();
     const props = {
-      groups,
+      packs,
       busy: false,
       onRecord,
       onCorrect: jest.fn(),
       onOpenMedicine: jest.fn(),
+      onOpenPack: jest.fn(),
     };
     const screen = await render(
       <TodayDoseList {...props} now={new Date('2026-08-10T08:10:00.000Z')} />,
@@ -65,12 +67,13 @@ describe('TodayDoseList future actions', () => {
     const onCorrect = jest.fn();
     const screen = await render(
       <TodayDoseList
-        groups={[{ ...groups[0]!, doses: [recordedDose] }]}
+        packs={buildDoseTimePacks([recordedDose], recordedDose.scheduledAt, true)}
         now={recordedDose.scheduledAt}
         busy={false}
         onRecord={jest.fn()}
         onCorrect={onCorrect}
         onOpenMedicine={jest.fn()}
+        onOpenPack={jest.fn()}
       />,
     );
 
@@ -79,5 +82,32 @@ describe('TodayDoseList future actions', () => {
     expect(screen.queryByText(/days left/)).toBeNull();
     expect(screen.queryByLabelText('Change status for Evening capsule')).toBeOnTheScreen();
     expect(onCorrect).toHaveBeenCalledWith(recordedDose);
+  });
+
+  test('collapses multiple medicines at the same time into one pack', async () => {
+    const secondDose = buildScheduledDose({
+      occurrenceId: 'second:2026-08-10',
+      scheduledAt: dose.scheduledAt,
+      medication: { name: 'Second capsule' },
+    });
+    const densePacks = buildDoseTimePacks([dose, secondDose], dose.scheduledAt, true);
+    const onOpenPack = jest.fn();
+    const screen = await render(
+      <TodayDoseList
+        packs={densePacks}
+        now={dose.scheduledAt}
+        busy={false}
+        onRecord={jest.fn()}
+        onCorrect={jest.fn()}
+        onOpenMedicine={jest.fn()}
+        onOpenPack={onOpenPack}
+      />,
+    );
+
+    fireEvent.press(screen.getByLabelText(densePacks[0]!.accessibilityLabel));
+
+    expect(screen.queryByText('Evening capsule')).toBeNull();
+    expect(screen.queryByText('Second capsule')).toBeNull();
+    expect(onOpenPack).toHaveBeenCalledWith(densePacks[0]);
   });
 });

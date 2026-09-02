@@ -5,54 +5,65 @@ import type { DoseStatus, ScheduledDose } from '@/models/dose';
 import { MedicationAppearance } from './medication-appearance';
 import { PillyButton } from './pilly-button';
 import { PillyCard } from './pilly-card';
-import { PillyIconButton } from './pilly-icon-button';
 import { PillyText } from './pilly-text';
 import { StatusLabel } from './status-label';
-import { colors, radii, spacing } from '@/ui/tokens';
-import { isDoseAvailable, type TodayDoseGroup } from '@/models/today';
+import { DoseTimePack } from './dose-time-pack';
+import { colors, spacing } from '@/ui/tokens';
+import type { DoseTimePackModel } from '@/models/dose-time-pack';
+import { isDoseAvailable } from '@/models/today';
 
 export function TodayDoseList({
-  groups,
+  packs,
   now,
   busy,
   pendingOccurrenceId,
+  pendingStatus,
   onRecord,
   onCorrect,
   onOpenMedicine,
+  onOpenPack,
 }: {
-  groups: TodayDoseGroup[];
+  packs: DoseTimePackModel[];
   now: Date;
   busy: boolean;
   pendingOccurrenceId?: string;
+  pendingStatus?: DoseStatus;
   onRecord: (dose: ScheduledDose, status: Exclude<DoseStatus, 'notRecorded'>) => void;
   onCorrect: (dose: ScheduledDose) => void;
   onOpenMedicine: (dose: ScheduledDose) => void;
+  onOpenPack: (pack: DoseTimePackModel) => void;
 }) {
   return (
     <View style={styles.list}>
-      {groups.map((group) => (
-        <View key={group.key} style={styles.group}>
-          <PillyText role="label" style={styles.time}>
-            {group.time}
-          </PillyText>
-          <PillyCard padding="medium" style={styles.groupCard}>
-            {group.doses.map((dose, index) => (
-              <View key={dose.occurrenceId}>
-                {index > 0 ? <View style={styles.separator} /> : null}
-                <DoseRow
-                  dose={dose}
-                  now={now}
-                  busy={busy}
-                  loading={busy && pendingOccurrenceId === dose.occurrenceId}
-                  onRecord={(status) => onRecord(dose, status)}
-                  onCorrect={() => onCorrect(dose)}
-                  onOpen={() => onOpenMedicine(dose)}
-                />
-              </View>
-            ))}
-          </PillyCard>
-        </View>
-      ))}
+      {packs.map((pack) =>
+        pack.doses.length === 1 ? (
+          <View key={pack.key} style={styles.group}>
+            <PillyText role="label" style={styles.time}>
+              {pack.time}
+            </PillyText>
+            <PillyCard
+              padding="medium"
+              style={[styles.groupCard, pack.state === 'complete' && styles.completeCard]}
+            >
+              <DoseRow
+                dose={pack.doses[0]!}
+                now={now}
+                busy={busy}
+                loadingStatus={
+                  busy && pendingOccurrenceId === pack.doses[0]!.occurrenceId
+                    ? pendingStatus
+                    : undefined
+                }
+                onRecord={(status) => onRecord(pack.doses[0]!, status)}
+                onCorrect={() => onCorrect(pack.doses[0]!)}
+                onOpen={() => onOpenMedicine(pack.doses[0]!)}
+              />
+            </PillyCard>
+          </View>
+        ) : (
+          <DoseTimePack key={pack.key} pack={pack} onPress={() => onOpenPack(pack)} />
+        ),
+      )}
     </View>
   );
 }
@@ -61,7 +72,7 @@ function DoseRow({
   dose,
   now,
   busy,
-  loading,
+  loadingStatus,
   onRecord,
   onCorrect,
   onOpen,
@@ -69,7 +80,7 @@ function DoseRow({
   dose: ScheduledDose;
   now: Date;
   busy: boolean;
-  loading: boolean;
+  loadingStatus?: DoseStatus;
   onRecord: (status: Exclude<DoseStatus, 'notRecorded'>) => void;
   onCorrect: () => void;
   onOpen: () => void;
@@ -119,17 +130,21 @@ function DoseRow({
                 label="Taken"
                 icon="done"
                 size="compact"
-                loading={loading}
-                disabled={busy && !loading}
+                loading={loadingStatus === 'taken'}
+                disabled={busy && loadingStatus !== 'taken'}
                 onPress={() => onRecord('taken')}
                 style={styles.takeAction}
               />
-              <PillyIconButton
+              <PillyButton
                 icon="remove"
-                label={`Skip ${dose.medication.name}`}
-                disabled={busy}
+                label="Skip"
+                variant="secondary"
+                size="compact"
+                loading={loadingStatus === 'skipped'}
+                accessibilityLabel={`Skip ${dose.medication.name}`}
+                disabled={busy && loadingStatus !== 'skipped'}
                 onPress={() => onRecord('skipped')}
-                style={styles.skip}
+                style={styles.skipAction}
               />
             </View>
           ) : (
@@ -175,11 +190,7 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.04,
     elevation: 0,
   },
-  separator: {
-    height: 1,
-    marginVertical: spacing.md,
-    backgroundColor: colors.surfaceSubtle,
-  },
+  completeCard: { backgroundColor: colors.successSoft, shadowOpacity: 0.02 },
   row: { gap: spacing.sm },
   medicineLink: {
     minHeight: 44,
@@ -212,7 +223,7 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
   },
   takeAction: { flex: 1 },
-  skip: { borderRadius: radii.round, backgroundColor: colors.surfaceSubtle },
+  skipAction: { minWidth: 112 },
   correction: {
     minWidth: 60,
     minHeight: 44,
