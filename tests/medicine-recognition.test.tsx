@@ -16,8 +16,8 @@ const forms: StoredMedicationForm[] = [
 describe('medicine recognition', () => {
   afterEach(cleanup);
 
-  test.each(forms)('renders the %s form at compact density', (form) => {
-    const screen = render(
+  test.each(forms)('renders the %s form at compact density', async (form) => {
+    const screen = await render(
       <MedicineRecognition
         form={form}
         tabletShape="round"
@@ -31,8 +31,8 @@ describe('medicine recognition', () => {
     expect(screen.getByTestId(`medicine-form-${form}`)).toBeOnTheScreen();
   });
 
-  test('owns an optional semantic label while keeping its drawing decorative', () => {
-    const screen = render(
+  test('owns an optional semantic label while keeping its drawing decorative', async () => {
+    const screen = await render(
       <MedicineRecognition
         form="drops"
         tabletShape="round"
