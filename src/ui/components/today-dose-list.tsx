@@ -8,51 +8,57 @@ import { PillyCard } from './pilly-card';
 import { PillyIconButton } from './pilly-icon-button';
 import { PillyText } from './pilly-text';
 import { StatusLabel } from './status-label';
+import { DoseTimePack } from './dose-time-pack';
 import { colors, radii, spacing } from '@/ui/tokens';
-import { isDoseAvailable, type TodayDoseGroup } from '@/models/today';
+import type { DoseTimePackModel } from '@/models/dose-time-pack';
+import { isDoseAvailable } from '@/models/today';
 
 export function TodayDoseList({
-  groups,
+  packs,
   now,
   busy,
   pendingOccurrenceId,
   onRecord,
   onCorrect,
   onOpenMedicine,
+  onOpenPack,
 }: {
-  groups: TodayDoseGroup[];
+  packs: DoseTimePackModel[];
   now: Date;
   busy: boolean;
   pendingOccurrenceId?: string;
   onRecord: (dose: ScheduledDose, status: Exclude<DoseStatus, 'notRecorded'>) => void;
   onCorrect: (dose: ScheduledDose) => void;
   onOpenMedicine: (dose: ScheduledDose) => void;
+  onOpenPack: (pack: DoseTimePackModel) => void;
 }) {
   return (
     <View style={styles.list}>
-      {groups.map((group) => (
-        <View key={group.key} style={styles.group}>
-          <PillyText role="label" style={styles.time}>
-            {group.time}
-          </PillyText>
-          <PillyCard padding="medium" style={styles.groupCard}>
-            {group.doses.map((dose, index) => (
-              <View key={dose.occurrenceId}>
-                {index > 0 ? <View style={styles.separator} /> : null}
-                <DoseRow
-                  dose={dose}
-                  now={now}
-                  busy={busy}
-                  loading={busy && pendingOccurrenceId === dose.occurrenceId}
-                  onRecord={(status) => onRecord(dose, status)}
-                  onCorrect={() => onCorrect(dose)}
-                  onOpen={() => onOpenMedicine(dose)}
-                />
-              </View>
-            ))}
-          </PillyCard>
-        </View>
-      ))}
+      {packs.map((pack) =>
+        pack.doses.length === 1 ? (
+          <View key={pack.key} style={styles.group}>
+            <PillyText role="label" style={styles.time}>
+              {pack.time}
+            </PillyText>
+            <PillyCard
+              padding="medium"
+              style={[styles.groupCard, pack.state === 'complete' && styles.completeCard]}
+            >
+              <DoseRow
+                dose={pack.doses[0]!}
+                now={now}
+                busy={busy}
+                loading={busy && pendingOccurrenceId === pack.doses[0]!.occurrenceId}
+                onRecord={(status) => onRecord(pack.doses[0]!, status)}
+                onCorrect={() => onCorrect(pack.doses[0]!)}
+                onOpen={() => onOpenMedicine(pack.doses[0]!)}
+              />
+            </PillyCard>
+          </View>
+        ) : (
+          <DoseTimePack key={pack.key} pack={pack} onPress={() => onOpenPack(pack)} />
+        ),
+      )}
     </View>
   );
 }
@@ -175,11 +181,7 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.04,
     elevation: 0,
   },
-  separator: {
-    height: 1,
-    marginVertical: spacing.md,
-    backgroundColor: colors.surfaceSubtle,
-  },
+  completeCard: { backgroundColor: colors.successSoft, shadowOpacity: 0.02 },
   row: { gap: spacing.sm },
   medicineLink: {
     minHeight: 44,

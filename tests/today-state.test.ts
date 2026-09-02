@@ -50,7 +50,7 @@ describe('Today dose availability', () => {
     expect([
       todayProgressHeadline({ recorded: 3, total: 3, available: 0, upcoming: 0 }),
       todayProgressDetail({ recorded: 3, total: 3, available: 0, upcoming: 0 }),
-    ]).toEqual(['All done today', '3 doses recorded']);
+    ]).toEqual(['All done for today', '3 doses recorded']);
     expect([
       todayProgressHeadline({ recorded: 1, total: 3, available: 2, upcoming: 0 }),
       todayProgressDetail({ recorded: 1, total: 3, available: 2, upcoming: 0 }),
