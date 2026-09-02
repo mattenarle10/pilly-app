@@ -41,6 +41,44 @@ describe('DoseTimePack', () => {
     expect(onPress).toHaveBeenCalledTimes(1);
   });
 
+  test('shows proportional recorded progress without hiding skipped doses', async () => {
+    const pack = buildDoseTimePacks(
+      [
+        buildScheduledDose({ occurrenceId: 'taken', status: 'taken' }),
+        buildScheduledDose({ occurrenceId: 'skipped', status: 'skipped' }),
+        buildScheduledDose({ occurrenceId: 'due-one' }),
+        buildScheduledDose({ occurrenceId: 'due-two' }),
+      ],
+      new Date(2026, 7, 10, 9, 0),
+      true,
+    )[0]!;
+    const screen = await render(<DoseTimePack pack={pack} onPress={jest.fn()} />);
+
+    expect(screen.getByText('2 due')).toBeOnTheScreen();
+    expect(screen.getByText('2 of 4 done')).toBeOnTheScreen();
+    expect(screen.getByTestId(`dose-pack-taken-progress-${pack.key}`)).toHaveStyle({
+      width: '25%',
+    });
+    expect(screen.getByTestId(`dose-pack-skipped-progress-${pack.key}`)).toHaveStyle({
+      width: '25%',
+    });
+  });
+
+  test('does not describe a fully recorded group with skips as complete', async () => {
+    const pack = buildDoseTimePacks(
+      [
+        buildScheduledDose({ occurrenceId: 'taken', status: 'taken' }),
+        buildScheduledDose({ occurrenceId: 'skipped', status: 'skipped' }),
+      ],
+      new Date(2026, 7, 10, 9, 0),
+      true,
+    )[0]!;
+    const screen = await render(<DoseTimePack pack={pack} onPress={jest.fn()} />);
+
+    expect(screen.getByText('Recorded')).toBeOnTheScreen();
+    expect(screen.getByText('1 taken, 1 skipped')).toBeOnTheScreen();
+  });
+
   test('keeps individual actions inside the focused sheet', async () => {
     const first = buildScheduledDose({ occurrenceId: 'one', medication: { name: 'First' } });
     const second = buildScheduledDose({

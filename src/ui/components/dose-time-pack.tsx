@@ -8,10 +8,19 @@ import { PillyText } from './pilly-text';
 
 export function DoseTimePack({ pack, onPress }: { pack: DoseTimePackModel; onPress: () => void }) {
   const state = packStateCopy(pack);
+  const recorded = pack.total - pack.unresolved;
+  const takenWidth = `${(pack.taken / pack.total) * 100}%` as const;
+  const skippedWidth = `${(pack.skipped / pack.total) * 100}%` as const;
   return (
     <Pressable
       accessibilityRole="button"
       accessibilityLabel={pack.accessibilityLabel}
+      accessibilityValue={{
+        min: 0,
+        max: pack.total,
+        now: recorded,
+        text: `${recorded} of ${pack.total} recorded`,
+      }}
       onPress={onPress}
       style={({ pressed }) => [
         styles.pack,
@@ -21,6 +30,16 @@ export function DoseTimePack({ pack, onPress }: { pack: DoseTimePackModel; onPre
         pressed && styles.pressed,
       ]}
     >
+      <View pointerEvents="none" style={styles.progress}>
+        <View
+          testID={`dose-pack-taken-progress-${pack.key}`}
+          style={[styles.progressTaken, { width: takenWidth }]}
+        />
+        <View
+          testID={`dose-pack-skipped-progress-${pack.key}`}
+          style={[styles.progressSkipped, { width: skippedWidth }]}
+        />
+      </View>
       <View style={styles.copy}>
         <View style={styles.titleRow}>
           <PillyText role={pack.focal ? 'title' : 'headline'} style={styles.time}>
@@ -30,16 +49,23 @@ export function DoseTimePack({ pack, onPress }: { pack: DoseTimePackModel; onPre
             {pack.state === 'complete' ? (
               <PillyIcon name="success" size={18} color={colors.success} />
             ) : null}
-            <PillyText
-              role="caption"
-              style={[
-                styles.state,
-                pack.focal && styles.focalState,
-                pack.state === 'complete' && styles.completeState,
-              ]}
-            >
-              {state}
-            </PillyText>
+            <View style={styles.stateCopy}>
+              <PillyText
+                role="caption"
+                style={[
+                  styles.state,
+                  pack.focal && styles.focalState,
+                  pack.state === 'complete' && styles.completeState,
+                ]}
+              >
+                {state.primary}
+              </PillyText>
+              {state.secondary ? (
+                <PillyText role="caption" muted style={styles.stateSecondary}>
+                  {state.secondary}
+                </PillyText>
+              ) : null}
+            </View>
           </View>
         </View>
         <MedicinePreviewStack previews={pack.previews} overflowCount={pack.overflowCount} />
@@ -49,13 +75,18 @@ export function DoseTimePack({ pack, onPress }: { pack: DoseTimePackModel; onPre
   );
 }
 
-function packStateCopy(pack: DoseTimePackModel): string {
-  if (pack.state === 'complete') return 'Complete';
-  if (pack.state === 'future') return 'Later';
-  if (pack.state === 'partial') {
-    return `${pack.unresolved} due · ${pack.taken + pack.skipped} recorded`;
+function packStateCopy(pack: DoseTimePackModel): { primary: string; secondary?: string } {
+  const recorded = pack.total - pack.unresolved;
+  if (pack.state === 'complete') {
+    return pack.skipped > 0
+      ? { primary: 'Recorded', secondary: `${pack.taken} taken, ${pack.skipped} skipped` }
+      : { primary: 'Complete' };
   }
-  return `${pack.unresolved} due`;
+  if (pack.state === 'future') return { primary: 'Later' };
+  if (pack.state === 'partial') {
+    return { primary: `${pack.unresolved} due`, secondary: `${recorded} of ${pack.total} done` };
+  }
+  return { primary: `${pack.unresolved} due` };
 }
 
 const styles = StyleSheet.create({
@@ -68,6 +99,7 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.md,
     borderRadius: radii.lg,
     backgroundColor: colors.glass,
+    overflow: 'hidden',
     ...shadows.soft,
   },
   focal: {
@@ -79,7 +111,15 @@ const styles = StyleSheet.create({
   complete: { minHeight: 76, backgroundColor: colors.successSoft },
   future: { backgroundColor: colors.surfaceSubtle, shadowOpacity: 0 },
   pressed: { opacity: 0.76, transform: [{ scale: 0.99 }] },
-  copy: { flex: 1, gap: spacing.xs },
+  progress: {
+    position: 'absolute',
+    inset: 0,
+    flexDirection: 'row',
+    opacity: 0.72,
+  },
+  progressTaken: { height: '100%', backgroundColor: colors.successSoft },
+  progressSkipped: { height: '100%', backgroundColor: colors.surfaceSubtle },
+  copy: { zIndex: 1, flex: 1, gap: spacing.xs },
   titleRow: {
     flexDirection: 'row',
     alignItems: 'baseline',
@@ -88,8 +128,10 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
   },
   time: { color: colors.textPrimary },
-  stateRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
-  state: { color: colors.textSecondary, fontWeight: '600' },
+  stateRow: { flexDirection: 'row', alignItems: 'flex-start', gap: spacing.xs },
+  stateCopy: { alignItems: 'flex-end' },
+  state: { color: colors.textSecondary, fontWeight: '600', textAlign: 'right' },
+  stateSecondary: { textAlign: 'right' },
   focalState: { color: colors.brandStrong },
   completeState: { color: colors.success },
 });
