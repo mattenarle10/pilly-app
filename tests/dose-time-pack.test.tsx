@@ -41,6 +41,23 @@ describe('DoseTimePack', () => {
     expect(onPress).toHaveBeenCalledTimes(1);
   });
 
+  test('keeps future tiles visually quiet without repeating later', async () => {
+    const pack = buildDoseTimePacks(
+      [
+        buildScheduledDose({
+          occurrenceId: 'future',
+          scheduledAt: new Date(2026, 7, 10, 13, 0),
+        }),
+      ],
+      new Date(2026, 7, 10, 9, 0),
+      true,
+    )[0]!;
+    const screen = await render(<DoseTimePack pack={pack} onPress={jest.fn()} />);
+
+    expect(screen.getByText('1:00 PM')).toBeOnTheScreen();
+    expect(screen.queryByText('Later')).toBeNull();
+  });
+
   test('shows proportional recorded progress without hiding skipped doses', async () => {
     const pack = buildDoseTimePacks(
       [
