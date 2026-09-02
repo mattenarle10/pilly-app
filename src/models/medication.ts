@@ -60,6 +60,28 @@ export function medicationFormName(form: StoredMedicationForm): string {
   return form === 'other' ? 'Medicine' : form.charAt(0).toUpperCase() + form.slice(1);
 }
 
+export function medicationRecognitionDescription({
+  form,
+  tabletShape,
+  color,
+  secondaryColor,
+}: {
+  form: StoredMedicationForm;
+  tabletShape: TabletShape;
+  color: MedicationAppearanceColor;
+  secondaryColor: MedicationAppearanceColor;
+}): string {
+  const parts = [medicationFormName(form)];
+  if (form === 'tablet') {
+    parts.push(tabletShape.charAt(0).toUpperCase() + tabletShape.slice(1));
+  }
+  const primary = medicationAppearanceColorName(color);
+  parts.push(
+    form === 'capsule' ? `${primary} + ${medicationAppearanceColorName(secondaryColor)}` : primary,
+  );
+  return parts.join(' · ');
+}
+
 export function normalizeMedicationAppearanceColor(value: string): MedicationAppearanceColor {
   return medicationAppearanceColorSchema.parse(value.toUpperCase());
 }

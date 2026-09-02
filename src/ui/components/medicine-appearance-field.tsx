@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { Pressable, StyleSheet, View } from 'react-native';
+import { Pressable, StyleSheet, useWindowDimensions, View } from 'react-native';
 
 import { MedicineRecognition } from './medicine-recognition';
 import { MedicationAppearancePreview3D } from './medication-appearance-preview-3d';
@@ -12,6 +12,7 @@ import {
   legacyAppearanceShape,
   medicationAppearanceColorName,
   medicationFormName,
+  medicationRecognitionDescription,
   type MedicationAppearanceColor,
   type MedicationAppearanceSize,
   type MedicationForm,
@@ -152,13 +153,7 @@ export function medicineTypeSummary({
   color,
   secondaryColor,
 }: Pick<Props, 'form' | 'tabletShape' | 'color' | 'secondaryColor'>): string {
-  const parts = [medicineFormLabel(form)];
-  if (form === 'tablet') parts.push(capitalize(tabletShape));
-  const primary = medicationAppearanceColorName(color);
-  parts.push(
-    form === 'capsule' ? `${primary} + ${medicationAppearanceColorName(secondaryColor)}` : primary,
-  );
-  return parts.join(' · ');
+  return medicationRecognitionDescription({ form, tabletShape, color, secondaryColor });
 }
 
 function medicineTypeDetails({
@@ -185,6 +180,9 @@ function FormChoices({
   color: MedicationAppearanceColor;
   onChange: (value: MedicationForm) => void;
 }) {
+  const { fontScale } = useWindowDimensions();
+  const useSingleColumn = fontScale >= 1.5;
+
   return (
     <View style={styles.choiceGroup}>
       <PillyText role="caption" muted>
@@ -202,6 +200,7 @@ function FormChoices({
               onPress={() => onChange(option.value)}
               style={({ pressed }) => [
                 styles.formChoice,
+                useSingleColumn && styles.formChoiceLarge,
                 selected && styles.formChoiceActive,
                 pressed && styles.rowPressed,
               ]}
@@ -213,7 +212,11 @@ function FormChoices({
                 color={color}
                 display="mini"
               />
-              <PillyText role="label" maxFontSizeMultiplier={1.35} numberOfLines={1}>
+              <PillyText
+                role="label"
+                maxFontSizeMultiplier={useSingleColumn ? undefined : 1.35}
+                numberOfLines={useSingleColumn ? undefined : 1}
+              >
                 {option.label}
               </PillyText>
             </Pressable>
@@ -377,6 +380,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surfaceSubtle,
   },
   formChoiceActive: { backgroundColor: colors.brandSoft },
+  formChoiceLarge: { width: '100%' },
   choiceRow: { flexDirection: 'row', gap: spacing.sm },
   choice: {
     flex: 1,

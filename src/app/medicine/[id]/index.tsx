@@ -14,6 +14,7 @@ import { PillyToggle } from '@/ui/components/pilly-toggle';
 import { Screen } from '@/ui/components/screen';
 import { PillyIcon } from '@/ui/icons';
 import { colors, spacing } from '@/ui/tokens';
+import { medicationRecognitionDescription } from '@/models/medication';
 import { formatTime } from '@/models/schedule';
 import { estimateSupply } from '@/models/supply';
 import { useMedicineDetail } from '@/hooks/use-medicine-detail';
@@ -95,8 +96,13 @@ export default function MedicineDetailRoute() {
           <PillyText role="large-title" accessibilityRole="header">
             {medication.name}
           </PillyText>
-          <PillyText role="caption" muted style={styles.appearanceLabel}>
-            {medication.appearanceSize} {medication.form}
+          <PillyText role="caption" muted>
+            {medicationRecognitionDescription({
+              form: medication.form,
+              tabletShape: medication.tabletShape,
+              color: medication.appearanceColor,
+              secondaryColor: medication.appearanceSecondaryColor,
+            })}
           </PillyText>
           {medication.instructions ? <PillyText muted>{medication.instructions}</PillyText> : null}
           {medication.archivedAt ? (
@@ -315,7 +321,6 @@ const styles = StyleSheet.create({
   },
   medicinePhoto: { width: 76, height: 76, borderRadius: 20 },
   medicineCopy: { flex: 1, gap: spacing.xs, paddingTop: spacing.xs },
-  appearanceLabel: { textTransform: 'capitalize' },
   section: { gap: spacing.sm },
   separator: { height: 1, backgroundColor: colors.surfaceSubtle },
   overviewCard: { overflow: 'hidden' },
