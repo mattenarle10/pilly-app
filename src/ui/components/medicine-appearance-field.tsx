@@ -1,7 +1,7 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 
-import { MedicationAppearance } from './medication-appearance';
+import { MedicineRecognition } from './medicine-recognition';
 import { MedicationAppearancePreview3D } from './medication-appearance-preview-3d';
 import { MedicationColorPicker } from './medication-color-picker';
 import { PillyDialog } from './pilly-dialog';
@@ -9,58 +9,93 @@ import { PillyText } from './pilly-text';
 import { PillyIcon } from '@/ui/icons';
 import { colors, radii, shadows, spacing } from '@/ui/tokens';
 import {
+  legacyAppearanceShape,
   medicationAppearanceColorName,
+  medicationFormName,
   type MedicationAppearanceColor,
-  type MedicationAppearanceShape,
   type MedicationAppearanceSize,
+  type MedicationForm,
+  type StoredMedicationForm,
+  type TabletShape,
 } from '@/models/medication';
 
-const shapes: { value: MedicationAppearanceShape; label: string }[] = [
+const forms: { value: MedicationForm; label: string }[] = [
+  { value: 'tablet', label: 'Tablet' },
+  { value: 'capsule', label: 'Capsule' },
+  { value: 'liquid', label: 'Liquid' },
+  { value: 'injection', label: 'Injection' },
+  { value: 'drops', label: 'Drops' },
+  { value: 'inhaler', label: 'Inhaler' },
+];
+const tabletShapes: { value: TabletShape; label: string }[] = [
   { value: 'round', label: 'Round' },
   { value: 'oval', label: 'Oval' },
-  { value: 'capsule', label: 'Capsule' },
 ];
+
 type Props = {
-  shape: MedicationAppearanceShape;
+  form: StoredMedicationForm;
+  tabletShape: TabletShape;
   size: MedicationAppearanceSize;
   color: MedicationAppearanceColor;
   secondaryColor: MedicationAppearanceColor;
-  onShapeChange: (value: MedicationAppearanceShape) => void;
+  onFormChange: (value: StoredMedicationForm) => void;
+  onTabletShapeChange: (value: TabletShape) => void;
   onColorChange: (value: MedicationAppearanceColor) => void;
   onSecondaryColorChange: (value: MedicationAppearanceColor) => void;
 };
 
-export function AppearanceStep(props: Props) {
+type RememberedColors = Record<
+  StoredMedicationForm,
+  { color: MedicationAppearanceColor; secondaryColor: MedicationAppearanceColor }
+>;
+
+export function MedicineTypeStep(props: Props) {
   const [showEditor, setShowEditor] = useState(false);
-  const title = capitalize(props.shape);
-  const colorSummary = appearanceColorSummary(props.shape, props.color, props.secondaryColor);
+  const rememberedColors = useRef<Partial<RememberedColors>>({});
+  const title = medicineFormLabel(props.form);
+  const summary = medicineTypeSummary(props);
+  const details = medicineTypeDetails(props);
+
+  useEffect(() => {
+    rememberedColors.current[props.form] = {
+      color: props.color,
+      secondaryColor: props.secondaryColor,
+    };
+  }, [props.color, props.form, props.secondaryColor]);
+
+  const changeForm = (form: MedicationForm) => {
+    rememberedColors.current[props.form] = {
+      color: props.color,
+      secondaryColor: props.secondaryColor,
+    };
+    const remembered = rememberedColors.current[form];
+    props.onFormChange(form);
+    if (remembered) {
+      props.onColorChange(remembered.color);
+      props.onSecondaryColorChange(remembered.secondaryColor);
+    }
+  };
 
   return (
     <View style={styles.section}>
       <View style={styles.heading}>
-        <PillyText role="title">Appearance</PillyText>
+        <PillyText role="title">Medicine type</PillyText>
         <PillyText role="caption" muted>
-          Optional recognition aid.
+          Recognition aid.
         </PillyText>
       </View>
       <Pressable
         accessibilityRole="button"
-        accessibilityLabel="Edit pill appearance"
-        accessibilityHint={`${title}, ${colorSummary}`}
+        accessibilityLabel="Edit medicine type"
+        accessibilityHint={summary}
         onPress={() => setShowEditor(true)}
-        style={({ pressed }) => [styles.appearanceRow, pressed && styles.appearanceRowPressed]}
+        style={({ pressed }) => [styles.summaryRow, pressed && styles.rowPressed]}
       >
-        <MedicationAppearance
-          shape={props.shape}
-          size={props.size}
-          color={props.color}
-          secondaryColor={props.secondaryColor}
-          display="compact"
-        />
-        <View style={styles.appearanceRowCopy}>
+        <MedicineRecognition {...props} display="compact" />
+        <View style={styles.summaryCopy}>
           <PillyText role="label">{title}</PillyText>
           <PillyText role="caption" muted>
-            {colorSummary}
+            {details}
           </PillyText>
         </View>
         <PillyIcon name="next" size={17} color={colors.textSecondary} />
@@ -68,7 +103,7 @@ export function AppearanceStep(props: Props) {
 
       <PillyDialog
         visible={showEditor}
-        title="Pill appearance"
+        title="Medicine type"
         message="Match what you see on the medicine."
         actions={[
           {
@@ -81,40 +116,112 @@ export function AppearanceStep(props: Props) {
         onClose={() => setShowEditor(false)}
       >
         <View style={styles.preview}>
-          <MedicationAppearancePreview3D
-            shape={props.shape}
-            color={props.color}
-            secondaryColor={props.secondaryColor}
-            active={showEditor}
-          />
+          {props.form === 'tablet' || props.form === 'capsule' ? (
+            <MedicationAppearancePreview3D
+              shape={legacyAppearanceShape(props.form, props.tabletShape)}
+              color={props.color}
+              secondaryColor={props.secondaryColor}
+              active={showEditor}
+            />
+          ) : (
+            <MedicineRecognition {...props} display="hero" />
+          )}
         </View>
-        <ChoiceGroup
-          label="Shape"
-          options={shapes}
-          value={props.shape}
-          onChange={props.onShapeChange}
-        />
-        <AppearanceColorEditor
-          shape={props.shape}
-          color={props.color}
-          secondaryColor={props.secondaryColor}
-          onColorChange={props.onColorChange}
-          onSecondaryColorChange={props.onSecondaryColorChange}
-        />
+        <FormChoices value={props.form} color={props.color} onChange={changeForm} />
+        {props.form === 'tablet' ? (
+          <ChoiceGroup
+            label="Shape"
+            options={tabletShapes}
+            value={props.tabletShape}
+            onChange={props.onTabletShapeChange}
+          />
+        ) : null}
+        <AppearanceColorEditor {...props} />
       </PillyDialog>
     </View>
   );
 }
 
-export function appearanceColorSummary(
-  shape: MedicationAppearanceShape,
-  color: MedicationAppearanceColor,
-  secondaryColor: MedicationAppearanceColor,
-): string {
+export function medicineFormLabel(form: StoredMedicationForm): string {
+  return medicationFormName(form);
+}
+
+export function medicineTypeSummary({
+  form,
+  tabletShape,
+  color,
+  secondaryColor,
+}: Pick<Props, 'form' | 'tabletShape' | 'color' | 'secondaryColor'>): string {
+  const parts = [medicineFormLabel(form)];
+  if (form === 'tablet') parts.push(capitalize(tabletShape));
   const primary = medicationAppearanceColorName(color);
-  return shape === 'capsule'
-    ? `${primary} + ${medicationAppearanceColorName(secondaryColor)}`
-    : primary;
+  parts.push(
+    form === 'capsule' ? `${primary} + ${medicationAppearanceColorName(secondaryColor)}` : primary,
+  );
+  return parts.join(' · ');
+}
+
+function medicineTypeDetails({
+  form,
+  tabletShape,
+  color,
+  secondaryColor,
+}: Pick<Props, 'form' | 'tabletShape' | 'color' | 'secondaryColor'>): string {
+  const parts: string[] = [];
+  if (form === 'tablet') parts.push(capitalize(tabletShape));
+  const primary = medicationAppearanceColorName(color);
+  parts.push(
+    form === 'capsule' ? `${primary} + ${medicationAppearanceColorName(secondaryColor)}` : primary,
+  );
+  return parts.join(' · ');
+}
+
+function FormChoices({
+  value,
+  color,
+  onChange,
+}: {
+  value: StoredMedicationForm;
+  color: MedicationAppearanceColor;
+  onChange: (value: MedicationForm) => void;
+}) {
+  return (
+    <View style={styles.choiceGroup}>
+      <PillyText role="caption" muted>
+        Type
+      </PillyText>
+      <View accessibilityRole="radiogroup" style={styles.formGrid}>
+        {forms.map((option) => {
+          const selected = option.value === value;
+          return (
+            <Pressable
+              key={option.value}
+              accessibilityRole="radio"
+              accessibilityLabel={option.label}
+              accessibilityState={{ selected }}
+              onPress={() => onChange(option.value)}
+              style={({ pressed }) => [
+                styles.formChoice,
+                selected && styles.formChoiceActive,
+                pressed && styles.rowPressed,
+              ]}
+            >
+              <MedicineRecognition
+                form={option.value}
+                tabletShape="round"
+                size="medium"
+                color={color}
+                display="mini"
+              />
+              <PillyText role="label" maxFontSizeMultiplier={1.35} numberOfLines={1}>
+                {option.label}
+              </PillyText>
+            </Pressable>
+          );
+        })}
+      </View>
+    </View>
+  );
 }
 
 function ChoiceGroup<Value extends string>({
@@ -133,7 +240,7 @@ function ChoiceGroup<Value extends string>({
       <PillyText role="caption" muted>
         {label}
       </PillyText>
-      <View style={styles.choiceRow}>
+      <View accessibilityRole="radiogroup" style={styles.choiceRow}>
         {options.map((option) => {
           const selected = option.value === value;
           return (
@@ -164,14 +271,14 @@ function ChoiceGroup<Value extends string>({
 type CapsuleColorSlot = 'primary' | 'secondary';
 
 function AppearanceColorEditor({
-  shape,
+  form,
   color,
   secondaryColor,
   onColorChange,
   onSecondaryColorChange,
-}: Pick<Props, 'shape' | 'color' | 'secondaryColor' | 'onColorChange' | 'onSecondaryColorChange'>) {
+}: Pick<Props, 'form' | 'color' | 'secondaryColor' | 'onColorChange' | 'onSecondaryColorChange'>) {
   const [activeSlot, setActiveSlot] = useState<CapsuleColorSlot>('primary');
-  const editingSecondary = shape === 'capsule' && activeSlot === 'secondary';
+  const editingSecondary = form === 'capsule' && activeSlot === 'secondary';
   const value = editingSecondary ? secondaryColor : color;
   const onChange = editingSecondary ? onSecondaryColorChange : onColorChange;
 
@@ -180,7 +287,7 @@ function AppearanceColorEditor({
       <PillyText role="caption" muted>
         Color
       </PillyText>
-      {shape === 'capsule' ? (
+      {form === 'capsule' ? (
         <View accessibilityRole="radiogroup" style={styles.colorTargets}>
           <ColorTarget
             label="Left"
@@ -225,11 +332,11 @@ function ColorTarget({
       style={({ pressed }) => [
         styles.colorTarget,
         selected && styles.colorTargetActive,
-        pressed && styles.colorTargetPressed,
+        pressed && styles.rowPressed,
       ]}
     >
-      <View style={styles.targetSwatchRing}>
-        <View style={[styles.targetSwatch, { backgroundColor: color }]} />
+      <View style={styles.swatchRing}>
+        <View style={[styles.swatch, { backgroundColor: color }]} />
       </View>
       <PillyText role="label">{label}</PillyText>
     </Pressable>
@@ -243,7 +350,7 @@ function capitalize(value: string): string {
 const styles = StyleSheet.create({
   section: { gap: spacing.lg, paddingTop: spacing.lg },
   heading: { gap: spacing.xs },
-  appearanceRow: {
+  summaryRow: {
     minHeight: 76,
     flexDirection: 'row',
     alignItems: 'center',
@@ -254,10 +361,22 @@ const styles = StyleSheet.create({
     backgroundColor: colors.glass,
     ...shadows.soft,
   },
-  appearanceRowPressed: { opacity: 0.74, transform: [{ scale: 0.99 }] },
-  appearanceRowCopy: { flex: 1, gap: spacing.xs },
-  preview: { alignItems: 'center', gap: spacing.sm },
+  rowPressed: { opacity: 0.74, transform: [{ scale: 0.99 }] },
+  summaryCopy: { flex: 1, gap: spacing.xs },
+  preview: { minHeight: 108, alignItems: 'center', justifyContent: 'center' },
   choiceGroup: { gap: spacing.sm },
+  formGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
+  formChoice: {
+    width: '48%',
+    minHeight: 48,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+    paddingHorizontal: spacing.sm,
+    borderRadius: radii.lg,
+    backgroundColor: colors.surfaceSubtle,
+  },
+  formChoiceActive: { backgroundColor: colors.brandSoft },
   choiceRow: { flexDirection: 'row', gap: spacing.sm },
   choice: {
     flex: 1,
@@ -284,8 +403,7 @@ const styles = StyleSheet.create({
     borderRadius: radii.lg,
   },
   colorTargetActive: { borderColor: colors.brand, backgroundColor: colors.brandSoft },
-  colorTargetPressed: { opacity: 0.72 },
-  targetSwatchRing: {
+  swatchRing: {
     width: 26,
     height: 26,
     alignItems: 'center',
@@ -295,9 +413,5 @@ const styles = StyleSheet.create({
     borderColor: colors.border,
     backgroundColor: colors.surface,
   },
-  targetSwatch: {
-    width: 20,
-    height: 20,
-    borderRadius: radii.round,
-  },
+  swatch: { width: 20, height: 20, borderRadius: radii.round },
 });
