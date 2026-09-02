@@ -10,9 +10,16 @@ type Props = {
   uri?: string | null;
   plus?: boolean;
   size?: number;
+  accessible?: boolean;
 };
 
-export function PillyAvatar({ displayName, uri, plus = false, size = 44 }: Props) {
+export function PillyAvatar({
+  displayName,
+  uri,
+  plus = false,
+  size = 44,
+  accessible = true,
+}: Props) {
   const initial = displayName.trim().charAt(0).toLocaleUpperCase() || 'P';
   const badgeSize = Math.max(15, Math.round(size * 0.34));
   return (
@@ -21,13 +28,14 @@ export function PillyAvatar({ displayName, uri, plus = false, size = 44 }: Props
         <Image
           source={{ uri }}
           accessibilityLabel={`${displayName} profile photo`}
+          accessible={accessible}
           accessibilityIgnoresInvertColors
           style={[styles.avatar, { width: size, height: size, borderRadius: size / 2 }]}
         />
       ) : (
         <View
           accessibilityLabel={`${displayName} profile initial`}
-          accessible
+          accessible={accessible}
           style={[styles.fallback, { width: size, height: size, borderRadius: size / 2 }]}
         >
           <PillyText role={size >= 60 ? 'title' : 'label'} style={styles.initial}>

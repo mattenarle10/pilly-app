@@ -1,5 +1,6 @@
 import type { PropsWithChildren } from 'react';
-import { cleanup, render } from '@testing-library/react-native';
+import { cleanup, fireEvent, render } from '@testing-library/react-native';
+import { ActionSheetIOS } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import type { AccountSessionContextValue } from '@/providers/account-session-provider';
@@ -85,6 +86,7 @@ describe('Profile route account boundary', () => {
       plusActive: false,
       isBusy: false,
       error: null,
+      errorKind: null,
       select: jest.fn(),
       remove: jest.fn(),
       retry: jest.fn(),
@@ -127,6 +129,7 @@ describe('Profile route account boundary', () => {
   });
 
   test('shows one quiet active cue and profile-photo action for Plus', async () => {
+    const selectAvatar = jest.fn();
     mockedUseAccountSession.mockReturnValue(
       account({
         kind: 'signed-in',
@@ -144,15 +147,56 @@ describe('Profile route account boundary', () => {
       plusActive: true,
       isBusy: false,
       error: null,
-      select: jest.fn(),
+      errorKind: null,
+      select: selectAvatar,
       remove: jest.fn(),
       retry: jest.fn(),
     });
 
+    jest
+      .spyOn(ActionSheetIOS, 'showActionSheetWithOptions')
+      .mockImplementation((_options, callback) => callback(1));
     const screen = await render(<ProfileRoute />, { wrapper });
 
     expect(screen.getByText('Pilly Plus active')).toBeOnTheScreen();
-    expect(screen.getByLabelText('Add profile photo')).toBeOnTheScreen();
+    await fireEvent.press(screen.getByLabelText('Add profile photo'));
+    expect(selectAvatar).toHaveBeenCalledWith('library');
+    expect(screen.queryByText('Add photo')).toBeNull();
     expect(screen.queryByText('Private with Plus')).toBeNull();
+  });
+
+  test('offers removal from the avatar control when a photo exists', async () => {
+    const removeAvatar = jest.fn();
+    mockedUseAccountSession.mockReturnValue(
+      account({
+        kind: 'signed-in',
+        user: {
+          id: 'account-1',
+          email: 'matt@example.com',
+          displayName: 'Matthew',
+          provider: 'apple',
+        },
+      }),
+    );
+    mockedUseProfileAvatar.mockReturnValue({
+      uri: 'file:///profile.jpg',
+      canUpload: true,
+      plusActive: true,
+      isBusy: false,
+      error: null,
+      errorKind: null,
+      select: jest.fn(),
+      remove: removeAvatar,
+      retry: jest.fn(),
+    });
+    jest
+      .spyOn(ActionSheetIOS, 'showActionSheetWithOptions')
+      .mockImplementation((_options, callback) => callback(2));
+
+    const screen = await render(<ProfileRoute />, { wrapper });
+    await fireEvent.press(screen.getByLabelText('Change profile photo'));
+
+    expect(removeAvatar).toHaveBeenCalledTimes(1);
+    expect(screen.queryByText('Remove')).toBeNull();
   });
 });

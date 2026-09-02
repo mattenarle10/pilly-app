@@ -47,6 +47,13 @@ export default function ProfileRoute() {
       setWebsiteError(true);
     }
   };
+  const showAvatarMenu = () =>
+    showPhotoSourceMenu(
+      'Profile photo',
+      (source) => void avatar.select(source),
+      avatar.uri ? () => void avatar.remove() : undefined,
+    );
+  const displayName = profile.displayName || account.state.user?.displayName || 'Pilly';
   return (
     <>
       <Screen
@@ -56,12 +63,41 @@ export default function ProfileRoute() {
       >
         <View style={styles.identity}>
           <View style={styles.identityHeader}>
-            <PillyAvatar
-              displayName={profile.displayName || account.state.user?.displayName || 'Pilly'}
-              uri={avatar.uri}
-              plus={avatar.plusActive}
-              size={64}
-            />
+            {avatar.canUpload ? (
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel={avatar.uri ? 'Change profile photo' : 'Add profile photo'}
+                accessibilityHint="Opens camera and photo library options"
+                disabled={avatar.isBusy}
+                onPress={showAvatarMenu}
+                style={({ pressed }) => [
+                  styles.avatarControl,
+                  pressed && styles.pressed,
+                  avatar.isBusy && styles.disabled,
+                ]}
+              >
+                <PillyAvatar
+                  displayName={displayName}
+                  uri={avatar.uri}
+                  size={64}
+                  accessible={false}
+                />
+                <View style={styles.avatarIcon} pointerEvents="none">
+                  {avatar.isBusy ? (
+                    <ActivityIndicator color={colors.brand} size="small" />
+                  ) : (
+                    <PillyIcon name="photo" size={15} color={colors.brand} />
+                  )}
+                </View>
+              </Pressable>
+            ) : (
+              <PillyAvatar
+                displayName={displayName}
+                uri={avatar.uri}
+                plus={avatar.plusActive}
+                size={64}
+              />
+            )}
             <View style={styles.identityCopy}>
               {profile.isLoading ? (
                 <View style={styles.loadingName}>
@@ -96,44 +132,14 @@ export default function ProfileRoute() {
               </PillyText>
             </Pressable>
           </View>
-          {avatar.canUpload ? (
-            <View style={styles.avatarActions}>
-              <Pressable
-                accessibilityRole="button"
-                accessibilityLabel={avatar.uri ? 'Change profile photo' : 'Add profile photo'}
-                disabled={avatar.isBusy}
-                onPress={() =>
-                  showPhotoSourceMenu('Profile photo', (source) => void avatar.select(source))
-                }
-                style={({ pressed }) => [pressed && styles.pressed]}
-              >
-                <PillyText role="label" style={styles.avatarActionLabel}>
-                  {avatar.uri ? 'Change photo' : 'Add photo'}
-                </PillyText>
-              </Pressable>
-              {avatar.uri ? (
-                <Pressable
-                  accessibilityRole="button"
-                  accessibilityLabel="Remove profile photo"
-                  disabled={avatar.isBusy}
-                  onPress={() => void avatar.remove()}
-                  style={({ pressed }) => [pressed && styles.pressed]}
-                >
-                  <PillyText role="label" muted>
-                    Remove
-                  </PillyText>
-                </Pressable>
-              ) : null}
-            </View>
-          ) : null}
         </View>
 
         {avatar.error ? (
           <PillyBanner
             kind="error"
-            message={avatar.error instanceof Error ? avatar.error.message : 'Profile photo failed.'}
-            actionLabel="Try again"
-            onAction={() => void avatar.retry()}
+            message={avatar.error}
+            actionLabel={avatar.errorKind === 'selection' ? 'Choose again' : 'Try again'}
+            onAction={avatar.errorKind === 'selection' ? showAvatarMenu : () => void avatar.retry()}
             compact
           />
         ) : null}
@@ -313,7 +319,7 @@ const styles = StyleSheet.create({
   identityHeader: {
     minHeight: 64,
     flexDirection: 'row',
-    alignItems: 'flex-start',
+    alignItems: 'center',
     justifyContent: 'space-between',
     gap: spacing.sm,
   },
@@ -328,18 +334,27 @@ const styles = StyleSheet.create({
   name: { fontWeight: '600' },
   editName: {
     minHeight: 44,
-    justifyContent: 'flex-start',
+    justifyContent: 'center',
     paddingHorizontal: spacing.sm,
   },
   editNameLabel: { color: colors.brand },
-  avatarActions: {
-    minHeight: 44,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.lg,
-    paddingLeft: 64 + spacing.md,
+  avatarControl: {
+    width: 64,
+    height: 64,
   },
-  avatarActionLabel: { color: colors.brand },
+  avatarIcon: {
+    position: 'absolute',
+    right: -2,
+    bottom: -2,
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    borderWidth: 2,
+    borderColor: colors.background,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.surface,
+  },
   pressed: { opacity: 0.68 },
   disabled: { opacity: 0.4 },
   section: { gap: spacing.sm },
