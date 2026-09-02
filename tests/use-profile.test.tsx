@@ -34,6 +34,7 @@ async function setup(settings: Record<string, string | null>) {
   const repository = {
     getSetting: jest.fn((key: string) => Promise.resolve(settings[key] ?? null)),
     setSetting: jest.fn().mockResolvedValue(undefined),
+    saveProfileName: jest.fn().mockResolvedValue(undefined),
     listMedications: jest
       .fn()
       .mockResolvedValue([medication('active', false), medication('archived', true)]),
@@ -93,7 +94,7 @@ describe('useProfile', () => {
       result.current.saveName.mutateAsync({ firstName: '  Ada ', lastName: ' Doe ' }),
     );
 
-    expect(repository.setSetting).toHaveBeenCalledTimes(3);
+    expect(repository.saveProfileName).toHaveBeenCalledWith('Ada', 'Doe');
     expect(queryClient.getQueryData(['settings', 'profileFirstName'])).toBe('Ada');
     expect(queryClient.getQueryData(['settings', 'profileLastName'])).toBe('Doe');
     expect(queryClient.getQueryData(['settings', 'profileName'])).toBe('Ada Doe');

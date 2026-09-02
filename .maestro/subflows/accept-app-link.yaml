@@ -1,0 +1,8 @@
+appId: dev.sidequests.pilly
+name: Accept Pilly app link when iOS asks
+---
+- runFlow:
+    when:
+      visible: 'Open in.*Pilly.*'
+    commands:
+      - tapOn: 'Open'

@@ -21,11 +21,37 @@ describe('database appearance migration', () => {
       expect.stringContaining('ALTER TABLE medications ADD COLUMN appearance_color'),
     );
     expect(execAsync).toHaveBeenCalledWith(expect.stringContaining("WHEN 'peach' THEN '#FBE9DE'"));
-    expect(execAsync).toHaveBeenLastCalledWith('PRAGMA user_version = 6');
+    expect(execAsync).toHaveBeenLastCalledWith('PRAGMA user_version = 8');
   });
 
-  test('does not repeat schema work once version 6 is installed', async () => {
+  test('adds durable cloud state without changing existing medicine tables', async () => {
     const { database, execAsync } = databaseAt(6);
+
+    await migrateDatabase(database);
+
+    expect(execAsync).toHaveBeenCalledWith(
+      expect.stringContaining('CREATE TABLE IF NOT EXISTS sync_outbox'),
+    );
+    expect(execAsync).toHaveBeenCalledWith(
+      expect.stringContaining('CREATE TABLE IF NOT EXISTS cloud_state'),
+    );
+    expect(execAsync).toHaveBeenLastCalledWith('PRAGMA user_version = 8');
+  });
+
+  test('adds a dedicated bounded private-image record', async () => {
+    const { database, execAsync } = databaseAt(7);
+
+    await migrateDatabase(database);
+
+    expect(execAsync).toHaveBeenCalledWith(
+      expect.stringContaining('CREATE TABLE IF NOT EXISTS medication_images'),
+    );
+    expect(execAsync).toHaveBeenCalledWith(expect.stringContaining('byte_count > 0'));
+    expect(execAsync).toHaveBeenLastCalledWith('PRAGMA user_version = 8');
+  });
+
+  test('does not repeat schema work once version 8 is installed', async () => {
+    const { database, execAsync } = databaseAt(8);
 
     await migrateDatabase(database);
 

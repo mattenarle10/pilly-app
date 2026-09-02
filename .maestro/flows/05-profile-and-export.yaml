@@ -3,6 +3,9 @@ name: Profile name export and Plus navigation
 ---
 - launchApp:
     clearState: true
+    clearKeychain: true
+- openLink: 'pilly-app:///'
+- runFlow: ../subflows/accept-app-link.yaml
 - runFlow: ../subflows/finish-empty-onboarding.yaml
 - tapOn: 'Profile'
 - tapOn: 'Edit name'
@@ -16,12 +19,14 @@ name: Profile name export and Plus navigation
 - assertVisible: 'Ada'
 - tapOn: 'Export data'
 - assertVisible: 'Your data, ready to take with you.'
-- tapOn: 'Back'
+- tapOn:
+    id: 'BackButton'
 - runFlow:
     when:
       visible: 'Pilly Plus'
     commands:
       - tapOn: 'Pilly Plus'
-      - assertVisible: 'Clear records, ready to share.'
-      - tapOn: 'Back'
+      - assertVisible: 'Your routine follows you.'
+      - tapOn:
+          id: 'BackButton'
 - assertVisible: 'Profile'

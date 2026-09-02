@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { Pressable, StyleSheet, View } from 'react-native';
 import { router } from 'expo-router';
 import Animated, { FadeInRight, FadeOutRight, ReduceMotion } from 'react-native-reanimated';
 
@@ -17,8 +17,11 @@ import { WeekStatusStrip } from '@/ui/components/week-status-strip';
 import { TodayCompanion } from '@/ui/illustrations';
 import { colors, radii, spacing } from '@/ui/tokens';
 import { useCurrentMinute } from '@/hooks/use-current-minute';
+import { useAccountSession } from '@/hooks/use-account-session';
 import { useDoseActions } from '@/hooks/use-dose-actions';
 import { useTodayData } from '@/hooks/use-today-data';
+import { useProfileAvatar } from '@/hooks/use-profile-avatar';
+import { PillyAvatar } from '@/ui/components/pilly-avatar';
 import {
   buildOrganizerDays,
   groupTodayDoses,
@@ -29,6 +32,8 @@ import {
 } from '@/models/today';
 
 export default function Today() {
+  const account = useAccountSession();
+  const avatar = useProfileAvatar();
   const { repository, today, dates, doses, weekDoses, medicines, reminderNotice, firstName } =
     useTodayData();
   const now = useCurrentMinute();
@@ -83,7 +88,24 @@ export default function Today() {
             }).format(today)}
           </PillyText>
         </View>
-        <PillyIconButton icon="profile" label="Profile" onPress={() => router.push('/profile')} />
+        {account.state.kind === 'signed-in' ? (
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Profile"
+            hitSlop={6}
+            onPress={() => router.push('/profile')}
+            style={({ pressed }) => [styles.profileButton, pressed && styles.profilePressed]}
+          >
+            <PillyAvatar
+              displayName={firstName || account.state.user.displayName}
+              uri={avatar.uri}
+              plus={avatar.plusActive}
+              size={40}
+            />
+          </Pressable>
+        ) : (
+          <PillyIconButton icon="profile" label="Profile" onPress={() => router.push('/profile')} />
+        )}
       </View>
       {progress.total > 0 ? (
         <View style={styles.summary}>
@@ -191,6 +213,8 @@ const styles = StyleSheet.create({
     gap: spacing.lg,
   },
   titleCopy: { flex: 1, gap: spacing.xs },
+  profileButton: { width: 48, height: 48, alignItems: 'center', justifyContent: 'center' },
+  profilePressed: { opacity: 0.72, transform: [{ scale: 0.97 }] },
   greeting: { color: colors.brand, fontWeight: '600' },
   summary: {
     minHeight: 80,

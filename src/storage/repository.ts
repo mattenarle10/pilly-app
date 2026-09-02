@@ -5,11 +5,14 @@ import * as Crypto from 'expo-crypto';
 import { z } from 'zod';
 
 import {
+  cloudState,
   doseEvents,
   doseRecords,
+  medicationImages,
   medications,
   schedules,
   settings,
+  syncOutbox,
   supplyEvents,
 } from './database-schema';
 import {
@@ -37,6 +40,13 @@ import type {
   ExportSupplyEvent,
 } from '@/models/export';
 import { supplyAdjustment } from '@/models/supply';
+import { profileDisplayName, profileSettingKeys } from '@/models/profile';
+import { syncMutationSchema, type SyncMutation } from '@/models/sync';
+import {
+  medicationImageSchema,
+  type MedicationImage,
+  type MedicationImageTransferState,
+} from '@/models/medication-image';
 
 export type CreatedMedication = {
   medicationId: string;
@@ -53,11 +63,43 @@ export type ReminderSchedule = CreatedMedication['schedules'][number];
 
 const settingValueSchema = z.string();
 
+type PillyDatabase = ReturnType<typeof drizzle>;
+type PillyTransaction = Parameters<Parameters<PillyDatabase['transaction']>[0]>[0];
+
 export class PillyRepository {
   private readonly db;
 
   constructor(database: SQLiteDatabase) {
     this.db = drizzle(database);
+  }
+
+  private activeSyncAccountId(): string | null {
+    const state = this.db.select().from(cloudState).where(eq(cloudState.id, 'current')).get();
+    return state?.migrationState === 'active' ? state.accountId : null;
+  }
+
+  private transactionWithSync(run: (transaction: PillyTransaction) => SyncMutation[]): void {
+    const accountId = this.activeSyncAccountId();
+    this.db.transaction((transaction) => {
+      const mutations = run(transaction);
+      if (!accountId || mutations.length === 0) return;
+      transaction
+        .insert(syncOutbox)
+        .values(
+          mutations.map((mutation, index) => ({
+            mutationId: mutation.mutationId,
+            accountId,
+            type: mutation.type,
+            entityId: mutation.entityId,
+            occurredAt: mutation.occurredAt,
+            payload: 'data' in mutation ? JSON.stringify(mutation.data) : null,
+            attemptCount: 0,
+            lastError: null,
+            createdAt: `${mutation.occurredAt}:${index.toString().padStart(4, '0')}`,
+          })),
+        )
+        .run();
+    });
   }
 
   async createMedication(input: CreateMedicationInput): Promise<CreatedMedication> {
@@ -71,41 +113,62 @@ export class PillyRepository {
       ...schedule,
       id: Crypto.randomUUID(),
     }));
-    this.db.transaction((transaction) => {
-      transaction
-        .insert(medications)
-        .values({
-          id: medicationId,
-          name: validated.name,
-          instructions: validated.instructions,
-          supplyCount: validated.supplyCount,
-          appearanceShape: validated.appearanceShape,
-          appearanceSize: validated.appearanceSize,
-          appearanceColor: validated.appearanceColor,
-          appearanceSecondaryColor: validated.appearanceSecondaryColor,
-          createdAt: now,
-          updatedAt: now,
-          archivedAt: null,
-          timeZoneIdentifier,
-        })
-        .run();
+    const medicine = {
+      id: medicationId,
+      name: validated.name,
+      instructions: validated.instructions,
+      supplyCount: validated.supplyCount,
+      appearanceShape: validated.appearanceShape,
+      appearanceSize: validated.appearanceSize,
+      appearanceColor: validated.appearanceColor,
+      appearanceSecondaryColor: validated.appearanceSecondaryColor,
+      createdAt: now,
+      updatedAt: now,
+      archivedAt: null,
+      timeZoneIdentifier,
+    };
+    this.transactionWithSync((transaction) => {
+      transaction.insert(medications).values(medicine).run();
+      const scheduleMutations: SyncMutation[] = [];
       createdSchedules.forEach((schedule, index) => {
+        const scheduleData = {
+          id: schedule.id,
+          medicationId,
+          hour: schedule.hour,
+          minute: schedule.minute,
+          weekdayMask: schedule.weekdayMask,
+          sortOrder: index,
+          startsOn,
+          endsOn: null,
+          createdAt: now,
+        };
         transaction
           .insert(schedules)
           .values({
-            id: schedule.id,
-            medicationId,
-            hour: schedule.hour,
-            minute: schedule.minute,
-            weekdayMask: schedule.weekdayMask,
-            sortOrder: index,
+            ...scheduleData,
             reminderEnabled: schedule.reminderEnabled,
-            startsOn,
-            endsOn: null,
-            createdAt: now,
           })
           .run();
+        scheduleMutations.push(
+          syncMutationSchema.parse({
+            mutationId: Crypto.randomUUID(),
+            type: 'schedule.upsert',
+            entityId: schedule.id,
+            occurredAt: now,
+            data: scheduleData,
+          }),
+        );
       });
+      return [
+        syncMutationSchema.parse({
+          mutationId: Crypto.randomUUID(),
+          type: 'medicine.upsert',
+          entityId: medicationId,
+          occurredAt: now,
+          data: medicine,
+        }),
+        ...scheduleMutations,
+      ];
     });
     return { medicationId, schedules: createdSchedules };
   }
@@ -136,6 +199,112 @@ export class PillyRepository {
       medication: medicationSchema.parse(medication),
       schedules: medicationSchedules.map((schedule) => scheduleSchema.parse(schedule)),
     };
+  }
+
+  async getMedicationImage(medicationId: string): Promise<MedicationImage | null> {
+    const row = this.db
+      .select()
+      .from(medicationImages)
+      .where(eq(medicationImages.medicationId, medicationId))
+      .get();
+    return row ? medicationImageSchema.parse(row) : null;
+  }
+
+  async saveMedicationImage(image: MedicationImage): Promise<void> {
+    const validated = medicationImageSchema.parse(image);
+    this.db
+      .insert(medicationImages)
+      .values(validated)
+      .onConflictDoUpdate({
+        target: medicationImages.medicationId,
+        set: {
+          imageId: validated.imageId,
+          cacheKey: validated.cacheKey,
+          sha256: validated.sha256,
+          byteCount: validated.byteCount,
+          width: validated.width,
+          height: validated.height,
+          remoteVersion: validated.remoteVersion,
+          transferState: validated.transferState,
+          updatedAt: validated.updatedAt,
+          lastError: validated.lastError,
+        },
+      })
+      .run();
+  }
+
+  async updateMedicationImageTransfer(input: {
+    medicationId: string;
+    state: MedicationImageTransferState;
+    remoteVersion?: string | null;
+    lastError?: string | null;
+  }): Promise<void> {
+    this.db
+      .update(medicationImages)
+      .set({
+        transferState: input.state,
+        remoteVersion: input.remoteVersion,
+        lastError: input.lastError ?? null,
+        updatedAt: new Date().toISOString(),
+      })
+      .where(eq(medicationImages.medicationId, input.medicationId))
+      .run();
+  }
+
+  async removeMedicationImage(medicationId: string): Promise<MedicationImage | null> {
+    const image = await this.getMedicationImage(medicationId);
+    if (!image) return null;
+    this.db.delete(medicationImages).where(eq(medicationImages.medicationId, medicationId)).run();
+    return image;
+  }
+
+  async listMedicationImages(): Promise<MedicationImage[]> {
+    return this.db
+      .select()
+      .from(medicationImages)
+      .all()
+      .map((row) => medicationImageSchema.parse(row));
+  }
+
+  async clearMedicationImages(): Promise<MedicationImage[]> {
+    const images = await this.listMedicationImages();
+    this.db.delete(medicationImages).run();
+    return images;
+  }
+
+  async clearTrackedData(): Promise<MedicationImage[]> {
+    const images = await this.listMedicationImages();
+    this.db.transaction((transaction) => {
+      transaction.delete(doseEvents).run();
+      transaction.delete(doseRecords).run();
+      transaction.delete(supplyEvents).run();
+      transaction.delete(medicationImages).run();
+      transaction.delete(schedules).run();
+      transaction.delete(medications).run();
+      transaction.delete(syncOutbox).run();
+      transaction
+        .delete(settings)
+        .where(
+          inArray(settings.key, [
+            profileSettingKeys.firstName,
+            profileSettingKeys.lastName,
+            profileSettingKeys.displayName,
+          ]),
+        )
+        .run();
+      transaction
+        .update(cloudState)
+        .set({
+          accountId: null,
+          cursor: null,
+          migrationState: 'disconnected',
+          lastSuccessfulSyncAt: null,
+          lastError: null,
+        })
+        .where(eq(cloudState.id, 'current'))
+        .run();
+    });
+    return images;
   }
 
   async updateMedication(
@@ -176,27 +345,57 @@ export class PillyRepository {
       medication.supplyCount === null || validated.supplyCount === null
         ? null
         : validated.supplyCount - medication.supplyCount;
+    const updatedMedicine = {
+      ...medication,
+      name: validated.name,
+      instructions: validated.instructions,
+      supplyCount: validated.supplyCount,
+      appearanceShape: validated.appearanceShape,
+      appearanceSize: validated.appearanceSize,
+      appearanceColor: validated.appearanceColor,
+      appearanceSecondaryColor: validated.appearanceSecondaryColor,
+      updatedAt: createdAt,
+    };
+    const supplyEventId = supplyChanged ? Crypto.randomUUID() : null;
 
-    this.db.transaction((transaction) => {
+    this.transactionWithSync((transaction) => {
       transaction
         .update(medications)
         .set({
-          name: validated.name,
-          instructions: validated.instructions,
-          supplyCount: validated.supplyCount,
-          appearanceShape: validated.appearanceShape,
-          appearanceSize: validated.appearanceSize,
-          appearanceColor: validated.appearanceColor,
-          appearanceSecondaryColor: validated.appearanceSecondaryColor,
+          name: updatedMedicine.name,
+          instructions: updatedMedicine.instructions,
+          supplyCount: updatedMedicine.supplyCount,
+          appearanceShape: updatedMedicine.appearanceShape,
+          appearanceSize: updatedMedicine.appearanceSize,
+          appearanceColor: updatedMedicine.appearanceColor,
+          appearanceSecondaryColor: updatedMedicine.appearanceSecondaryColor,
           updatedAt: createdAt,
         })
         .where(eq(medications.id, medicationId))
         .run();
-      if (supplyChanged) {
+      const mutations: SyncMutation[] = [
+        syncMutationSchema.parse({
+          mutationId: Crypto.randomUUID(),
+          type: 'medicine.upsert',
+          entityId: medicationId,
+          occurredAt: createdAt,
+          data: updatedMedicine,
+        }),
+      ];
+      if (supplyChanged && supplyEventId) {
+        const supplyEvent = {
+          id: supplyEventId,
+          medicineId: medicationId,
+          doseOccurrenceId: null,
+          delta: supplyDelta,
+          resultingCount: validated.supplyCount,
+          reason: 'manualCount' as const,
+          occurredAt: createdAt,
+        };
         transaction
           .insert(supplyEvents)
           .values({
-            id: Crypto.randomUUID(),
+            id: supplyEventId,
             medicationId,
             doseOccurrenceId: null,
             delta: supplyDelta,
@@ -205,6 +404,15 @@ export class PillyRepository {
             occurredAt: createdAt,
           })
           .run();
+        mutations.push(
+          syncMutationSchema.parse({
+            mutationId: Crypto.randomUUID(),
+            type: 'supplyEvent.append',
+            entityId: supplyEventId,
+            occurredAt: createdAt,
+            data: supplyEvent,
+          }),
+        );
       }
       if (scheduleChanged) {
         transaction
@@ -212,24 +420,49 @@ export class PillyRepository {
           .set({ endsOn })
           .where(and(eq(schedules.medicationId, medicationId), isNull(schedules.endsOn)))
           .run();
+        currentSchedules.forEach((schedule) => {
+          const { reminderEnabled: _reminderEnabled, ...scheduleData } = schedule;
+          mutations.push(
+            syncMutationSchema.parse({
+              mutationId: Crypto.randomUUID(),
+              type: 'schedule.upsert',
+              entityId: schedule.id,
+              occurredAt: createdAt,
+              data: { ...scheduleData, endsOn },
+            }),
+          );
+        });
         savedSchedules.forEach((schedule, index) => {
+          const scheduleData = {
+            id: schedule.id,
+            medicationId,
+            hour: schedule.hour,
+            minute: schedule.minute,
+            weekdayMask: schedule.weekdayMask,
+            sortOrder: index,
+            startsOn,
+            endsOn: null,
+            createdAt,
+          };
           transaction
             .insert(schedules)
             .values({
-              id: schedule.id,
-              medicationId,
-              hour: schedule.hour,
-              minute: schedule.minute,
-              weekdayMask: schedule.weekdayMask,
-              sortOrder: index,
+              ...scheduleData,
               reminderEnabled: schedule.reminderEnabled,
-              startsOn,
-              endsOn: null,
-              createdAt,
             })
             .run();
+          mutations.push(
+            syncMutationSchema.parse({
+              mutationId: Crypto.randomUUID(),
+              type: 'schedule.upsert',
+              entityId: schedule.id,
+              occurredAt: createdAt,
+              data: scheduleData,
+            }),
+          );
         });
       }
+      return mutations;
     });
     return { medicationId, schedules: savedSchedules };
   }
@@ -399,23 +632,30 @@ export class PillyRepository {
     nextStatus: Exclude<DoseStatus, 'notRecorded'>,
   ): Promise<void> {
     const now = new Date().toISOString();
-    this.db.transaction((transaction) => {
+    this.transactionWithSync((transaction) => {
       const current = transaction
         .select()
         .from(doseRecords)
         .where(eq(doseRecords.occurrenceId, dose.occurrenceId))
         .get();
       const delta = supplyAdjustment(current?.status ?? 'notRecorded', nextStatus);
-      transaction
-        .insert(doseEvents)
-        .values({
-          id: Crypto.randomUUID(),
-          occurrenceId: dose.occurrenceId,
-          previousStatus: current?.status ?? 'notRecorded',
-          nextStatus,
+      const doseEvent = {
+        id: Crypto.randomUUID(),
+        occurrenceId: dose.occurrenceId,
+        previousStatus: current?.status ?? ('notRecorded' as const),
+        nextStatus,
+        occurredAt: now,
+      };
+      transaction.insert(doseEvents).values(doseEvent).run();
+      const mutations: SyncMutation[] = [
+        syncMutationSchema.parse({
+          mutationId: Crypto.randomUUID(),
+          type: 'doseEvent.append',
+          entityId: doseEvent.id,
           occurredAt: now,
-        })
-        .run();
+          data: doseEvent,
+        }),
+      ];
       if (delta !== 0) {
         transaction
           .update(medications)
@@ -424,56 +664,112 @@ export class PillyRepository {
           })
           .where(eq(medications.id, dose.medication.id))
           .run();
+        const updatedMedicine = transaction
+          .select()
+          .from(medications)
+          .where(eq(medications.id, dose.medication.id))
+          .get();
+        if (!updatedMedicine) throw new Error('Medicine not found.');
+        const supplyEvent = {
+          id: Crypto.randomUUID(),
+          medicineId: dose.medication.id,
+          doseOccurrenceId: dose.occurrenceId,
+          delta,
+          resultingCount: updatedMedicine.supplyCount,
+          reason: 'doseRecorded' as const,
+          occurredAt: now,
+        };
         transaction
           .insert(supplyEvents)
           .values({
-            id: Crypto.randomUUID(),
+            id: supplyEvent.id,
             medicationId: dose.medication.id,
             doseOccurrenceId: dose.occurrenceId,
             delta,
+            resultingCount: supplyEvent.resultingCount,
             reason: 'doseRecorded',
             occurredAt: now,
           })
           .run();
+        mutations.push(
+          syncMutationSchema.parse({
+            mutationId: Crypto.randomUUID(),
+            type: 'medicine.upsert',
+            entityId: updatedMedicine.id,
+            occurredAt: now,
+            data: updatedMedicine,
+          }),
+          syncMutationSchema.parse({
+            mutationId: Crypto.randomUUID(),
+            type: 'supplyEvent.append',
+            entityId: supplyEvent.id,
+            occurredAt: now,
+            data: supplyEvent,
+          }),
+        );
       }
+      const doseRecord = {
+        occurrenceId: dose.occurrenceId,
+        scheduleId: dose.schedule.id,
+        status: nextStatus,
+        scheduledAt: dose.scheduledAt.toISOString(),
+        recordedAt: now,
+        updatedAt: now,
+      };
       transaction
         .insert(doseRecords)
-        .values({
-          occurrenceId: dose.occurrenceId,
-          scheduleId: dose.schedule.id,
-          status: nextStatus,
-          scheduledAt: dose.scheduledAt.toISOString(),
-          recordedAt: now,
-          updatedAt: now,
-        })
+        .values(doseRecord)
         .onConflictDoUpdate({
           target: doseRecords.occurrenceId,
           set: { status: nextStatus, recordedAt: now, updatedAt: now },
         })
         .run();
+      mutations.push(
+        syncMutationSchema.parse({
+          mutationId: Crypto.randomUUID(),
+          type: 'doseRecord.upsert',
+          entityId: dose.occurrenceId,
+          occurredAt: now,
+          data: doseRecord,
+        }),
+      );
+      return mutations;
     });
   }
 
   async undoDose(dose: ScheduledDose): Promise<void> {
     const now = new Date().toISOString();
-    this.db.transaction((transaction) => {
+    this.transactionWithSync((transaction) => {
       const current = transaction
         .select()
         .from(doseRecords)
         .where(eq(doseRecords.occurrenceId, dose.occurrenceId))
         .get();
-      if (!current) return;
+      if (!current) return [];
       const delta = supplyAdjustment(current.status, 'notRecorded');
-      transaction
-        .insert(doseEvents)
-        .values({
-          id: Crypto.randomUUID(),
-          occurrenceId: dose.occurrenceId,
-          previousStatus: current.status,
-          nextStatus: 'notRecorded',
+      const doseEvent = {
+        id: Crypto.randomUUID(),
+        occurrenceId: dose.occurrenceId,
+        previousStatus: current.status,
+        nextStatus: 'notRecorded' as const,
+        occurredAt: now,
+      };
+      transaction.insert(doseEvents).values(doseEvent).run();
+      const mutations: SyncMutation[] = [
+        syncMutationSchema.parse({
+          mutationId: Crypto.randomUUID(),
+          type: 'doseEvent.append',
+          entityId: doseEvent.id,
           occurredAt: now,
-        })
-        .run();
+          data: doseEvent,
+        }),
+        syncMutationSchema.parse({
+          mutationId: Crypto.randomUUID(),
+          type: 'doseRecord.delete',
+          entityId: dose.occurrenceId,
+          occurredAt: now,
+        }),
+      ];
       transaction
         .delete(doseRecords)
         .where(
@@ -491,18 +787,51 @@ export class PillyRepository {
           })
           .where(eq(medications.id, dose.medication.id))
           .run();
+        const updatedMedicine = transaction
+          .select()
+          .from(medications)
+          .where(eq(medications.id, dose.medication.id))
+          .get();
+        if (!updatedMedicine) throw new Error('Medicine not found.');
+        const supplyEvent = {
+          id: Crypto.randomUUID(),
+          medicineId: dose.medication.id,
+          doseOccurrenceId: dose.occurrenceId,
+          delta,
+          resultingCount: updatedMedicine.supplyCount,
+          reason: 'doseCorrected' as const,
+          occurredAt: now,
+        };
         transaction
           .insert(supplyEvents)
           .values({
-            id: Crypto.randomUUID(),
+            id: supplyEvent.id,
             medicationId: dose.medication.id,
             doseOccurrenceId: dose.occurrenceId,
             delta,
+            resultingCount: supplyEvent.resultingCount,
             reason: 'doseCorrected',
             occurredAt: now,
           })
           .run();
+        mutations.push(
+          syncMutationSchema.parse({
+            mutationId: Crypto.randomUUID(),
+            type: 'medicine.upsert',
+            entityId: updatedMedicine.id,
+            occurredAt: now,
+            data: updatedMedicine,
+          }),
+          syncMutationSchema.parse({
+            mutationId: Crypto.randomUUID(),
+            type: 'supplyEvent.append',
+            entityId: supplyEvent.id,
+            occurredAt: now,
+            data: supplyEvent,
+          }),
+        );
       }
+      return mutations;
     });
   }
 
@@ -519,7 +848,17 @@ export class PillyRepository {
     const now = new Date().toISOString();
     const delta =
       medication.supplyCount === null || count === null ? null : count - medication.supplyCount;
-    this.db.transaction((transaction) => {
+    const updatedMedicine = { ...medication, supplyCount: count, updatedAt: now };
+    const supplyEvent = {
+      id: Crypto.randomUUID(),
+      medicineId: medicationId,
+      doseOccurrenceId: null,
+      delta,
+      resultingCount: count,
+      reason: 'manualCount' as const,
+      occurredAt: now,
+    };
+    this.transactionWithSync((transaction) => {
       transaction
         .update(medications)
         .set({ supplyCount: count, updatedAt: now })
@@ -528,7 +867,7 @@ export class PillyRepository {
       transaction
         .insert(supplyEvents)
         .values({
-          id: Crypto.randomUUID(),
+          id: supplyEvent.id,
           medicationId,
           doseOccurrenceId: null,
           delta,
@@ -537,6 +876,22 @@ export class PillyRepository {
           occurredAt: now,
         })
         .run();
+      return [
+        syncMutationSchema.parse({
+          mutationId: Crypto.randomUUID(),
+          type: 'medicine.upsert',
+          entityId: medicationId,
+          occurredAt: now,
+          data: updatedMedicine,
+        }),
+        syncMutationSchema.parse({
+          mutationId: Crypto.randomUUID(),
+          type: 'supplyEvent.append',
+          entityId: supplyEvent.id,
+          occurredAt: now,
+          data: supplyEvent,
+        }),
+      ];
     });
   }
 
@@ -550,27 +905,108 @@ export class PillyRepository {
 
   async setMedicationArchived(medicationId: string, archived: boolean): Promise<void> {
     const now = new Date().toISOString();
-    this.db
-      .update(medications)
-      .set({ archivedAt: archived ? now : null, updatedAt: now })
-      .where(eq(medications.id, medicationId))
-      .run();
+    this.transactionWithSync((transaction) => {
+      transaction
+        .update(medications)
+        .set({ archivedAt: archived ? now : null, updatedAt: now })
+        .where(eq(medications.id, medicationId))
+        .run();
+      const medication = transaction
+        .select()
+        .from(medications)
+        .where(eq(medications.id, medicationId))
+        .get();
+      if (!medication) throw new Error('Medicine not found.');
+      return [
+        syncMutationSchema.parse({
+          mutationId: Crypto.randomUUID(),
+          type: 'medicine.upsert',
+          entityId: medicationId,
+          occurredAt: now,
+          data: medication,
+        }),
+      ];
+    });
   }
 
   async deleteMedication(medicationId: string): Promise<void> {
-    const medicationSchedules = this.db
-      .select({ id: schedules.id })
-      .from(schedules)
-      .where(eq(schedules.medicationId, medicationId))
-      .all();
-    this.db.transaction((transaction) => {
+    const now = new Date().toISOString();
+    this.transactionWithSync((transaction) => {
+      const medicationSchedules = transaction
+        .select({ id: schedules.id })
+        .from(schedules)
+        .where(eq(schedules.medicationId, medicationId))
+        .all();
+      const medicationSupplyEvents = transaction
+        .select({ id: supplyEvents.id })
+        .from(supplyEvents)
+        .where(eq(supplyEvents.medicationId, medicationId))
+        .all();
+      const mutations: SyncMutation[] = [];
       medicationSchedules.forEach(({ id }) => {
+        const records = transaction
+          .select({ occurrenceId: doseRecords.occurrenceId })
+          .from(doseRecords)
+          .where(eq(doseRecords.scheduleId, id))
+          .all();
+        const events = transaction
+          .select({ id: doseEvents.id })
+          .from(doseEvents)
+          .where(like(doseEvents.occurrenceId, `${id}:%`))
+          .all();
+        records.forEach(({ occurrenceId }) => {
+          mutations.push(
+            syncMutationSchema.parse({
+              mutationId: Crypto.randomUUID(),
+              type: 'doseRecord.delete',
+              entityId: occurrenceId,
+              occurredAt: now,
+            }),
+          );
+        });
+        events.forEach(({ id: eventId }) => {
+          mutations.push(
+            syncMutationSchema.parse({
+              mutationId: Crypto.randomUUID(),
+              type: 'doseEvent.delete',
+              entityId: eventId,
+              occurredAt: now,
+            }),
+          );
+        });
         transaction
           .delete(doseEvents)
           .where(like(doseEvents.occurrenceId, `${id}:%`))
           .run();
+        mutations.push(
+          syncMutationSchema.parse({
+            mutationId: Crypto.randomUUID(),
+            type: 'schedule.delete',
+            entityId: id,
+            occurredAt: now,
+          }),
+        );
+      });
+      medicationSupplyEvents.forEach(({ id }) => {
+        mutations.push(
+          syncMutationSchema.parse({
+            mutationId: Crypto.randomUUID(),
+            type: 'supplyEvent.delete',
+            entityId: id,
+            occurredAt: now,
+          }),
+        );
       });
       transaction.delete(medications).where(eq(medications.id, medicationId)).run();
+      mutations.push(
+        syncMutationSchema.parse({
+          mutationId: Crypto.randomUUID(),
+          type: 'medicine.delete',
+          entityId: medicationId,
+          occurredAt: now,
+        }),
+      );
+      return mutations;
     });
   }
 
@@ -586,5 +1022,43 @@ export class PillyRepository {
       .values({ key, value })
       .onConflictDoUpdate({ target: settings.key, set: { value } })
       .run();
+  }
+
+  async deleteSetting(key: string): Promise<void> {
+    this.db.delete(settings).where(eq(settings.key, key)).run();
+  }
+
+  async saveProfileName(firstName: string, lastName: string): Promise<void> {
+    const profile = {
+      firstName: settingValueSchema.parse(firstName).trim(),
+      lastName: settingValueSchema.parse(lastName).trim(),
+      updatedAt: new Date().toISOString(),
+    };
+    this.transactionWithSync((transaction) => {
+      const values = [
+        { key: profileSettingKeys.firstName, value: profile.firstName },
+        { key: profileSettingKeys.lastName, value: profile.lastName },
+        {
+          key: profileSettingKeys.displayName,
+          value: profileDisplayName(profile),
+        },
+      ];
+      values.forEach(({ key, value }) => {
+        transaction
+          .insert(settings)
+          .values({ key, value })
+          .onConflictDoUpdate({ target: settings.key, set: { value } })
+          .run();
+      });
+      return [
+        syncMutationSchema.parse({
+          mutationId: Crypto.randomUUID(),
+          type: 'profile.upsert',
+          entityId: 'profile',
+          occurredAt: profile.updatedAt,
+          data: profile,
+        }),
+      ];
+    });
   }
 }

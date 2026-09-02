@@ -5,14 +5,16 @@ import { useForm, useSelector, type AnyFormApi } from '@tanstack/react-form';
 
 import type { MedicationDetail } from '@/models/medication';
 import { AppearanceStep } from '@/ui/components/medicine-appearance-field';
+import { MedicinePhotoField } from '@/ui/components/medicine-photo-field';
 import { DetailsStep, NameStep, ScheduleStep } from '@/ui/components/medicine-form-sections';
 import { MedicineFormShell } from '@/ui/components/medicine-form-shell';
 import { EmptyState } from '@/ui/components/empty-state';
 import { PillyBanner } from '@/ui/components/pilly-banner';
-import { PillyModal } from '@/ui/components/pilly-modal';
+import { PillyConfirmationSheet } from '@/ui/components/pilly-confirmation-sheet';
 import { Screen } from '@/ui/components/screen';
 import { schedulesMatch } from '@/models/schedule';
 import { useEditMedicine } from '@/hooks/use-edit-medicine';
+import { useMedicinePhoto } from '@/hooks/use-medicine-photo';
 import {
   medicationDraftsMatch,
   scheduleConfigurationFromDraft,
@@ -26,6 +28,7 @@ import { friendlySaveError } from '@/models/medicine-form-errors';
 export default function EditMedicineRoute() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const edit = useEditMedicine(id);
+  const photo = useMedicinePhoto(id);
 
   if (edit.query.isLoading) return <EditState message="Loading medicine…" />;
   if (edit.query.isError)
@@ -38,15 +41,19 @@ export default function EditMedicineRoute() {
     );
   if (!edit.query.data) return <EditState kind="missing" message="Medicine not found" />;
 
-  return <EditMedicineForm detail={edit.query.data} saveMutation={edit.saveMutation} />;
+  return (
+    <EditMedicineForm detail={edit.query.data} saveMutation={edit.saveMutation} photo={photo} />
+  );
 }
 
 function EditMedicineForm({
   detail,
   saveMutation,
+  photo,
 }: {
   detail: MedicationDetail;
   saveMutation: ReturnType<typeof useEditMedicine>['saveMutation'];
+  photo: ReturnType<typeof useMedicinePhoto>;
 }) {
   const navigation = useNavigation();
   const schedule = detail.schedules[0];
@@ -107,7 +114,7 @@ function EditMedicineForm({
       actionDisabled={!isDirty || issue !== null}
       onAction={() => void form.handleSubmit()}
       modal={
-        <PillyModal
+        <PillyConfirmationSheet
           visible={pendingNavigation !== null}
           title="Discard changes?"
           message="Your edits haven’t been saved."
@@ -133,6 +140,20 @@ function EditMedicineForm({
       ) : null}
       <EditNameSection form={form} issue={issue} setFieldValue={setFieldValue} />
       <EditAppearanceSection form={form} setFieldValue={setFieldValue} />
+      {photo.available ? (
+        <MedicinePhotoField
+          uri={photo.uri}
+          busy={photo.isBusy}
+          error={photo.error}
+          onSelect={(source) => void photo.select(source)}
+          onRemove={() => void photo.remove()}
+          onRetry={
+            photo.errorKind === 'transfer' || photo.errorKind === 'restore'
+              ? () => void photo.retry()
+              : undefined
+          }
+        />
+      ) : null}
       <EditScheduleSection form={form} issue={issue} setFieldValue={setFieldValue} />
       <EditDetailsSection form={form} issue={issue} setFieldValue={setFieldValue} />
       <ScheduleChangedBanner form={form} initialSchedules={detail.schedules} />

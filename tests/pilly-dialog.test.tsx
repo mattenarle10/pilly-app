@@ -52,7 +52,7 @@ describe('PillyDialog', () => {
         visible
         title="Pill appearance"
         onClose={onClose}
-        footerAction={{ label: 'Done', onPress: onDone }}
+        actions={[{ label: 'Done', variant: 'quiet', onPress: onDone }]}
       >
         <PillyText>Appearance controls</PillyText>
       </PillyDialog>,

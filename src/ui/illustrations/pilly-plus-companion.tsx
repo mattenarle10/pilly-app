@@ -19,7 +19,7 @@ const compartments = [
   colors.peach,
 ];
 
-export function PillyPlusCompanion() {
+export function PillyPlusCompanion({ compact = false }: { compact?: boolean }) {
   const reducedMotion = useReducedMotion();
   const entrance = useSharedValue(reducedMotion ? 1 : 0);
 
@@ -38,7 +38,7 @@ export function PillyPlusCompanion() {
     <Animated.View
       accessibilityElementsHidden
       importantForAccessibility="no-hide-descendants"
-      style={[styles.frame, animatedStyle]}
+      style={[styles.frame, compact && styles.compactFrame, animatedStyle]}
     >
       <Svg width="100%" height="100%" viewBox="0 0 320 155">
         <G stroke={colors.brand} strokeLinecap="round" strokeLinejoin="round">
@@ -94,5 +94,6 @@ export function PillyPlusCompanion() {
 }
 
 const styles = StyleSheet.create({
-  frame: { width: '100%', maxWidth: 340, height: 164, alignSelf: 'center' },
+  frame: { width: '100%', maxWidth: 264, height: 128, alignSelf: 'center' },
+  compactFrame: { maxWidth: 224, height: 108 },
 });

@@ -1,3 +1,4 @@
+import { forwardRef } from 'react';
 import {
   StyleSheet,
   TextInput,
@@ -18,16 +19,10 @@ type Props = TextInputProps & {
   optional?: boolean;
 };
 
-export function PillyField({
-  label,
-  hint,
-  error,
-  icon,
-  optional,
-  style,
-  multiline,
-  ...props
-}: Props) {
+export const PillyField = forwardRef<TextInput, Props>(function PillyField(
+  { label, hint, error, icon, optional, style, multiline, ...props },
+  ref,
+) {
   const { fontScale } = useWindowDimensions();
   const describedBy = error ? `${label}-error` : hint ? `${label}-hint` : undefined;
   return (
@@ -49,6 +44,7 @@ export function PillyField({
           </View>
         ) : null}
         <TextInput
+          ref={ref}
           accessibilityLabel={label}
           accessibilityHint={error ?? hint}
           aria-describedby={describedBy}
@@ -75,7 +71,7 @@ export function PillyField({
       ) : null}
     </View>
   );
-}
+});
 
 const styles = StyleSheet.create({
   group: { gap: spacing.sm },

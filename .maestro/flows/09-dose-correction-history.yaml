@@ -3,8 +3,11 @@ name: Correct a dose and review its history
 ---
 - launchApp:
     clearState: true
+    clearKeychain: true
     permissions:
       notifications: allow
+- openLink: 'pilly-app:///'
+- runFlow: ../subflows/accept-app-link.yaml
 - runFlow: ../subflows/create-medicine.yaml
 - tapOn: 'Taken'
 - assertVisible: 'Status: Taken'

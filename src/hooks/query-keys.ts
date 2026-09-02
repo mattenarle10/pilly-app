@@ -1,5 +1,7 @@
 export const queryKeys = {
   medication: (id: string) => ['medication', id] as const,
+  medicationImage: (id: string) => ['medication-image', id] as const,
+  profileAvatar: (accountId: string) => ['profile-avatar', accountId] as const,
   medications: {
     root: ['medications'] as const,
     all: ['medications', 'all'] as const,
@@ -17,7 +19,7 @@ export const queryKeys = {
   setting: (key: string) => ['settings', key] as const,
   plus: {
     root: ['plus'] as const,
-    store: ['plus', 'store'] as const,
+    store: (accountId: string) => ['plus', 'store', accountId] as const,
   },
   exportData: ['export-data'] as const,
 } as const;

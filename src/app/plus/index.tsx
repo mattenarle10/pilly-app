@@ -1,7 +1,16 @@
-import { useState } from 'react';
-import { ActivityIndicator, StyleSheet, View } from 'react-native';
-import { Stack } from 'expo-router';
+import { useEffect, useRef, useState } from 'react';
+import { ActivityIndicator, Linking, Pressable, StyleSheet, View } from 'react-native';
+import { router, useLocalSearchParams } from 'expo-router';
 
+import { useAccountSession } from '@/hooks/use-account-session';
+import { usePlus } from '@/hooks/use-plus';
+import {
+  introductoryOfferLabel,
+  plusPurchaseCtaLabel,
+  plusPurchaseDisclosure,
+  type PlusOffer,
+  type PlusPlan,
+} from '@/services/plus-offers';
 import { PillyBanner } from '@/ui/components/pilly-banner';
 import { PillyButton } from '@/ui/components/pilly-button';
 import { PillyText } from '@/ui/components/pilly-text';
@@ -9,224 +18,504 @@ import { Screen } from '@/ui/components/screen';
 import { PillyIcon, type PillyIconName } from '@/ui/icons';
 import { PillyPlusCompanion } from '@/ui/illustrations';
 import { colors, radii, shadows, spacing } from '@/ui/tokens';
-import { usePlus } from '@/hooks/use-plus';
 
-type Notice = { kind: 'error' | 'info'; message: string };
-
-export default function PlusRoute() {
-  const plus = usePlus();
-  const [notice, setNotice] = useState<Notice | null>(null);
-  const busy = plus.purchase.isPending || plus.restore.isPending;
-  const preview = plus.state.kind === 'preview';
-  const active = plus.state.active;
-
-  const buy = async () => {
-    setNotice(null);
-    try {
-      const result = await plus.purchase.mutateAsync();
-      if (result.kind === 'inactive') {
-        setNotice({ kind: 'error', message: 'The purchase finished, but Plus is not active yet.' });
-      }
-    } catch (cause) {
-      setNotice({
-        kind: 'error',
-        message: cause instanceof Error ? cause.message : 'The App Store could not finish.',
-      });
-    }
-  };
-
-  const restore = async () => {
-    setNotice(null);
-    try {
-      const result = await plus.restore.mutateAsync();
-      if (result.kind === 'inactive') {
-        setNotice({ kind: 'info', message: 'No Pilly Plus purchase was found for this Apple ID.' });
-      }
-    } catch (cause) {
-      setNotice({
-        kind: 'error',
-        message: cause instanceof Error ? cause.message : 'The App Store could not restore Plus.',
-      });
-    }
-  };
-
-  return (
-    <>
-      <Stack.Screen
-        options={{
-          headerShown: true,
-          headerBackButtonDisplayMode: 'minimal',
-          headerBackButtonMenuEnabled: false,
-          headerShadowVisible: false,
-          headerStyle: { backgroundColor: colors.background },
-          headerTintColor: colors.textPrimary,
-          headerTitleAlign: 'center',
-          headerTitleStyle: { color: colors.textPrimary, fontWeight: '600' },
-          title: 'Pilly Plus',
-        }}
-      />
-      <Screen
-        safeAreaEdges={['bottom']}
-        contentInsetAdjustmentBehavior="never"
-        contentStyle={styles.screen}
-      >
-        <View style={styles.hero}>
-          <PillyPlusCompanion />
-          {preview ? (
-            <View style={styles.previewStatus}>
-              <PillyIcon name="info" size={16} color={colors.brand} />
-              <PillyText role="caption" style={styles.previewStatusLabel}>
-                {active ? 'Paid version preview' : 'Free version preview'}
-              </PillyText>
-            </View>
-          ) : null}
-          <PillyText role="large-title" accessibilityRole="header" style={styles.heroTitle}>
-            {active ? 'Pilly Plus is yours.' : 'Clear records, ready to share.'}
-          </PillyText>
-          <PillyText muted style={styles.heroCopy}>
-            {active
-              ? 'Your advanced export tools are unlocked for life.'
-              : 'Turn your medicine plan and dose history into useful files.'}
-          </PillyText>
-        </View>
-
-        <View style={styles.benefitsSection}>
-          <PillyText role="headline">Included with Plus</PillyText>
-          <View style={styles.benefits}>
-            <Benefit
-              icon="print"
-              title="Medicine plan PDF"
-              message="A clean plan for home, travel, or appointments."
-            />
-            <View style={styles.separator} />
-            <Benefit
-              icon="calendar"
-              title="Dose history spreadsheet"
-              message="A CSV you can sort, filter, and keep."
-            />
-          </View>
-        </View>
-
-        <View style={styles.freePromise}>
-          <View style={styles.freePromiseCopy}>
-            <PillyText role="label">The essentials stay free</PillyText>
-            <PillyText role="caption" muted>
-              Tracking, reminders, history, and a complete data export.
-            </PillyText>
-          </View>
-        </View>
-
-        <View style={styles.actions}>
-          {plus.state.kind === 'loading' ? (
-            <View accessibilityLabel="Loading Pilly Plus" style={styles.loading}>
-              <ActivityIndicator color={colors.brand} />
-              <PillyText role="caption" muted>
-                Checking Plus…
-              </PillyText>
-            </View>
-          ) : active ? (
-            <View style={styles.activeState}>
-              <PillyIcon name="done" size={20} color={colors.success} />
-              <View style={styles.activeStateCopy}>
-                <PillyText role="label">
-                  {preview ? 'Paid version preview' : 'Pilly Plus is active'}
-                </PillyText>
-                <PillyText role="caption" muted>
-                  {plus.state.kind === 'active' && plus.state.offline
-                    ? 'Using your saved access while the store is offline.'
-                    : preview
-                      ? 'No real App Store entitlement was changed.'
-                      : 'Purchased once. Yours to keep.'}
-                </PillyText>
-              </View>
-            </View>
-          ) : plus.state.kind === 'available' ? (
-            <>
-              <PillyButton
-                label={`Unlock for ${plus.state.offer.localizedPrice}`}
-                icon="unlock"
-                loading={plus.purchase.isPending}
-                onPress={() => void buy()}
-                fullWidth
-              />
-              <PillyText role="caption" muted style={styles.purchaseNote}>
-                Lifetime access. No subscription.
-              </PillyText>
-            </>
-          ) : plus.state.kind === 'error' ? (
-            <PillyBanner
-              kind="error"
-              title="Couldn’t reach the App Store"
-              message="Your saved access is unchanged. Try again when you’re connected."
-              actionLabel="Try again"
-              onAction={() => void plus.retry()}
-            />
-          ) : (
-            <View style={styles.unavailable}>
-              <PillyText role="label" style={styles.centeredCopy}>
-                {preview
-                  ? 'Checkout is off in preview mode'
-                  : plus.state.kind === 'unavailable' && plus.state.reason === 'gate'
-                    ? 'Plus is not for sale in this build yet'
-                    : 'Plus is not available yet'}
-              </PillyText>
-              <PillyText role="caption" muted style={styles.centeredCopy}>
-                {preview
-                  ? 'Use store mode to test a real RevenueCat offering.'
-                  : plus.state.kind === 'unavailable' && plus.state.reason === 'gate'
-                    ? 'The export tools are ready. Checkout opens after device purchase testing.'
-                    : 'You can keep using every essential Pilly feature for free.'}
-              </PillyText>
-            </View>
-          )}
-
-          {notice ? <PillyBanner kind={notice.kind} message={notice.message} compact /> : null}
-
-          {plus.state.canRestore && !active ? (
-            <PillyButton
-              label="Restore purchase"
-              variant="quiet"
-              size="medium"
-              disabled={busy}
-              onPress={() => void restore()}
-              fullWidth
-            />
-          ) : null}
-        </View>
-      </Screen>
-    </>
-  );
-}
-
-function Benefit({
-  icon,
-  title,
-  message,
-}: {
+const benefitItems = [
+  { icon: 'private', title: 'Private backup', message: 'Medicines, schedules, and history.' },
+  { icon: 'refresh', title: 'Easy recovery', message: 'Pick up on another iPhone.' },
+  { icon: 'photo', title: 'Medicine photos', message: 'Recognize medicines at a glance.' },
+] as const satisfies readonly {
   icon: PillyIconName;
   title: string;
   message: string;
-}) {
+}[];
+
+export default function PlusRoute() {
+  const account = useAccountSession();
+  const plus = usePlus({ loadAnonymousOffers: true });
+  const params = useLocalSearchParams<{
+    plan?: string | string[];
+    intent?: string | string[];
+  }>();
+  const requestedPlan = plusPlan(firstParam(params.plan));
+  const [selectedPlan, setSelectedPlan] = useState<PlusPlan>(requestedPlan ?? 'annual');
+  const [linkError, setLinkError] = useState(false);
+  const resumedRestore = useRef(false);
+  const preview = plus.state.kind === 'preview';
+  const signedIn = account.state.kind === 'signed-in';
+  const active = signedIn && plus.state.active;
+  const offers = plus.state.kind === 'available' ? plus.state.offers : null;
+  const selectedOffer = offers?.[selectedPlan] ?? offers?.annual ?? offers?.monthly ?? null;
+  const websiteUrl = secureWebsiteUrl(process.env.EXPO_PUBLIC_WEBSITE_URL);
+
+  useEffect(() => {
+    if (
+      firstParam(params.intent) !== 'restore' ||
+      resumedRestore.current ||
+      !signedIn ||
+      !plus.state.canRestore ||
+      plus.restore.isPending
+    ) {
+      return;
+    }
+    resumedRestore.current = true;
+    router.setParams({ intent: undefined });
+    void plus.restore.mutateAsync().catch(() => undefined);
+  }, [params.intent, plus.restore, plus.state.canRestore, signedIn]);
+
+  const continueWithPlan = () => {
+    if (!selectedOffer) return;
+    if (!signedIn) {
+      router.push({
+        pathname: '/account',
+        params: { returnTo: 'plus', plan: selectedOffer.plan },
+      });
+      return;
+    }
+    void plus.purchase.mutateAsync(selectedOffer.plan).catch(() => undefined);
+  };
+  const restore = () => {
+    if (!signedIn) {
+      router.push({
+        pathname: '/account',
+        params: { returnTo: 'plus', plan: selectedPlan, intent: 'restore' },
+      });
+      return;
+    }
+    void plus.restore.mutateAsync().catch(() => undefined);
+  };
+  const openLegalPage = async (path: 'privacy' | 'terms') => {
+    if (!websiteUrl) return;
+    setLinkError(false);
+    try {
+      await Linking.openURL(`${websiteUrl}/${path}`);
+    } catch {
+      setLinkError(true);
+    }
+  };
+
   return (
-    <View style={styles.benefit}>
-      <View style={styles.benefitIcon}>
-        <PillyIcon name={icon} size={20} color={colors.brand} />
-      </View>
-      <View style={styles.benefitCopy}>
-        <PillyText role="label">{title}</PillyText>
-        <PillyText role="caption" muted>
-          {message}
-        </PillyText>
-      </View>
+    <Screen
+      safeAreaEdges={['bottom']}
+      contentInsetAdjustmentBehavior="never"
+      contentStyle={styles.screen}
+    >
+      {active ? (
+        <ActivePlus
+          preview={preview}
+          offline={plus.state.kind === 'active' && plus.state.offline}
+          managing={plus.manage.isPending}
+          manageError={plus.manage.isError}
+          onManage={() => void plus.manage.mutateAsync().catch(() => undefined)}
+          onDismissError={plus.manage.reset}
+        />
+      ) : (
+        <>
+          <PlusHero preview={preview} />
+          <Benefits />
+
+          <View style={styles.decision}>
+            {plus.state.kind === 'loading' || account.state.kind === 'loading' ? (
+              <LoadingPlans />
+            ) : plus.state.kind === 'error' ? (
+              <PillyBanner
+                kind="error"
+                title="Plans are unavailable"
+                message="Try again when you’re connected."
+                actionLabel="Try again"
+                onAction={() => void plus.retry()}
+              />
+            ) : offers && selectedOffer ? (
+              <PurchaseDecision
+                offers={offers}
+                selectedOffer={selectedOffer}
+                signedIn={signedIn}
+                purchasing={plus.purchase.isPending}
+                restoring={plus.restore.isPending}
+                onSelect={setSelectedPlan}
+                onContinue={continueWithPlan}
+              />
+            ) : (
+              <UnavailableDecision
+                signedIn={signedIn}
+                preview={preview}
+                onConnect={() =>
+                  router.push({
+                    pathname: '/account',
+                    params: { returnTo: 'plus', plan: selectedPlan },
+                  })
+                }
+              />
+            )}
+
+            {plus.purchase.isError || plus.restore.isError ? (
+              <PillyBanner
+                kind="error"
+                title={plus.purchase.isError ? 'Purchase not completed' : 'Restore didn’t finish'}
+                message="Your current access is unchanged."
+                actionLabel="Dismiss"
+                onAction={() => {
+                  plus.purchase.reset();
+                  plus.restore.reset();
+                }}
+                compact
+              />
+            ) : null}
+          </View>
+
+          <PlusFooter
+            canRestore={plus.state.canRestore}
+            restoring={plus.restore.isPending}
+            websiteUrl={websiteUrl}
+            onRestore={restore}
+            onOpenLegal={openLegalPage}
+          />
+          {linkError ? (
+            <PillyBanner kind="error" message="Couldn’t open that page." compact />
+          ) : null}
+        </>
+      )}
+    </Screen>
+  );
+}
+
+function PlusHero({ preview }: { preview: boolean }) {
+  return (
+    <View style={styles.hero}>
+      <PillyPlusCompanion compact />
+      {preview ? <PreviewStatus /> : null}
+      <PillyText role="large-title" accessibilityRole="header" style={styles.heroTitle}>
+        Your routine follows you.
+      </PillyText>
+      <PillyText muted style={styles.heroCopy}>
+        Private backup, recovery, and medicine photos.
+      </PillyText>
     </View>
   );
 }
 
+function PreviewStatus() {
+  return (
+    <View style={styles.previewStatus}>
+      <PillyIcon name="info" size={15} color={colors.brand} />
+      <PillyText role="caption" style={styles.brandText}>
+        Preview
+      </PillyText>
+    </View>
+  );
+}
+
+function Benefits() {
+  return (
+    <View style={styles.benefits}>
+      {benefitItems.map((benefit, index) => (
+        <View key={benefit.title}>
+          {index > 0 ? <View style={styles.separator} /> : null}
+          <View style={styles.benefit}>
+            <View style={styles.benefitIcon}>
+              <PillyIcon name={benefit.icon} size={20} color={colors.brand} />
+            </View>
+            <View style={styles.benefitCopy}>
+              <PillyText role="label">{benefit.title}</PillyText>
+              <PillyText role="caption" muted>
+                {benefit.message}
+              </PillyText>
+            </View>
+          </View>
+        </View>
+      ))}
+    </View>
+  );
+}
+
+function PurchaseDecision({
+  offers,
+  selectedOffer,
+  signedIn,
+  purchasing,
+  restoring,
+  onSelect,
+  onContinue,
+}: {
+  offers: Record<PlusPlan, PlusOffer | null>;
+  selectedOffer: PlusOffer;
+  signedIn: boolean;
+  purchasing: boolean;
+  restoring: boolean;
+  onSelect: (plan: PlusPlan) => void;
+  onContinue: () => void;
+}) {
+  return (
+    <>
+      <PillyText role="headline" accessibilityRole="header">
+        Choose your plan
+      </PillyText>
+      <View accessibilityRole="radiogroup" style={styles.offerList}>
+        {offers.annual ? (
+          <PlanOption
+            offer={offers.annual}
+            selected={selectedOffer.plan === 'annual'}
+            onPress={() => onSelect('annual')}
+          />
+        ) : null}
+        {offers.monthly ? (
+          <PlanOption
+            offer={offers.monthly}
+            selected={selectedOffer.plan === 'monthly'}
+            onPress={() => onSelect('monthly')}
+          />
+        ) : null}
+      </View>
+      <PillyButton
+        label={signedIn ? plusPurchaseCtaLabel(selectedOffer) : 'Continue'}
+        accessibilityHint={
+          signedIn
+            ? `Opens Apple purchase confirmation for the ${selectedOffer.plan} plan`
+            : 'Connects your Pilly Plus account before purchase'
+        }
+        onPress={onContinue}
+        loading={purchasing}
+        disabled={restoring}
+        fullWidth
+      />
+      <PillyText role="caption" muted style={styles.purchaseTerms}>
+        {plusPurchaseDisclosure(selectedOffer)}
+      </PillyText>
+    </>
+  );
+}
+
+function PlanOption({
+  offer,
+  selected,
+  onPress,
+}: {
+  offer: PlusOffer;
+  selected: boolean;
+  onPress: () => void;
+}) {
+  const intro = offer.introductoryOffer ? introductoryOfferLabel(offer.introductoryOffer) : null;
+  const title = offer.plan === 'annual' ? 'Annual' : 'Monthly';
+  const interval = offer.plan === 'annual' ? 'per year' : 'per month';
+  const monthlyEquivalent =
+    offer.plan === 'annual' && offer.localizedPricePerMonth
+      ? `${offer.localizedPricePerMonth} per month`
+      : null;
+  const accessibilityParts = [
+    title,
+    offer.localizedPrice,
+    interval,
+    monthlyEquivalent,
+    intro,
+  ].filter(Boolean);
+
+  return (
+    <Pressable
+      accessibilityRole="radio"
+      accessibilityLabel={accessibilityParts.join(', ')}
+      accessibilityState={{ checked: selected }}
+      onPress={onPress}
+      style={({ pressed }) => [
+        styles.offer,
+        selected && styles.selectedOffer,
+        pressed && styles.pressed,
+      ]}
+    >
+      <View style={styles.offerCopy}>
+        <View style={styles.offerTitleRow}>
+          <PillyText role="label">{title}</PillyText>
+          {intro ? (
+            <View style={styles.introBadge}>
+              <PillyText role="caption" style={styles.brandText}>
+                {intro}
+              </PillyText>
+            </View>
+          ) : null}
+        </View>
+        {monthlyEquivalent ? (
+          <PillyText role="caption" muted>
+            {monthlyEquivalent}
+          </PillyText>
+        ) : null}
+      </View>
+      <View style={styles.price}>
+        <PillyText role="label" style={selected ? styles.brandText : undefined}>
+          {offer.localizedPrice}
+        </PillyText>
+        <PillyText role="caption" muted>
+          {interval}
+        </PillyText>
+      </View>
+    </Pressable>
+  );
+}
+
+function LoadingPlans() {
+  return (
+    <View accessibilityLabel="Loading Pilly Plus plans" style={styles.loading}>
+      <ActivityIndicator color={colors.brand} />
+      <PillyText role="caption" muted>
+        Loading plans…
+      </PillyText>
+    </View>
+  );
+}
+
+function UnavailableDecision({
+  signedIn,
+  preview,
+  onConnect,
+}: {
+  signedIn: boolean;
+  preview: boolean;
+  onConnect: () => void;
+}) {
+  if (!signedIn) {
+    return <PillyButton label="Connect account" onPress={onConnect} fullWidth />;
+  }
+  return (
+    <PillyBanner
+      kind="info"
+      message={
+        preview ? 'Subscriptions are unavailable in this preview.' : 'Plans are unavailable.'
+      }
+      compact
+    />
+  );
+}
+
+function ActivePlus({
+  preview,
+  offline,
+  managing,
+  manageError,
+  onManage,
+  onDismissError,
+}: {
+  preview: boolean;
+  offline: boolean;
+  managing: boolean;
+  manageError: boolean;
+  onManage: () => void;
+  onDismissError: () => void;
+}) {
+  return (
+    <>
+      <View style={styles.hero}>
+        <PillyPlusCompanion compact />
+        {preview ? <PreviewStatus /> : null}
+        <PillyText role="large-title" accessibilityRole="header" style={styles.heroTitle}>
+          Pilly Plus is active.
+        </PillyText>
+        <PillyText muted style={styles.heroCopy}>
+          Your backup and recovery access is ready.
+        </PillyText>
+      </View>
+
+      {offline ? (
+        <PillyBanner kind="info" message="Using saved Plus access while offline." compact />
+      ) : null}
+      <Benefits />
+      <View style={styles.activeActions}>
+        {!preview ? (
+          <PillyButton
+            label="Manage subscription"
+            onPress={onManage}
+            loading={managing}
+            fullWidth
+          />
+        ) : null}
+        <PillyButton
+          label="Manage account"
+          variant={preview ? 'primary' : 'quiet'}
+          size={preview ? 'large' : 'medium'}
+          onPress={() => router.push('/account')}
+          fullWidth
+        />
+        {manageError ? (
+          <PillyBanner
+            kind="error"
+            message="Couldn’t open subscription settings."
+            actionLabel="Dismiss"
+            onAction={onDismissError}
+            compact
+          />
+        ) : null}
+      </View>
+    </>
+  );
+}
+
+function PlusFooter({
+  canRestore,
+  restoring,
+  websiteUrl,
+  onRestore,
+  onOpenLegal,
+}: {
+  canRestore: boolean;
+  restoring: boolean;
+  websiteUrl: string | null;
+  onRestore: () => void;
+  onOpenLegal: (path: 'privacy' | 'terms') => void;
+}) {
+  return (
+    <View style={styles.footer}>
+      <View style={styles.footerActions}>
+        {canRestore ? (
+          <FooterAction
+            label={restoring ? 'Restoring…' : 'Restore purchases'}
+            onPress={onRestore}
+          />
+        ) : null}
+        {websiteUrl ? (
+          <>
+            <FooterAction label="Terms" onPress={() => onOpenLegal('terms')} />
+            <FooterAction label="Privacy" onPress={() => onOpenLegal('privacy')} />
+          </>
+        ) : null}
+      </View>
+      <PillyText role="caption" muted style={styles.freePromise}>
+        Pilly’s free tracker stays free.
+      </PillyText>
+    </View>
+  );
+}
+
+function FooterAction({ label, onPress }: { label: string; onPress: () => void }) {
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={label}
+      hitSlop={4}
+      onPress={onPress}
+      style={({ pressed }) => [styles.footerAction, pressed && styles.pressed]}
+    >
+      <PillyText role="caption" style={styles.footerActionLabel}>
+        {label}
+      </PillyText>
+    </Pressable>
+  );
+}
+
+function firstParam(value: string | string[] | undefined): string | undefined {
+  return Array.isArray(value) ? value[0] : value;
+}
+
+function plusPlan(value: string | undefined): PlusPlan | null {
+  return value === 'annual' || value === 'monthly' ? value : null;
+}
+
+function secureWebsiteUrl(value: string | undefined): string | null {
+  return value?.startsWith('https://') ? value.replace(/\/$/, '') : null;
+}
+
 const styles = StyleSheet.create({
   screen: { gap: spacing.xl, paddingTop: spacing.sm, paddingBottom: spacing.xxxl },
-  hero: { alignItems: 'center', gap: spacing.sm },
+  hero: { alignItems: 'center', gap: spacing.xs },
+  heroTitle: { maxWidth: 340, textAlign: 'center', fontWeight: '600' },
+  heroCopy: { maxWidth: 330, textAlign: 'center' },
   previewStatus: {
-    minHeight: 30,
+    minHeight: 28,
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.xs,
@@ -234,48 +523,73 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.md,
     backgroundColor: colors.lavenderSoft,
   },
-  previewStatusLabel: { color: colors.brand },
-  heroTitle: { maxWidth: 360, textAlign: 'center', fontWeight: '600' },
-  heroCopy: { maxWidth: 360, textAlign: 'center' },
-  benefitsSection: { gap: spacing.md },
+  brandText: { color: colors.brand },
   benefits: {
     overflow: 'hidden',
     borderRadius: radii.xl,
-    backgroundColor: colors.surface,
+    backgroundColor: colors.glass,
     ...shadows.soft,
   },
   benefit: {
-    minHeight: 72,
+    minHeight: 64,
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.md,
     paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.md,
+    paddingVertical: spacing.sm,
   },
   benefitIcon: { width: 28, alignItems: 'center' },
-  benefitCopy: { flex: 1, gap: spacing.xs },
+  benefitCopy: { flex: 1, gap: 2 },
   separator: { height: StyleSheet.hairlineWidth, marginLeft: 60, backgroundColor: colors.border },
-  freePromise: {
-    paddingHorizontal: spacing.xs,
-  },
-  freePromiseCopy: { flex: 1, gap: spacing.xs },
-  actions: { gap: spacing.sm },
-  loading: {
-    minHeight: 56,
+  decision: { gap: spacing.md },
+  offerList: { gap: spacing.sm },
+  offer: {
+    minHeight: 76,
     flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: spacing.md,
+    borderWidth: 1,
+    borderColor: 'transparent',
+    borderRadius: radii.lg,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.md,
+    backgroundColor: colors.glass,
+    ...shadows.soft,
+  },
+  selectedOffer: { borderColor: colors.brand, backgroundColor: colors.brandSoft },
+  offerCopy: { flex: 1, gap: spacing.xs },
+  offerTitleRow: { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: spacing.sm },
+  introBadge: {
+    borderRadius: radii.round,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 2,
+    backgroundColor: colors.surface,
+  },
+  price: { alignItems: 'flex-end' },
+  purchaseTerms: { textAlign: 'center', paddingHorizontal: spacing.md },
+  loading: {
+    minHeight: 88,
     alignItems: 'center',
     justifyContent: 'center',
     gap: spacing.sm,
   },
-  activeState: {
+  activeActions: { gap: spacing.sm },
+  footer: { alignItems: 'center', gap: spacing.sm },
+  footerActions: {
+    minHeight: 44,
     flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: spacing.md,
-    paddingHorizontal: spacing.xs,
-    paddingVertical: spacing.sm,
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexWrap: 'wrap',
+    columnGap: spacing.sm,
   },
-  activeStateCopy: { flex: 1, gap: spacing.xs },
-  purchaseNote: { textAlign: 'center' },
-  unavailable: { gap: spacing.xs, paddingHorizontal: spacing.lg, paddingVertical: spacing.sm },
-  centeredCopy: { textAlign: 'center' },
+  footerAction: {
+    minHeight: 44,
+    justifyContent: 'center',
+    paddingHorizontal: spacing.sm,
+  },
+  footerActionLabel: { color: colors.brand, textDecorationLine: 'underline' },
+  freePromise: { textAlign: 'center' },
+  pressed: { opacity: 0.72 },
 });

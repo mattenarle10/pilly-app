@@ -1,25 +1,28 @@
 import { useState, type ReactNode } from 'react';
-import { ActivityIndicator, Linking, Pressable, StyleSheet, View } from 'react-native';
+import { Linking, Pressable, StyleSheet, View } from 'react-native';
 import Constants from 'expo-constants';
-import { router, Stack } from 'expo-router';
+import { router } from 'expo-router';
 
 import { PillyBanner } from '@/ui/components/pilly-banner';
-import { PillyField } from '@/ui/components/pilly-field';
-import { PillyIconButton } from '@/ui/components/pilly-icon-button';
-import { PillyModal } from '@/ui/components/pilly-modal';
+import { ProfileIdentity } from '@/ui/components/profile-identity';
+import { ProfileNameDialog } from '@/ui/components/profile-name-dialog';
 import { PillyText } from '@/ui/components/pilly-text';
 import { Screen } from '@/ui/components/screen';
 import { PillyIcon, type PillyIconName } from '@/ui/icons';
 import { colors, radii, shadows, spacing } from '@/ui/tokens';
+import { useAccountSession } from '@/hooks/use-account-session';
 import { useProfile } from '@/hooks/use-profile';
+import { useProfileAvatar } from '@/hooks/use-profile-avatar';
+import { accountProviderLabel } from '@/models/account';
 import { isPlusPurchasesSupported } from '@/services/purchases';
+import { showPhotoSourceMenu } from '@/ui/components/photo-source-menu';
 
 export default function ProfileRoute() {
+  const account = useAccountSession();
   const profile = useProfile();
+  const avatar = useProfileAvatar();
   const plusSupported = isPlusPurchasesSupported();
   const [nameModalOpen, setNameModalOpen] = useState(false);
-  const [firstNameDraft, setFirstNameDraft] = useState('');
-  const [lastNameDraft, setLastNameDraft] = useState('');
   const [websiteError, setWebsiteError] = useState(false);
   const websiteUrl = process.env.EXPO_PUBLIC_WEBSITE_URL?.startsWith('https://')
     ? process.env.EXPO_PUBLIC_WEBSITE_URL
@@ -27,8 +30,6 @@ export default function ProfileRoute() {
   const archivedMessage = `${profile.archivedCount} ${profile.archivedCount === 1 ? 'medicine' : 'medicines'}`;
 
   const openNameEditor = () => {
-    setFirstNameDraft(profile.name.firstName);
-    setLastNameDraft(profile.name.lastName);
     profile.saveName.reset();
     setNameModalOpen(true);
   };
@@ -41,77 +42,42 @@ export default function ProfileRoute() {
       setWebsiteError(true);
     }
   };
-  const leaveProfile = () => {
-    if (router.canGoBack()) {
-      router.back();
-      return;
-    }
-
-    router.replace('/(tabs)/today');
-  };
-
+  const showAvatarMenu = () =>
+    showPhotoSourceMenu({
+      title: 'Profile photo',
+      onSelect: avatar.canUpload ? (source) => void avatar.select(source) : undefined,
+      onRemove: avatar.canRemove ? () => void avatar.remove() : undefined,
+    });
+  const displayName = profile.displayName || account.state.user?.displayName || 'Pilly';
   return (
     <>
-      <Stack.Screen
-        options={{
-          headerShown: true,
-          headerBackVisible: false,
-          headerBackButtonDisplayMode: 'minimal',
-          headerBackButtonMenuEnabled: false,
-          headerShadowVisible: false,
-          headerStyle: { backgroundColor: colors.background },
-          headerTintColor: colors.textPrimary,
-          headerTitleAlign: 'center',
-          headerTitleStyle: { color: colors.textPrimary, fontWeight: '600' },
-          headerLeft: () => (
-            <PillyIconButton
-              icon="back"
-              label="Back"
-              onPress={leaveProfile}
-              style={styles.headerBack}
-            />
-          ),
-          title: 'Profile',
-        }}
-      />
       <Screen
         safeAreaEdges={['bottom']}
         contentInsetAdjustmentBehavior="never"
         contentStyle={styles.screen}
       >
-        <View style={styles.identity}>
-          <View style={styles.identityHeader}>
-            {profile.isLoading ? (
-              <View style={styles.loadingName}>
-                <ActivityIndicator color={colors.brand} />
-                <PillyText role="caption" muted>
-                  Loading profile…
-                </PillyText>
-              </View>
-            ) : (
-              <PillyText role="title" accessibilityRole="header" style={styles.name}>
-                {profile.displayName || 'Your Pilly'}
-              </PillyText>
-            )}
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel="Edit name"
-              disabled={profile.isLoading}
-              hitSlop={6}
-              onPress={openNameEditor}
-              style={({ pressed }) => [
-                styles.editName,
-                pressed && styles.pressed,
-                profile.isLoading && styles.disabled,
-              ]}
-            >
-              <PillyText role="label" style={styles.editNameLabel}>
-                Edit name
-              </PillyText>
-            </Pressable>
-          </View>
-          <PillyText muted>No account. Saved only on this iPhone.</PillyText>
-        </View>
+        <ProfileIdentity
+          displayName={displayName}
+          profileName={profile.displayName}
+          avatarUri={avatar.uri}
+          plusActive={avatar.plusActive}
+          profileLoading={profile.isLoading}
+          avatarBusy={avatar.isBusy}
+          canUploadAvatar={avatar.canUpload}
+          canRemoveAvatar={avatar.canRemove}
+          onEditName={openNameEditor}
+          onManageAvatar={showAvatarMenu}
+        />
+
+        {avatar.error ? (
+          <PillyBanner
+            kind="error"
+            message={avatar.error}
+            actionLabel={avatar.errorKind === 'selection' ? 'Choose again' : 'Try again'}
+            onAction={avatar.errorKind === 'selection' ? showAvatarMenu : () => void avatar.retry()}
+            compact
+          />
+        ) : null}
 
         {profile.isError ? (
           <PillyBanner
@@ -136,6 +102,17 @@ export default function ProfileRoute() {
         ) : null}
 
         <ProfileSection title="Your data">
+          {account.state.kind === 'signed-in' ? (
+            <>
+              <ProfileRow
+                icon="profile"
+                title="Account"
+                message={`${accountProviderLabel(account.state.user.provider)} · ${account.state.user.email}`}
+                onPress={() => router.push('/account')}
+              />
+              <View style={styles.separator} />
+            </>
+          ) : null}
           <ProfileRow
             icon="document"
             title="Export data"
@@ -150,7 +127,7 @@ export default function ProfileRoute() {
               <ProfileRow
                 icon="favorite"
                 title="Pilly Plus"
-                message="PDF plans and spreadsheet exports"
+                message="Private backup, recovery, and medicine photos"
                 onPress={() => router.push('/plus')}
               />
               <View style={styles.separator} />
@@ -174,43 +151,18 @@ export default function ProfileRoute() {
         </PillyText>
       </Screen>
 
-      <PillyModal
-        visible={nameModalOpen}
-        title="Edit name"
-        confirmLabel="Save"
-        confirmLoading={profile.saveName.isPending}
-        onConfirm={() =>
-          profile.saveName.mutate(
-            { firstName: firstNameDraft, lastName: lastNameDraft },
-            { onSuccess: () => setNameModalOpen(false) },
-          )
-        }
-        onClose={() => setNameModalOpen(false)}
-      >
-        <View style={styles.nameFields}>
-          <PillyField
-            testID="profile-first-name"
-            label="First name"
-            value={firstNameDraft}
-            onChangeText={setFirstNameDraft}
-            placeholder="First name"
-            autoCapitalize="words"
-            maxLength={40}
-          />
-          <PillyField
-            label="Last name"
-            optional
-            value={lastNameDraft}
-            onChangeText={setLastNameDraft}
-            placeholder="Last name"
-            autoCapitalize="words"
-            maxLength={40}
-          />
-          {profile.saveName.isError ? (
-            <PillyBanner kind="error" message="Couldn’t save your name." compact />
-          ) : null}
-        </View>
-      </PillyModal>
+      {nameModalOpen ? (
+        <ProfileNameDialog
+          name={profile.name}
+          saving={profile.saveName.isPending}
+          saveError={profile.saveName.isError}
+          onResetError={profile.saveName.reset}
+          onSave={(name) =>
+            profile.saveName.mutate(name, { onSuccess: () => setNameModalOpen(false) })
+          }
+          onClose={() => setNameModalOpen(false)}
+        />
+      ) : null}
     </>
   );
 }
@@ -268,36 +220,7 @@ function ProfileRow({
 }
 
 const styles = StyleSheet.create({
-  headerBack: { width: 44, height: 44 },
   screen: { gap: spacing.lg, paddingTop: spacing.lg, paddingBottom: spacing.xxxl },
-  identity: {
-    gap: spacing.xs,
-    paddingHorizontal: spacing.xs,
-    paddingVertical: spacing.sm,
-  },
-  identityHeader: {
-    minHeight: 44,
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    justifyContent: 'space-between',
-    gap: spacing.sm,
-  },
-  loadingName: {
-    flex: 1,
-    minHeight: 38,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
-  },
-  name: { flex: 1, fontWeight: '600' },
-  editName: {
-    minHeight: 44,
-    justifyContent: 'flex-start',
-    paddingHorizontal: spacing.sm,
-  },
-  editNameLabel: { color: colors.brand },
-  pressed: { opacity: 0.68 },
-  disabled: { opacity: 0.4 },
   section: { gap: spacing.sm },
   surface: {
     overflow: 'hidden',
@@ -323,5 +246,4 @@ const styles = StyleSheet.create({
   rowCopy: { flex: 1, gap: spacing.xs },
   separator: { height: StyleSheet.hairlineWidth, marginLeft: 60, backgroundColor: colors.border },
   boundary: { paddingHorizontal: spacing.xs, paddingTop: spacing.sm },
-  nameFields: { gap: spacing.lg },
 });

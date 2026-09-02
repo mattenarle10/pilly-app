@@ -31,6 +31,7 @@ const icons = {
   pending: { glyph: 'time-outline', motion: 'none' },
   palette: { glyph: 'color-palette-outline', motion: 'press' },
   phone: { glyph: 'phone-portrait-outline', motion: 'press' },
+  photo: { glyph: 'image-outline', motion: 'press' },
   private: { glyph: 'shield-checkmark-outline', motion: 'press' },
   print: { glyph: 'print-outline', motion: 'press' },
   profile: { glyph: 'person-circle-outline', motion: 'press' },

@@ -38,11 +38,7 @@ export function useProfileName() {
   const saveName = useMutation({
     mutationFn: async (draft: ProfileName) => {
       const normalized = normalizeProfileName(draft);
-      await Promise.all([
-        repository.setSetting(profileSettingKeys.firstName, normalized.firstName),
-        repository.setSetting(profileSettingKeys.lastName, normalized.lastName),
-        repository.setSetting(profileSettingKeys.displayName, profileDisplayName(normalized)),
-      ]);
+      await repository.saveProfileName(normalized.firstName, normalized.lastName);
       return normalized;
     },
     networkMode: 'always',

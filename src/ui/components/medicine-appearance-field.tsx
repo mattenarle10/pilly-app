@@ -70,7 +70,14 @@ export function AppearanceStep(props: Props) {
         visible={showEditor}
         title="Pill appearance"
         message="Match what you see on the medicine."
-        footerAction={{ label: 'Done', onPress: () => setShowEditor(false) }}
+        actions={[
+          {
+            label: 'Done',
+            variant: 'quiet',
+            tone: 'brand',
+            onPress: () => setShowEditor(false),
+          },
+        ]}
         onClose={() => setShowEditor(false)}
       >
         <View style={styles.preview}>
