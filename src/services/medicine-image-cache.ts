@@ -1,6 +1,6 @@
 import * as Crypto from 'expo-crypto';
 import { Directory, File, Paths } from 'expo-file-system';
-import { manipulateAsync, SaveFormat, type Action } from 'expo-image-manipulator';
+import { ImageManipulator, SaveFormat, type Action } from 'expo-image-manipulator';
 import * as ImagePicker from 'expo-image-picker';
 
 import {
@@ -18,7 +18,10 @@ const imageRoot = new Directory(Paths.document, 'medicine-images');
 export type MedicinePhotoSelection =
   | { kind: 'selected'; image: StagedMedicationImage; uri: string }
   | { kind: 'cancelled' }
-  | { kind: 'permission-denied' };
+  | { kind: 'permission-denied'; canAskAgain: boolean }
+  | { kind: 'unavailable' };
+
+export type MedicinePhotoSource = 'camera' | 'library';
 
 export function resizeAction(width: number, height: number): Action[] {
   if (width <= maxEdge && height <= maxEdge) return [];
@@ -42,6 +45,72 @@ export function containsSensitiveJpegMetadata(bytes: Uint8Array): boolean {
     offset += 2 + length;
   }
   return true;
+}
+
+export function sanitizeJpegMetadata(bytes: Uint8Array): Uint8Array {
+  if (bytes.length < 4 || bytes[0] !== 0xff || bytes[1] !== 0xd8) {
+    throw new Error('The selected image could not be safely prepared.');
+  }
+
+  const chunks: Uint8Array[] = [bytes.slice(0, 2)];
+  let totalLength = 2;
+  let offset = 2;
+
+  while (offset < bytes.length) {
+    const markerStart = offset;
+    if (bytes[offset] !== 0xff) {
+      throw new Error('The selected image could not be safely prepared.');
+    }
+    while (offset < bytes.length && bytes[offset] === 0xff) offset += 1;
+    if (offset >= bytes.length) {
+      throw new Error('The selected image could not be safely prepared.');
+    }
+    const marker = bytes[offset]!;
+    if (marker === 0x00) {
+      throw new Error('The selected image could not be safely prepared.');
+    }
+    if (marker === 0xda || marker === 0xd9) {
+      const tail = bytes.slice(markerStart);
+      chunks.push(tail);
+      totalLength += tail.length;
+      break;
+    }
+    if (marker === 0x01 || (marker >= 0xd0 && marker <= 0xd7)) {
+      const standalone = bytes.slice(markerStart, offset + 1);
+      chunks.push(standalone);
+      totalLength += standalone.length;
+      offset += 1;
+      continue;
+    }
+    if (offset + 2 >= bytes.length) {
+      throw new Error('The selected image could not be safely prepared.');
+    }
+    const length = (bytes[offset + 1]! << 8) | bytes[offset + 2]!;
+    const segmentEnd = offset + 1 + length;
+    if (length < 2 || segmentEnd > bytes.length) {
+      throw new Error('The selected image could not be safely prepared.');
+    }
+    if (marker !== 0xe1 && marker !== 0xed && marker !== 0xfe) {
+      const segment = bytes.slice(markerStart, segmentEnd);
+      chunks.push(segment);
+      totalLength += segment.length;
+    }
+    offset = segmentEnd;
+  }
+
+  if (chunks.length < 2) {
+    throw new Error('The selected image could not be safely prepared.');
+  }
+  const sanitized = new Uint8Array(totalLength);
+  let destinationOffset = 0;
+  for (const chunk of chunks) {
+    sanitized.set(chunk, destinationOffset);
+    destinationOffset += chunk.length;
+  }
+  if (containsSensitiveJpegMetadata(sanitized)) {
+    throw new Error('The selected image could not be safely prepared.');
+  }
+  return sanitized;
 }
 
 function toHex(buffer: ArrayBuffer): string {
@@ -75,24 +144,30 @@ async function normalizeAsset(
   const imageId = Crypto.randomUUID();
 
   for (const compress of compressionAttempts) {
-    const result = await manipulateAsync(asset.uri, resizeAction(asset.width, asset.height), {
-      compress,
-      format: SaveFormat.JPEG,
-    });
+    const context = ImageManipulator.manipulate(asset.uri);
+    const [resize] = resizeAction(asset.width, asset.height);
+    if (resize && 'resize' in resize) context.resize(resize.resize);
+    const rendered = await context.renderAsync();
+    const result = await rendered.saveAsync({ compress, format: SaveFormat.JPEG });
     const temporary = new File(result.uri);
-    const bytes = await temporary.bytes();
+    let bytes: Uint8Array;
+    try {
+      bytes = sanitizeJpegMetadata(await temporary.bytes());
+    } catch (error) {
+      if (temporary.exists) temporary.delete();
+      throw error;
+    }
     if (bytes.byteLength > maxBytes) {
       if (temporary.exists) temporary.delete();
       continue;
     }
-    if (containsSensitiveJpegMetadata(bytes)) {
-      if (temporary.exists) temporary.delete();
-      throw new Error('The selected image could not be safely prepared.');
-    }
-    const digest = toHex(await Crypto.digest(Crypto.CryptoDigestAlgorithm.SHA256, bytes));
+    const digestBytes = Uint8Array.from(bytes).buffer;
+    const digest = toHex(await Crypto.digest(Crypto.CryptoDigestAlgorithm.SHA256, digestBytes));
     const cacheKey = `staging/${imageId}.jpg`;
     const destination = fileForCacheKey(cacheKey);
-    await temporary.move(destination, { overwrite: true });
+    destination.create({ overwrite: true });
+    destination.write(bytes);
+    if (temporary.exists) temporary.delete();
     const image = stagedMedicationImageSchema.parse({
       imageId,
       cacheKey,
@@ -106,19 +181,34 @@ async function normalizeAsset(
   throw new Error('Choose a smaller image and try again.');
 }
 
-export async function selectMedicinePhoto(): Promise<MedicinePhotoSelection> {
+export async function selectMedicinePhoto(
+  source: MedicinePhotoSource,
+): Promise<MedicinePhotoSelection> {
   try {
-    const result = await ImagePicker.launchImageLibraryAsync({
+    if (source === 'camera') {
+      const permission = await ImagePicker.requestCameraPermissionsAsync();
+      if (!permission.granted) {
+        return { kind: 'permission-denied', canAskAgain: permission.canAskAgain };
+      }
+    }
+    const options: ImagePicker.ImagePickerOptions = {
       mediaTypes: ['images'],
       allowsEditing: false,
       allowsMultipleSelection: false,
       quality: 1,
-    });
+    };
+    const result =
+      source === 'camera'
+        ? await ImagePicker.launchCameraAsync(options)
+        : await ImagePicker.launchImageLibraryAsync(options);
     if (result.canceled || !result.assets[0]) return { kind: 'cancelled' };
     return normalizeAsset(result.assets[0]);
   } catch (error) {
     const code = typeof error === 'object' && error !== null && 'code' in error ? error.code : null;
-    if (code === 'ERR_MISSING_PERMISSION') return { kind: 'permission-denied' };
+    if (code === 'ERR_MISSING_PERMISSION') {
+      return { kind: 'permission-denied', canAskAgain: false };
+    }
+    if (code === 'ERR_CAMERA_UNAVAILABLE') return { kind: 'unavailable' };
     throw error;
   }
 }

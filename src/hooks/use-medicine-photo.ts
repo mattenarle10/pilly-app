@@ -7,6 +7,7 @@ import {
   deleteCachedMedicinePhoto,
   medicinePhotoUri,
   selectMedicinePhoto,
+  type MedicinePhotoSource,
 } from '@/services/medicine-image-cache';
 import { CloudSyncApiError } from '@/services/cloud-sync-api';
 import {
@@ -99,9 +100,19 @@ export function useMedicinePhoto(medicationId?: string) {
   };
 
   const selectMutation = useMutation({
-    mutationFn: async () => {
+    mutationFn: async (source: MedicinePhotoSource) => {
       if (!available) throw new Error('Pilly Plus is required for photos.');
-      const selection = await selectMedicinePhoto();
+      const selection = await selectMedicinePhoto(source);
+      if (selection.kind === 'permission-denied') {
+        throw new Error(
+          selection.canAskAgain
+            ? 'Camera access is needed to take a medicine photo.'
+            : 'Camera access is off. Allow it in iPhone Settings to take a photo.',
+        );
+      }
+      if (selection.kind === 'unavailable') {
+        throw new Error('A camera is not available on this device.');
+      }
       if (selection.kind !== 'selected') return selection;
       if (!medicationId) {
         setStaged(selection.image);
@@ -164,7 +175,7 @@ export function useMedicinePhoto(medicationId?: string) {
       retryMutation.error ??
       query.error ??
       (image?.transferState === 'failed' ? image.lastError : null),
-    select: () => selectMutation.mutateAsync(),
+    select: (source: MedicinePhotoSource) => selectMutation.mutateAsync(source),
     remove: () => removeMutation.mutateAsync(),
     retry: () => retryMutation.mutateAsync(),
     attachToMedication: (id: string) =>

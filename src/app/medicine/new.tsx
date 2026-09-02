@@ -178,7 +178,7 @@ export default function NewMedicationRoute() {
           uri={photo.uri}
           busy={photo.isBusy}
           error={photo.error}
-          onSelect={() => void photo.select()}
+          onSelect={(source) => void photo.select(source)}
           onRemove={() => void photo.remove()}
         />
       ) : null}

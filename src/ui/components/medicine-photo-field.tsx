@@ -1,6 +1,7 @@
-import { Image, StyleSheet, View } from 'react-native';
+import { ActionSheetIOS, Alert, Image, Platform, StyleSheet, View } from 'react-native';
 
 import { colors, radii, spacing } from '@/ui/tokens';
+import type { MedicinePhotoSource } from '@/services/medicine-image-cache';
 
 import { PillyBanner } from './pilly-banner';
 import { PillyButton } from './pilly-button';
@@ -11,19 +12,40 @@ type Props = {
   uri: string | null;
   busy: boolean;
   error?: string | Error | null;
-  onSelect: () => void;
+  onSelect: (source: MedicinePhotoSource) => void;
   onRemove: () => void;
   onRetry?: () => void;
 };
 
 export function MedicinePhotoField({ uri, busy, error, onSelect, onRemove, onRetry }: Props) {
   const message = error instanceof Error ? error.message : error;
+  const chooseSource = () => {
+    if (Platform.OS === 'ios') {
+      ActionSheetIOS.showActionSheetWithOptions(
+        {
+          options: ['Take photo', 'Choose from library', 'Cancel'],
+          cancelButtonIndex: 2,
+          title: 'Medicine photo',
+        },
+        (index) => {
+          if (index === 0) onSelect('camera');
+          if (index === 1) onSelect('library');
+        },
+      );
+      return;
+    }
+    Alert.alert('Medicine photo', undefined, [
+      { text: 'Take photo', onPress: () => onSelect('camera') },
+      { text: 'Choose from library', onPress: () => onSelect('library') },
+      { text: 'Cancel', style: 'cancel' },
+    ]);
+  };
   return (
     <View style={styles.section}>
       <View style={styles.heading}>
-        <PillyText role="title">Photo</PillyText>
+        <PillyText role="title">Medicine photo</PillyText>
         <PillyText role="caption" muted>
-          Optional recognition photo. Private with Plus.
+          Optional photo to help recognize this medicine.
         </PillyText>
       </View>
       <PillyCard padding="medium" style={styles.surface}>
@@ -42,17 +64,14 @@ export function MedicinePhotoField({ uri, busy, error, onSelect, onRemove, onRet
           </View>
         )}
         <View style={styles.copy}>
-          <PillyText role="label">Recognition photo</PillyText>
-          <PillyText role="caption" muted>
-            Stored privately with your Plus account.
-          </PillyText>
+          <PillyText role="label">{uri ? 'Photo added' : 'No photo yet'}</PillyText>
           <View style={styles.actions}>
             <PillyButton
-              label={uri ? 'Replace' : 'Choose photo'}
+              label={uri ? 'Change photo' : 'Add photo'}
               variant="secondary"
               size="compact"
               loading={busy}
-              onPress={onSelect}
+              onPress={chooseSource}
             />
             {uri ? (
               <PillyButton
