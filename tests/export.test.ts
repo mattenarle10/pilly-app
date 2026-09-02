@@ -12,7 +12,8 @@ const medicine: Medication = {
   name: 'Ada, daily',
   instructions: 'Take with <food>',
   supplyCount: 7,
-  appearanceShape: 'capsule',
+  form: 'capsule',
+  tabletShape: 'round',
   appearanceSize: 'medium',
   appearanceColor: '#F3CCD7',
   appearanceSecondaryColor: '#FBE9DE',
@@ -79,7 +80,7 @@ describe('Pilly export', () => {
   test('builds a versioned complete local export and summary', () => {
     expect(data).toMatchObject({
       format: 'pilly-export',
-      version: 1,
+      version: 2,
       profile: { displayName: 'Ada & Co' },
       doseEvents: expect.arrayContaining([expect.objectContaining({ nextStatus: 'taken' })]),
       supplyEvents: expect.arrayContaining([expect.objectContaining({ resultingCount: 6 })]),

@@ -17,7 +17,8 @@ const medicine: Medication = {
   name: 'Archived medicine',
   instructions: '',
   supplyCount: null,
-  appearanceShape: 'capsule',
+  form: 'capsule',
+  tabletShape: 'round',
   appearanceSize: 'medium',
   appearanceColor: '#F3CCD7',
   appearanceSecondaryColor: '#FBE9DE',
@@ -70,7 +71,7 @@ describe('useExportData', () => {
     expect(repository.listMedications).toHaveBeenCalledWith({ includeArchived: true });
     expect(result.current.data).toMatchObject({
       format: 'pilly-export',
-      version: 1,
+      version: 2,
       profile: { displayName: 'Ada' },
       medicines: [{ medicine, schedules: [schedule] }],
       doseRecords: [{ occurrenceId: 'dose' }],
