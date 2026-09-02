@@ -52,6 +52,11 @@ export function useMedicinePhoto(medicationId?: string) {
 
   const setImageQuery = (id: string, image: MedicationImage | null) => {
     queryClient.setQueryData(queryKeys.medicationImage(id), image);
+    queryClient.setQueryData<MedicationImage[]>(queryKeys.medicationImages, (current) => {
+      if (!current) return current;
+      const withoutCurrent = current.filter((candidate) => candidate.medicationId !== id);
+      return image ? [...withoutCurrent, image] : withoutCurrent;
+    });
   };
 
   const persistStaged = async (
