@@ -1,4 +1,4 @@
-import { medicationAppearanceColorName, type Medication } from './medication';
+import { medicationAppearanceColorName, medicationFormName, type Medication } from './medication';
 
 export type MedicineCollectionView = 'cabinet' | 'list';
 export type MedicineCollectionSort = 'name' | 'recent';
@@ -63,11 +63,13 @@ export function parseMedicineCollectionSort(value: string | null): MedicineColle
 }
 
 function medicineAccessibilityLabel(medication: Medication, hasPhoto: boolean): string {
-  const shape = medication.appearanceShape;
+  const form = medicationFormName(medication.form).toLocaleLowerCase();
   const archiveState = medication.archivedAt ? 'Archived medicine' : 'Medicine';
   const recognition = hasPhoto
     ? 'Saved medicine photo.'
-    : `${medicationAppearanceColorName(medication.appearanceColor)} ${shape} medicine.`;
+    : `${medicationAppearanceColorName(medication.appearanceColor)} ${
+        medication.form === 'other' ? 'medicine' : `${form} medicine`
+      }.`;
   return `${medication.name}. ${archiveState}. ${recognition} Opens medicine details.`;
 }
 

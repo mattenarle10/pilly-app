@@ -1,8 +1,9 @@
 import type { ScheduledDose } from './dose';
 import type {
   MedicationAppearanceColor,
-  MedicationAppearanceShape,
   MedicationAppearanceSize,
+  StoredMedicationForm,
+  TabletShape,
 } from './medication';
 import { formatTime } from './schedule';
 
@@ -11,7 +12,8 @@ export type DoseTimePackState = 'overdue' | 'due' | 'partial' | 'complete' | 'fu
 export type MedicineRecognitionPreview = {
   id: string;
   name: string;
-  shape: MedicationAppearanceShape;
+  form: StoredMedicationForm;
+  tabletShape: TabletShape;
   size: MedicationAppearanceSize;
   color: MedicationAppearanceColor;
   secondaryColor: MedicationAppearanceColor;
@@ -117,7 +119,8 @@ function toRecognitionPreview(dose: ScheduledDose): MedicineRecognitionPreview {
   return {
     id: dose.medication.id,
     name: dose.medication.name,
-    shape: dose.medication.appearanceShape,
+    form: dose.medication.form,
+    tabletShape: dose.medication.tabletShape,
     size: dose.medication.appearanceSize,
     color: dose.medication.appearanceColor,
     secondaryColor: dose.medication.appearanceSecondaryColor,

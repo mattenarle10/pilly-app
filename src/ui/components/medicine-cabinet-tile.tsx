@@ -4,7 +4,7 @@ import { Image, Pressable, StyleSheet, useWindowDimensions, View } from 'react-n
 import type { MedicineCollectionItemModel } from '@/models/medicine-collection';
 import { PillyIcon } from '@/ui/icons';
 import { colors, radii, shadows, spacing } from '@/ui/tokens';
-import { MedicationAppearance } from './medication-appearance';
+import { MedicineRecognition } from './medicine-recognition';
 import { PillyText } from './pilly-text';
 
 type Props = {
@@ -42,8 +42,9 @@ export function MedicineCabinetTile({ item, layout, onPress }: Props) {
             style={layout === 'cabinet' ? styles.cabinetPhoto : styles.listPhoto}
           />
         ) : (
-          <MedicationAppearance
-            shape={item.medication.appearanceShape}
+          <MedicineRecognition
+            form={item.medication.form}
+            tabletShape={item.medication.tabletShape}
             size={item.medication.appearanceSize}
             color={item.medication.appearanceColor}
             secondaryColor={item.medication.appearanceSecondaryColor}

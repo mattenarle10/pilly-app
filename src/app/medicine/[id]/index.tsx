@@ -3,7 +3,7 @@ import { router, useLocalSearchParams } from 'expo-router';
 import Animated, { FadeInDown, ReduceMotion } from 'react-native-reanimated';
 
 import { EmptyState } from '@/ui/components/empty-state';
-import { MedicationAppearance } from '@/ui/components/medication-appearance';
+import { MedicineRecognition } from '@/ui/components/medicine-recognition';
 import { PillyBanner } from '@/ui/components/pilly-banner';
 import { PillyCard } from '@/ui/components/pilly-card';
 import { PillyIconButton } from '@/ui/components/pilly-icon-button';
@@ -83,8 +83,9 @@ export default function MedicineDetailRoute() {
             style={styles.medicinePhoto}
           />
         ) : (
-          <MedicationAppearance
-            shape={medication.appearanceShape}
+          <MedicineRecognition
+            form={medication.form}
+            tabletShape={medication.tabletShape}
             size={medication.appearanceSize}
             color={medication.appearanceColor}
             secondaryColor={medication.appearanceSecondaryColor}
@@ -95,7 +96,7 @@ export default function MedicineDetailRoute() {
             {medication.name}
           </PillyText>
           <PillyText role="caption" muted style={styles.appearanceLabel}>
-            {medication.appearanceSize} {medication.appearanceShape}
+            {medication.appearanceSize} {medication.form}
           </PillyText>
           {medication.instructions ? <PillyText muted>{medication.instructions}</PillyText> : null}
           {medication.archivedAt ? (

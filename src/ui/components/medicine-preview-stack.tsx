@@ -2,7 +2,7 @@ import { StyleSheet, View } from 'react-native';
 
 import type { MedicineRecognitionPreview } from '@/models/dose-time-pack';
 import { colors, radii, spacing } from '@/ui/tokens';
-import { MedicationAppearance } from './medication-appearance';
+import { MedicineRecognition } from './medicine-recognition';
 import { PillyText } from './pilly-text';
 
 export function MedicinePreviewStack({
@@ -24,8 +24,9 @@ export function MedicinePreviewStack({
             key={`${preview.id}:${index}`}
             style={[styles.preview, index > 0 && styles.overlap]}
           >
-            <MedicationAppearance
-              shape={preview.shape}
+            <MedicineRecognition
+              form={preview.form}
+              tabletShape={preview.tabletShape}
               size={preview.size}
               color={preview.color}
               secondaryColor={preview.secondaryColor}
