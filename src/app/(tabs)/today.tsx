@@ -189,6 +189,7 @@ export default function Today() {
         now={now}
         busy={mutation.isPending}
         pendingOccurrenceId={mutation.variables?.dose.occurrenceId}
+        pendingStatus={mutation.variables?.status}
         onRecord={recordDose}
         onCorrect={(dose) => {
           setSelectedPackKey(null);
@@ -206,6 +207,7 @@ export default function Today() {
         interactive
         busy={mutation.isPending}
         pendingOccurrenceId={mutation.variables?.dose.occurrenceId}
+        pendingStatus={mutation.variables?.status}
         onRecord={recordDose}
         onCorrect={(dose) => {
           setSelectedPackKey(null);

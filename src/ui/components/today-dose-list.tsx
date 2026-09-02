@@ -5,11 +5,10 @@ import type { DoseStatus, ScheduledDose } from '@/models/dose';
 import { MedicationAppearance } from './medication-appearance';
 import { PillyButton } from './pilly-button';
 import { PillyCard } from './pilly-card';
-import { PillyIconButton } from './pilly-icon-button';
 import { PillyText } from './pilly-text';
 import { StatusLabel } from './status-label';
 import { DoseTimePack } from './dose-time-pack';
-import { colors, radii, spacing } from '@/ui/tokens';
+import { colors, spacing } from '@/ui/tokens';
 import type { DoseTimePackModel } from '@/models/dose-time-pack';
 import { isDoseAvailable } from '@/models/today';
 
@@ -18,6 +17,7 @@ export function TodayDoseList({
   now,
   busy,
   pendingOccurrenceId,
+  pendingStatus,
   onRecord,
   onCorrect,
   onOpenMedicine,
@@ -27,6 +27,7 @@ export function TodayDoseList({
   now: Date;
   busy: boolean;
   pendingOccurrenceId?: string;
+  pendingStatus?: DoseStatus;
   onRecord: (dose: ScheduledDose, status: Exclude<DoseStatus, 'notRecorded'>) => void;
   onCorrect: (dose: ScheduledDose) => void;
   onOpenMedicine: (dose: ScheduledDose) => void;
@@ -48,7 +49,11 @@ export function TodayDoseList({
                 dose={pack.doses[0]!}
                 now={now}
                 busy={busy}
-                loading={busy && pendingOccurrenceId === pack.doses[0]!.occurrenceId}
+                loadingStatus={
+                  busy && pendingOccurrenceId === pack.doses[0]!.occurrenceId
+                    ? pendingStatus
+                    : undefined
+                }
                 onRecord={(status) => onRecord(pack.doses[0]!, status)}
                 onCorrect={() => onCorrect(pack.doses[0]!)}
                 onOpen={() => onOpenMedicine(pack.doses[0]!)}
@@ -67,7 +72,7 @@ function DoseRow({
   dose,
   now,
   busy,
-  loading,
+  loadingStatus,
   onRecord,
   onCorrect,
   onOpen,
@@ -75,7 +80,7 @@ function DoseRow({
   dose: ScheduledDose;
   now: Date;
   busy: boolean;
-  loading: boolean;
+  loadingStatus?: DoseStatus;
   onRecord: (status: Exclude<DoseStatus, 'notRecorded'>) => void;
   onCorrect: () => void;
   onOpen: () => void;
@@ -125,17 +130,21 @@ function DoseRow({
                 label="Taken"
                 icon="done"
                 size="compact"
-                loading={loading}
-                disabled={busy && !loading}
+                loading={loadingStatus === 'taken'}
+                disabled={busy && loadingStatus !== 'taken'}
                 onPress={() => onRecord('taken')}
                 style={styles.takeAction}
               />
-              <PillyIconButton
+              <PillyButton
                 icon="remove"
-                label={`Skip ${dose.medication.name}`}
-                disabled={busy}
+                label="Skip"
+                variant="secondary"
+                size="compact"
+                loading={loadingStatus === 'skipped'}
+                accessibilityLabel={`Skip ${dose.medication.name}`}
+                disabled={busy && loadingStatus !== 'skipped'}
                 onPress={() => onRecord('skipped')}
-                style={styles.skip}
+                style={styles.skipAction}
               />
             </View>
           ) : (
@@ -214,7 +223,7 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
   },
   takeAction: { flex: 1 },
-  skip: { borderRadius: radii.round, backgroundColor: colors.surfaceSubtle },
+  skipAction: { minWidth: 112 },
   correction: {
     minWidth: 60,
     minHeight: 44,

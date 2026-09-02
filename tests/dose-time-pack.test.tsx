@@ -110,6 +110,40 @@ describe('DoseTimePack', () => {
     fireEvent.press(screen.getAllByText('Taken')[0]!);
 
     expect(screen.getByText('0 of 2 recorded')).toBeOnTheScreen();
+    expect(screen.getAllByText('Skip')).toHaveLength(2);
     expect(onRecord).toHaveBeenCalledWith(first, 'taken');
+  });
+
+  test('keeps the selected action labeled and stable while it saves', async () => {
+    const first = buildScheduledDose({ occurrenceId: 'one', medication: { name: 'First' } });
+    const pack = buildDoseTimePacks([first], first.scheduledAt, true)[0]!;
+    const screen = await render(
+      <SafeAreaProvider
+        initialMetrics={{
+          frame: { x: 0, y: 0, width: 390, height: 844 },
+          insets: { top: 47, right: 0, bottom: 34, left: 0 },
+        }}
+      >
+        <DoseTimeSheet
+          pack={pack}
+          visible
+          interactive
+          busy
+          pendingOccurrenceId={first.occurrenceId}
+          pendingStatus="skipped"
+          onRecord={jest.fn()}
+          onCorrect={jest.fn()}
+          onOpenMedicine={jest.fn()}
+          onClose={jest.fn()}
+        />
+      </SafeAreaProvider>,
+    );
+
+    expect(screen.getByText('Taken')).toBeOnTheScreen();
+    expect(screen.getByText('Skip')).toBeOnTheScreen();
+    expect(screen.getByLabelText('Skip First').props.accessibilityState).toEqual({
+      disabled: true,
+      busy: true,
+    });
   });
 });

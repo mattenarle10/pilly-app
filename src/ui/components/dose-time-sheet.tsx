@@ -2,10 +2,9 @@ import { Pressable, StyleSheet, View } from 'react-native';
 
 import type { DoseStatus, ScheduledDose } from '@/models/dose';
 import type { DoseTimePackModel } from '@/models/dose-time-pack';
-import { colors, radii, spacing } from '@/ui/tokens';
+import { colors, spacing } from '@/ui/tokens';
 import { MedicationAppearance } from './medication-appearance';
 import { PillyButton } from './pilly-button';
-import { PillyIconButton } from './pilly-icon-button';
 import { PillySheet } from './pilly-sheet';
 import { PillyText } from './pilly-text';
 import { StatusLabel } from './status-label';
@@ -16,6 +15,7 @@ export function DoseTimeSheet({
   interactive,
   busy,
   pendingOccurrenceId,
+  pendingStatus,
   onRecord,
   onCorrect,
   onOpenMedicine,
@@ -26,6 +26,7 @@ export function DoseTimeSheet({
   interactive: boolean;
   busy: boolean;
   pendingOccurrenceId?: string;
+  pendingStatus?: DoseStatus;
   onRecord?: (dose: ScheduledDose, status: Exclude<DoseStatus, 'notRecorded'>) => void;
   onCorrect?: (dose: ScheduledDose) => void;
   onOpenMedicine: (dose: ScheduledDose) => void;
@@ -54,7 +55,9 @@ export function DoseTimeSheet({
               interactive={interactive}
               actionable={pack.actionable}
               busy={busy}
-              loading={busy && pendingOccurrenceId === dose.occurrenceId}
+              loadingStatus={
+                busy && pendingOccurrenceId === dose.occurrenceId ? pendingStatus : undefined
+              }
               onRecord={(status) => onRecord?.(dose, status)}
               onCorrect={() => onCorrect?.(dose)}
               onOpen={() => onOpenMedicine(dose)}
@@ -71,7 +74,7 @@ function SheetDoseRow({
   interactive,
   actionable,
   busy,
-  loading,
+  loadingStatus,
   onRecord,
   onCorrect,
   onOpen,
@@ -80,7 +83,7 @@ function SheetDoseRow({
   interactive: boolean;
   actionable: boolean;
   busy: boolean;
-  loading: boolean;
+  loadingStatus?: DoseStatus;
   onRecord: (status: Exclude<DoseStatus, 'notRecorded'>) => void;
   onCorrect: () => void;
   onOpen: () => void;
@@ -116,17 +119,21 @@ function SheetDoseRow({
               label="Taken"
               icon="done"
               size="compact"
-              loading={loading}
-              disabled={busy && !loading}
+              loading={loadingStatus === 'taken'}
+              disabled={busy && loadingStatus !== 'taken'}
               onPress={() => onRecord('taken')}
               style={styles.takeAction}
             />
-            <PillyIconButton
+            <PillyButton
               icon="remove"
-              label={`Skip ${dose.medication.name}`}
-              disabled={busy}
+              label="Skip"
+              variant="secondary"
+              size="compact"
+              loading={loadingStatus === 'skipped'}
+              accessibilityLabel={`Skip ${dose.medication.name}`}
+              disabled={busy && loadingStatus !== 'skipped'}
               onPress={() => onRecord('skipped')}
-              style={styles.skip}
+              style={styles.skipAction}
             />
           </View>
         ) : (
@@ -169,7 +176,7 @@ const styles = StyleSheet.create({
   copy: { flex: 1, gap: spacing.xs },
   actions: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
   takeAction: { flex: 1 },
-  skip: { borderRadius: radii.round, backgroundColor: colors.surfaceSubtle },
+  skipAction: { minWidth: 112 },
   recorded: {
     minHeight: 44,
     flexDirection: 'row',
