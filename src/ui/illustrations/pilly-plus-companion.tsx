@@ -9,7 +9,7 @@ import Animated, {
 } from 'react-native-reanimated';
 import Svg, { Circle, G, Line, Path, Rect } from 'react-native-svg';
 
-import { colors } from '@/ui/tokens';
+import { colors, motionDurations } from '@/ui/tokens';
 
 const compartments = [
   colors.brandSoft,
@@ -26,7 +26,10 @@ export function PillyPlusCompanion({ compact = false }: { compact?: boolean }) {
   useEffect(() => {
     entrance.value = reducedMotion
       ? 1
-      : withTiming(1, { duration: 380, easing: Easing.out(Easing.cubic) });
+      : withTiming(1, {
+          duration: motionDurations.contentEntrance,
+          easing: Easing.out(Easing.cubic),
+        });
   }, [entrance, reducedMotion]);
 
   const animatedStyle = useAnimatedStyle(() => ({
