@@ -1,4 +1,4 @@
-import type { PropsWithChildren } from 'react';
+import { useRef, type PropsWithChildren } from 'react';
 import {
   KeyboardAvoidingView,
   Modal,
@@ -45,6 +45,7 @@ export function PillyDialog({
   actions = [],
   children,
 }: Props) {
+  const bodyRef = useRef<ScrollView>(null);
   const insets = useSafeAreaInsets();
   const { fontScale } = useWindowDimensions();
   const paddingTop = Math.max(insets.top, spacing.xl);
@@ -59,7 +60,10 @@ export function PillyDialog({
       onRequestClose={() => {
         if (dismissible) onClose();
       }}
-      onShow={onShow}
+      onShow={() => {
+        bodyRef.current?.scrollTo({ y: 0, animated: false });
+        onShow?.();
+      }}
     >
       <KeyboardAvoidingView
         behavior={keyboardAware ? (Platform.OS === 'ios' ? 'padding' : 'height') : undefined}
@@ -94,6 +98,8 @@ export function PillyDialog({
             {!hasActions ? <PillyIconButton icon="close" label="Close" onPress={onClose} /> : null}
           </View>
           <ScrollView
+            ref={bodyRef}
+            key={visible ? 'dialog-open' : 'dialog-closed'}
             alwaysBounceVertical={false}
             bounces={false}
             contentContainerStyle={[styles.body, hasActions && styles.bodyWithFooter]}

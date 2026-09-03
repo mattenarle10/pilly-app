@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { Pressable, StyleSheet, useWindowDimensions, View } from 'react-native';
+import { Keyboard, Pressable, StyleSheet, useWindowDimensions, View } from 'react-native';
 
 import { MedicineRecognition } from './medicine-recognition';
 import { MedicationColorPicker } from './medication-color-picker';
@@ -87,7 +87,10 @@ export function MedicineTypeStep(props: Props) {
         accessibilityRole="button"
         accessibilityLabel="Edit medicine type"
         accessibilityHint={summary}
-        onPress={() => setShowEditor(true)}
+        onPress={() => {
+          Keyboard.dismiss();
+          setShowEditor(true);
+        }}
         style={({ pressed }) => [styles.summaryRow, pressed && styles.rowPressed]}
       >
         <MedicineRecognition {...props} display="compact" />
@@ -114,19 +117,21 @@ export function MedicineTypeStep(props: Props) {
         ]}
         onClose={() => setShowEditor(false)}
       >
-        <View style={styles.preview}>
-          <MedicineRecognition {...props} display="hero" />
+        <View style={styles.editorBody}>
+          <View style={styles.preview}>
+            <MedicineRecognition {...props} display="hero" />
+          </View>
+          <FormChoices value={props.form} color={props.color} onChange={changeForm} />
+          {props.form === 'tablet' ? (
+            <ChoiceGroup
+              label="Shape"
+              options={tabletShapes}
+              value={props.tabletShape}
+              onChange={props.onTabletShapeChange}
+            />
+          ) : null}
+          <AppearanceColorEditor {...props} />
         </View>
-        <FormChoices value={props.form} color={props.color} onChange={changeForm} />
-        {props.form === 'tablet' ? (
-          <ChoiceGroup
-            label="Shape"
-            options={tabletShapes}
-            value={props.tabletShape}
-            onChange={props.onTabletShapeChange}
-          />
-        ) : null}
-        <AppearanceColorEditor {...props} />
       </PillyDialog>
     </View>
   );
@@ -355,6 +360,7 @@ const styles = StyleSheet.create({
   },
   rowPressed: { opacity: 0.74, transform: [{ scale: 0.99 }] },
   summaryCopy: { flex: 1, gap: spacing.xs },
+  editorBody: { minHeight: 485, gap: spacing.lg },
   preview: { minHeight: 108, alignItems: 'center', justifyContent: 'center' },
   choiceGroup: { gap: spacing.sm },
   formGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
