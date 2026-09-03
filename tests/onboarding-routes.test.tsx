@@ -13,6 +13,7 @@ import StartSmallRoute from '@/app/(onboarding)/start-small';
 
 const mockPush = jest.fn();
 const mockReplace = jest.fn();
+const mockDismissTo = jest.fn();
 const mockBack = jest.fn();
 const mockUseProfileName = jest.fn();
 let mockSaveName: {
@@ -25,7 +26,12 @@ let mockSaveName: {
 
 jest.mock('expo-router', () => ({
   Stack: { Screen: () => null },
-  useRouter: () => ({ push: mockPush, replace: mockReplace, back: mockBack }),
+  useRouter: () => ({
+    push: mockPush,
+    replace: mockReplace,
+    dismissTo: mockDismissTo,
+    back: mockBack,
+  }),
 }));
 
 jest.mock('@/hooks/use-repository');
@@ -43,9 +49,15 @@ jest.mock('@/ui/illustrations', () => {
 
 jest.mock('react-native-reanimated', () => {
   const { View } = jest.requireActual<typeof import('react-native')>('react-native');
+  const fadeIn = {
+    delay: () => fadeIn,
+    duration: () => fadeIn,
+    reduceMotion: () => fadeIn,
+  };
   return {
     __esModule: true,
     default: { View, createAnimatedComponent: (component: unknown) => component },
+    FadeIn: fadeIn,
     ReduceMotion: { System: 'system' },
     useAnimatedStyle: (updater: () => object) => updater(),
     useSharedValue: (value: unknown) => ({ value }),
@@ -148,8 +160,8 @@ describe('onboarding routes', () => {
       { firstName: '  Ada  ', lastName: '' },
       expect.objectContaining({ onSuccess: expect.any(Function) }),
     );
-    expect(mockReplace).toHaveBeenCalledWith('/(onboarding)/start-small');
-    expect(mockReplace).toHaveBeenCalledTimes(1);
+    expect(mockPush).toHaveBeenCalledWith('/(onboarding)/start-small');
+    expect(mockPush).toHaveBeenCalledTimes(1);
   });
 
   test('can skip the optional name and continue with an empty profile', async () => {
@@ -157,7 +169,7 @@ describe('onboarding routes', () => {
 
     fireEvent.press(await screen.findByText('Skip for now'));
 
-    expect(mockReplace).toHaveBeenCalledWith('/(onboarding)/start-small');
+    expect(mockPush).toHaveBeenCalledWith('/(onboarding)/start-small');
   });
 
   test('does not ask for a name that already exists', async () => {
@@ -196,7 +208,7 @@ describe('onboarding routes', () => {
     });
 
     await waitFor(() => expect(setSetting).toHaveBeenCalledWith('hasCompletedOnboarding', 'true'));
-    expect(mockReplace).toHaveBeenCalledWith('/medicine/new');
+    expect(mockDismissTo).toHaveBeenCalledWith('/medicine/new');
   });
 
   test('can finish without adding a medicine', async () => {
@@ -208,7 +220,7 @@ describe('onboarding routes', () => {
       fireEvent.press(screen.getByText('Not now'));
     });
 
-    await waitFor(() => expect(mockReplace).toHaveBeenCalledWith('/(tabs)/today'));
+    await waitFor(() => expect(mockDismissTo).toHaveBeenCalledWith('/(tabs)/today'));
   });
 
   test('shows a retryable local error without navigating', async () => {
@@ -221,6 +233,6 @@ describe('onboarding routes', () => {
     });
 
     expect(await screen.findByText('Couldn’t finish setup. Try again.')).toBeOnTheScreen();
-    expect(mockReplace).not.toHaveBeenCalled();
+    expect(mockDismissTo).not.toHaveBeenCalled();
   });
 });

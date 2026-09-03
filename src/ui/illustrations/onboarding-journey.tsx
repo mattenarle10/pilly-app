@@ -23,7 +23,7 @@ import Svg, {
   Text as SvgText,
 } from 'react-native-svg';
 
-import { colors } from '@/ui/tokens';
+import { colors, motionDurations } from '@/ui/tokens';
 
 type OnboardingJourneyProps = {
   stage: 'welcome' | 'setup';
@@ -48,10 +48,10 @@ export function OnboardingJourney({ stage }: OnboardingJourneyProps) {
     }
 
     const easing = Easing.out(Easing.cubic);
-    entrance.value = withTiming(1, { duration: 420, easing });
-    firstDetail.value = withDelay(120, withTiming(1, { duration: 360, easing }));
-    secondDetail.value = withDelay(270, withTiming(1, { duration: 340, easing }));
-    thirdDetail.value = withDelay(420, withTiming(1, { duration: 340, easing }));
+    entrance.value = withTiming(1, { duration: motionDurations.illustrationEntrance, easing });
+    firstDetail.value = withDelay(70, withTiming(1, { duration: 260, easing }));
+    secondDetail.value = withDelay(160, withTiming(1, { duration: 240, easing }));
+    thirdDetail.value = withDelay(240, withTiming(1, { duration: 240, easing }));
   }, [entrance, firstDetail, reducedMotion, secondDetail, stage, thirdDetail]);
 
   const frameStyle = useAnimatedStyle(() => ({
