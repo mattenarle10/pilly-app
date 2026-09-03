@@ -3,7 +3,7 @@ import { router, useLocalSearchParams } from 'expo-router';
 import Animated, { FadeInDown, ReduceMotion } from 'react-native-reanimated';
 
 import { EmptyState } from '@/ui/components/empty-state';
-import { MedicationAppearance } from '@/ui/components/medication-appearance';
+import { MedicineRecognition } from '@/ui/components/medicine-recognition';
 import { PillyBanner } from '@/ui/components/pilly-banner';
 import { PillyCard } from '@/ui/components/pilly-card';
 import { PillyIconButton } from '@/ui/components/pilly-icon-button';
@@ -14,6 +14,7 @@ import { PillyToggle } from '@/ui/components/pilly-toggle';
 import { Screen } from '@/ui/components/screen';
 import { PillyIcon } from '@/ui/icons';
 import { colors, spacing } from '@/ui/tokens';
+import { medicationRecognitionDescription } from '@/models/medication';
 import { formatTime } from '@/models/schedule';
 import { estimateSupply } from '@/models/supply';
 import { useMedicineDetail } from '@/hooks/use-medicine-detail';
@@ -83,8 +84,9 @@ export default function MedicineDetailRoute() {
             style={styles.medicinePhoto}
           />
         ) : (
-          <MedicationAppearance
-            shape={medication.appearanceShape}
+          <MedicineRecognition
+            form={medication.form}
+            tabletShape={medication.tabletShape}
             size={medication.appearanceSize}
             color={medication.appearanceColor}
             secondaryColor={medication.appearanceSecondaryColor}
@@ -94,8 +96,13 @@ export default function MedicineDetailRoute() {
           <PillyText role="large-title" accessibilityRole="header">
             {medication.name}
           </PillyText>
-          <PillyText role="caption" muted style={styles.appearanceLabel}>
-            {medication.appearanceSize} {medication.appearanceShape}
+          <PillyText role="caption" muted>
+            {medicationRecognitionDescription({
+              form: medication.form,
+              tabletShape: medication.tabletShape,
+              color: medication.appearanceColor,
+              secondaryColor: medication.appearanceSecondaryColor,
+            })}
           </PillyText>
           {medication.instructions ? <PillyText muted>{medication.instructions}</PillyText> : null}
           {medication.archivedAt ? (
@@ -314,7 +321,6 @@ const styles = StyleSheet.create({
   },
   medicinePhoto: { width: 76, height: 76, borderRadius: 20 },
   medicineCopy: { flex: 1, gap: spacing.xs, paddingTop: spacing.xs },
-  appearanceLabel: { textTransform: 'capitalize' },
   section: { gap: spacing.sm },
   separator: { height: 1, backgroundColor: colors.surfaceSubtle },
   overviewCard: { overflow: 'hidden' },

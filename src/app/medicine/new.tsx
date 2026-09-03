@@ -6,7 +6,7 @@ import { router, useNavigation } from 'expo-router';
 import { usePreventRemove } from 'expo-router/react-navigation';
 import Storage from 'expo-sqlite/kv-store';
 
-import { AppearanceStep } from '@/ui/components/medicine-appearance-field';
+import { MedicineTypeStep } from '@/ui/components/medicine-appearance-field';
 import { MedicinePhotoField } from '@/ui/components/medicine-photo-field';
 import { DetailsStep, NameStep, ScheduleStep } from '@/ui/components/medicine-form-sections';
 import { MedicineFormShell } from '@/ui/components/medicine-form-shell';
@@ -50,7 +50,8 @@ export default function NewMedicationRoute() {
         name: value.name.trim(),
         instructions: value.instructions.trim(),
         supplyCount: supplyValue(value.supply),
-        appearanceShape: value.appearanceShape,
+        form: value.form,
+        tabletShape: value.tabletShape,
         appearanceSize: value.appearanceSize,
         appearanceColor: value.appearanceColor,
         appearanceSecondaryColor: value.appearanceSecondaryColor,
@@ -164,12 +165,14 @@ export default function NewMedicationRoute() {
         }}
         onInstructionsChange={(text) => form.setFieldValue('instructions', text)}
       />
-      <AppearanceStep
-        shape={values.appearanceShape}
+      <MedicineTypeStep
+        form={values.form}
+        tabletShape={values.tabletShape}
         size={values.appearanceSize}
         color={values.appearanceColor}
         secondaryColor={values.appearanceSecondaryColor}
-        onShapeChange={(shape) => form.setFieldValue('appearanceShape', shape)}
+        onFormChange={(medicineForm) => form.setFieldValue('form', medicineForm)}
+        onTabletShapeChange={(shape) => form.setFieldValue('tabletShape', shape)}
         onColorChange={(color) => form.setFieldValue('appearanceColor', color)}
         onSecondaryColorChange={(color) => form.setFieldValue('appearanceSecondaryColor', color)}
       />

@@ -4,7 +4,7 @@ import { usePreventRemove } from 'expo-router/react-navigation';
 import { useForm, useSelector, type AnyFormApi } from '@tanstack/react-form';
 
 import type { MedicationDetail } from '@/models/medication';
-import { AppearanceStep } from '@/ui/components/medicine-appearance-field';
+import { MedicineTypeStep } from '@/ui/components/medicine-appearance-field';
 import { MedicinePhotoField } from '@/ui/components/medicine-photo-field';
 import { DetailsStep, NameStep, ScheduleStep } from '@/ui/components/medicine-form-sections';
 import { MedicineFormShell } from '@/ui/components/medicine-form-shell';
@@ -67,7 +67,8 @@ function EditMedicineForm({
         selectedDays: schedule ? selectedDaysFromMask(schedule.weekdayMask) : [],
         schedules: scheduleDraftsFromSchedules(detail.schedules),
         supply: detail.medication.supplyCount === null ? '' : `${detail.medication.supplyCount}`,
-        appearanceShape: detail.medication.appearanceShape,
+        form: detail.medication.form,
+        tabletShape: detail.medication.tabletShape,
         appearanceSize: detail.medication.appearanceSize,
         appearanceColor: detail.medication.appearanceColor,
         appearanceSecondaryColor: detail.medication.appearanceSecondaryColor,
@@ -195,18 +196,21 @@ const EditAppearanceSection = memo(function EditAppearanceSection({
   form,
   setFieldValue,
 }: FormSectionProps) {
-  const shape = useDraftValue(form, (draft) => draft.appearanceShape);
+  const medicineForm = useDraftValue(form, (draft) => draft.form);
+  const tabletShape = useDraftValue(form, (draft) => draft.tabletShape);
   const size = useDraftValue(form, (draft) => draft.appearanceSize);
   const color = useDraftValue(form, (draft) => draft.appearanceColor);
   const secondaryColor = useDraftValue(form, (draft) => draft.appearanceSecondaryColor);
 
   return (
-    <AppearanceStep
-      shape={shape}
+    <MedicineTypeStep
+      form={medicineForm}
+      tabletShape={tabletShape}
       size={size}
       color={color}
       secondaryColor={secondaryColor}
-      onShapeChange={(value) => setFieldValue('appearanceShape', value)}
+      onFormChange={(value) => setFieldValue('form', value)}
+      onTabletShapeChange={(value) => setFieldValue('tabletShape', value)}
       onColorChange={(value) => setFieldValue('appearanceColor', value)}
       onSecondaryColorChange={(value) => setFieldValue('appearanceSecondaryColor', value)}
     />

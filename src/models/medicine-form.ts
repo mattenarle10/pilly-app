@@ -3,9 +3,13 @@ import {
   defaultMedicationAppearanceColor,
   defaultMedicationAppearanceSecondaryColor,
   medicationAppearanceColorFromLegacy,
-  medicationAppearanceShapeSchema,
   medicationAppearanceSizeSchema,
   medicationAppearanceColorSchema,
+  medicationFormFromLegacyShape,
+  storedMedicationFormSchema,
+  storedMedicationFormFromLegacy,
+  tabletShapeFromLegacy,
+  tabletShapeSchema,
 } from '@/models/medication';
 import { weekdayMask, type Schedule, type ScheduleConfiguration } from '@/models/schedule';
 
@@ -22,7 +26,8 @@ const currentDraftSchema = z.object({
     .array(medicationScheduleDraftSchema)
     .default([{ time: '09:00', reminderEnabled: true }]),
   supply: z.string(),
-  appearanceShape: medicationAppearanceShapeSchema.default('capsule'),
+  form: storedMedicationFormSchema.default('tablet'),
+  tabletShape: tabletShapeSchema.default('round'),
   appearanceSize: medicationAppearanceSizeSchema.default('medium'),
   appearanceColor: medicationAppearanceColorSchema.default(defaultMedicationAppearanceColor),
   appearanceSecondaryColor: medicationAppearanceColorSchema.default(
@@ -34,6 +39,14 @@ export const draftSchema = z.preprocess((value) => {
   const legacy = value as Record<string, unknown>;
   const migrated = {
     ...legacy,
+    form:
+      legacy.form === undefined
+        ? medicationFormFromLegacyShape(legacy.appearanceShape)
+        : storedMedicationFormFromLegacy(legacy.form),
+    tabletShape:
+      legacy.tabletShape === 'round' || legacy.tabletShape === 'oval'
+        ? legacy.tabletShape
+        : tabletShapeFromLegacy(legacy.appearanceShape),
     appearanceColor: medicationAppearanceColorFromLegacy(
       legacy.appearanceColor ?? legacy.appearanceTone,
     ),
@@ -58,7 +71,8 @@ export const defaults: MedicationDraft = {
   selectedDays: [1, 2, 3, 4, 5, 6, 7],
   schedules: [{ time: '09:00', reminderEnabled: true }],
   supply: '',
-  appearanceShape: 'capsule',
+  form: 'tablet',
+  tabletShape: 'round',
   appearanceSize: 'medium',
   appearanceColor: defaultMedicationAppearanceColor,
   appearanceSecondaryColor: defaultMedicationAppearanceSecondaryColor,
@@ -216,7 +230,8 @@ export function medicationDraftsMatch(current: MedicationDraft, next: Medication
       );
     }) &&
     supplyValue(current.supply) === supplyValue(next.supply) &&
-    current.appearanceShape === next.appearanceShape &&
+    current.form === next.form &&
+    current.tabletShape === next.tabletShape &&
     current.appearanceSize === next.appearanceSize &&
     current.appearanceColor === next.appearanceColor &&
     current.appearanceSecondaryColor === next.appearanceSecondaryColor

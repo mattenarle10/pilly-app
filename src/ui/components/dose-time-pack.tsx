@@ -45,28 +45,30 @@ export function DoseTimePack({ pack, onPress }: { pack: DoseTimePackModel; onPre
           <PillyText role={pack.focal ? 'title' : 'headline'} style={styles.time}>
             {pack.time}
           </PillyText>
-          <View style={styles.stateCopy}>
-            <View style={styles.stateHeadline}>
-              {pack.state === 'complete' ? (
-                <PillyIcon name="success" size={18} color={colors.success} />
+          {state ? (
+            <View style={styles.stateCopy}>
+              <View style={styles.stateHeadline}>
+                {pack.state === 'complete' ? (
+                  <PillyIcon name="success" size={18} color={colors.success} />
+                ) : null}
+                <PillyText
+                  role="caption"
+                  style={[
+                    styles.state,
+                    pack.focal && styles.focalState,
+                    pack.state === 'complete' && styles.completeState,
+                  ]}
+                >
+                  {state.primary}
+                </PillyText>
+              </View>
+              {state.secondary ? (
+                <PillyText role="caption" muted style={styles.stateSecondary}>
+                  {state.secondary}
+                </PillyText>
               ) : null}
-              <PillyText
-                role="caption"
-                style={[
-                  styles.state,
-                  pack.focal && styles.focalState,
-                  pack.state === 'complete' && styles.completeState,
-                ]}
-              >
-                {state.primary}
-              </PillyText>
             </View>
-            {state.secondary ? (
-              <PillyText role="caption" muted style={styles.stateSecondary}>
-                {state.secondary}
-              </PillyText>
-            ) : null}
-          </View>
+          ) : null}
         </View>
         <MedicinePreviewStack previews={pack.previews} overflowCount={pack.overflowCount} />
       </View>
@@ -75,14 +77,14 @@ export function DoseTimePack({ pack, onPress }: { pack: DoseTimePackModel; onPre
   );
 }
 
-function packStateCopy(pack: DoseTimePackModel): { primary: string; secondary?: string } {
+function packStateCopy(pack: DoseTimePackModel): { primary: string; secondary?: string } | null {
   const recorded = pack.total - pack.unresolved;
   if (pack.state === 'complete') {
     return pack.skipped > 0
       ? { primary: 'Recorded', secondary: `${pack.taken} taken, ${pack.skipped} skipped` }
       : { primary: 'Complete' };
   }
-  if (pack.state === 'future') return { primary: 'Later' };
+  if (pack.state === 'future') return null;
   if (pack.state === 'partial') {
     return { primary: `${pack.unresolved} due`, secondary: `${recorded} of ${pack.total} done` };
   }

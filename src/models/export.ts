@@ -44,7 +44,7 @@ export type MedicineExportEntry = {
 
 export type PillyExport = {
   format: 'pilly-export';
-  version: 1;
+  version: 2;
   exportedAt: string;
   profile: { displayName: string };
   medicines: MedicineExportEntry[];
@@ -70,7 +70,7 @@ export function buildPillyExport({
 }): PillyExport {
   return {
     format: 'pilly-export',
-    version: 1,
+    version: 2,
     exportedAt: exportedAt.toISOString(),
     profile: { displayName },
     medicines,

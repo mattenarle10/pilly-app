@@ -17,6 +17,7 @@ import {
 } from './database-schema';
 import {
   createMedicationSchema,
+  legacyAppearanceShape,
   medicationSchema,
   updateMedicationSchema,
   type CreateMedicationInput,
@@ -118,7 +119,8 @@ export class PillyRepository {
       name: validated.name,
       instructions: validated.instructions,
       supplyCount: validated.supplyCount,
-      appearanceShape: validated.appearanceShape,
+      form: validated.form,
+      tabletShape: validated.tabletShape,
       appearanceSize: validated.appearanceSize,
       appearanceColor: validated.appearanceColor,
       appearanceSecondaryColor: validated.appearanceSecondaryColor,
@@ -128,7 +130,7 @@ export class PillyRepository {
       timeZoneIdentifier,
     };
     this.transactionWithSync((transaction) => {
-      transaction.insert(medications).values(medicine).run();
+      transaction.insert(medications).values(medicationRow(medicine)).run();
       const scheduleMutations: SyncMutation[] = [];
       createdSchedules.forEach((schedule, index) => {
         const scheduleData = {
@@ -350,7 +352,8 @@ export class PillyRepository {
       name: validated.name,
       instructions: validated.instructions,
       supplyCount: validated.supplyCount,
-      appearanceShape: validated.appearanceShape,
+      form: validated.form,
+      tabletShape: validated.tabletShape,
       appearanceSize: validated.appearanceSize,
       appearanceColor: validated.appearanceColor,
       appearanceSecondaryColor: validated.appearanceSecondaryColor,
@@ -365,7 +368,8 @@ export class PillyRepository {
           name: updatedMedicine.name,
           instructions: updatedMedicine.instructions,
           supplyCount: updatedMedicine.supplyCount,
-          appearanceShape: updatedMedicine.appearanceShape,
+          form: updatedMedicine.form,
+          appearanceShape: legacyAppearanceShape(updatedMedicine.form, updatedMedicine.tabletShape),
           appearanceSize: updatedMedicine.appearanceSize,
           appearanceColor: updatedMedicine.appearanceColor,
           appearanceSecondaryColor: updatedMedicine.appearanceSecondaryColor,
@@ -1061,4 +1065,12 @@ export class PillyRepository {
       ];
     });
   }
+}
+
+function medicationRow(medicine: Medication) {
+  const { tabletShape, ...values } = medicine;
+  return {
+    ...values,
+    appearanceShape: legacyAppearanceShape(medicine.form, tabletShape),
+  };
 }

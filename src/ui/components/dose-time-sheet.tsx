@@ -3,7 +3,7 @@ import { Pressable, StyleSheet, View } from 'react-native';
 import type { DoseStatus, ScheduledDose } from '@/models/dose';
 import type { DoseTimePackModel } from '@/models/dose-time-pack';
 import { colors, spacing } from '@/ui/tokens';
-import { MedicationAppearance } from './medication-appearance';
+import { MedicineRecognition } from './medicine-recognition';
 import { PillyButton } from './pilly-button';
 import { PillySheet } from './pilly-sheet';
 import { PillyText } from './pilly-text';
@@ -96,8 +96,9 @@ function SheetDoseRow({
         onPress={onOpen}
         style={({ pressed }) => [styles.identity, pressed && styles.pressed]}
       >
-        <MedicationAppearance
-          shape={dose.medication.appearanceShape}
+        <MedicineRecognition
+          form={dose.medication.form}
+          tabletShape={dose.medication.tabletShape}
           size={dose.medication.appearanceSize}
           color={dose.medication.appearanceColor}
           secondaryColor={dose.medication.appearanceSecondaryColor}

@@ -463,10 +463,11 @@ export class PillySyncStore {
       }
       case 'medicine': {
         const medicine = syncMedicineSchema.parse(change.data);
+        const { tabletShape: _tabletShape, ...medicineRow } = medicine;
         transaction
           .insert(medications)
-          .values(medicine)
-          .onConflictDoUpdate({ target: medications.id, set: medicine })
+          .values(medicineRow)
+          .onConflictDoUpdate({ target: medications.id, set: medicineRow })
           .run();
         break;
       }

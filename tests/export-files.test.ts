@@ -49,7 +49,7 @@ const mockedPrint = jest.mocked(Print.printToFileAsync);
 
 const data: PillyExport = {
   format: 'pilly-export',
-  version: 1,
+  version: 2,
   exportedAt: '2026-08-13T01:00:00.000Z',
   profile: { displayName: '' },
   medicines: [],

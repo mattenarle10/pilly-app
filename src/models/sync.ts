@@ -1,4 +1,12 @@
 import { z } from 'zod';
+import {
+  legacyAppearanceShape,
+  medicationFormFromLegacyShape,
+  storedMedicationFormFromLegacy,
+  storedMedicationFormSchema,
+  tabletShapeFromLegacy,
+  tabletShapeSchema,
+} from '@/models/medication';
 
 const isoDateTime = z.iso.datetime();
 const uuid = z.uuid();
@@ -9,12 +17,14 @@ export const syncProfileSchema = z.object({
   updatedAt: isoDateTime,
 });
 
-export const syncMedicineSchema = z.object({
+const syncMedicineInputSchema = z.object({
   id: uuid,
   name: z.string().trim().min(1).max(120),
   instructions: z.string().trim().max(500),
   supplyCount: z.number().nonnegative().nullable(),
-  appearanceShape: z.enum(['round', 'oval', 'capsule']),
+  form: z.string().trim().min(1).optional(),
+  tabletShape: tabletShapeSchema.optional(),
+  appearanceShape: z.enum(['round', 'oval', 'capsule']).optional(),
   appearanceSize: z.enum(['small', 'medium', 'large']),
   appearanceColor: z.string().regex(/^#[0-9a-f]{6}$/i),
   appearanceSecondaryColor: z.string().regex(/^#[0-9a-f]{6}$/i),
@@ -23,6 +33,24 @@ export const syncMedicineSchema = z.object({
   archivedAt: isoDateTime.nullable(),
   timeZoneIdentifier: z.string().min(1),
 });
+
+export const syncMedicineSchema = syncMedicineInputSchema
+  .refine((medicine) => medicine.form !== undefined || medicine.appearanceShape !== undefined, {
+    message: 'Medicine form or legacy appearance shape is required.',
+  })
+  .transform((medicine) => {
+    const form =
+      medicine.form === undefined
+        ? medicationFormFromLegacyShape(medicine.appearanceShape)
+        : storedMedicationFormFromLegacy(medicine.form);
+    const tabletShape = medicine.tabletShape ?? tabletShapeFromLegacy(medicine.appearanceShape);
+    return {
+      ...medicine,
+      form: storedMedicationFormSchema.parse(form),
+      tabletShape,
+      appearanceShape: legacyAppearanceShape(form, tabletShape),
+    };
+  });
 
 export const syncScheduleSchema = z.object({
   id: uuid,

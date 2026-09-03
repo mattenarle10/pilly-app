@@ -2,7 +2,7 @@ import { Pressable, StyleSheet, View } from 'react-native';
 import Animated, { FadeIn, FadeOut, LinearTransition, ReduceMotion } from 'react-native-reanimated';
 
 import type { DoseStatus, ScheduledDose } from '@/models/dose';
-import { MedicationAppearance } from './medication-appearance';
+import { MedicineRecognition } from './medicine-recognition';
 import { PillyButton } from './pilly-button';
 import { PillyCard } from './pilly-card';
 import { PillyText } from './pilly-text';
@@ -98,8 +98,9 @@ function DoseRow({
         onPress={onOpen}
         style={({ pressed }) => [styles.medicineLink, pressed && styles.pressedLink]}
       >
-        <MedicationAppearance
-          shape={dose.medication.appearanceShape}
+        <MedicineRecognition
+          form={dose.medication.form}
+          tabletShape={dose.medication.tabletShape}
           size={dose.medication.appearanceSize}
           color={dose.medication.appearanceColor}
           secondaryColor={dose.medication.appearanceSecondaryColor}

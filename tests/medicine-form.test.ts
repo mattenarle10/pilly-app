@@ -24,11 +24,32 @@ describe('medicine setup validation', () => {
 
     expect(draft).toMatchObject({
       schedules: [{ time: '09:00', reminderEnabled: false }],
-      appearanceShape: 'capsule',
+      form: 'capsule',
+      tabletShape: 'round',
       appearanceSize: 'medium',
       appearanceColor: '#F3CCD7',
       appearanceSecondaryColor: '#F3CCD7',
     });
+  });
+
+  test('migrates saved pill geometry and defaults new medicines to a round tablet', () => {
+    expect(
+      draftSchema.parse({
+        ...defaults,
+        form: undefined,
+        tabletShape: undefined,
+        appearanceShape: 'oval',
+      }),
+    ).toMatchObject({ form: 'tablet', tabletShape: 'oval' });
+    expect(
+      draftSchema.parse({
+        ...defaults,
+        form: undefined,
+        tabletShape: undefined,
+        appearanceShape: 'capsule',
+      }),
+    ).toMatchObject({ form: 'capsule', tabletShape: 'round' });
+    expect(defaults).toMatchObject({ form: 'tablet', tabletShape: 'round' });
   });
 
   test('migrates the old appearance palette into editable colors', () => {

@@ -5,6 +5,9 @@ export const medications = sqliteTable('medications', {
   name: text('name').notNull(),
   instructions: text('instructions').notNull(),
   supplyCount: real('supply_count'),
+  form: text('form', {
+    enum: ['tablet', 'capsule', 'liquid', 'injection', 'drops', 'inhaler', 'other'],
+  }).notNull(),
   appearanceShape: text('appearance_shape', { enum: ['round', 'oval', 'capsule'] }).notNull(),
   appearanceSize: text('appearance_size', { enum: ['small', 'medium', 'large'] }).notNull(),
   appearanceColor: text('appearance_color').notNull(),
