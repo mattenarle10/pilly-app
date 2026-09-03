@@ -52,11 +52,12 @@ export async function scheduleLocalReminders(
 
   const slots = buildReminderSlots(enabledSchedules);
   for (const slot of slots) {
+    const medicineCount = slot.scheduleIds.length;
     await Notifications.scheduleNotificationAsync({
       identifier: slot.identifier,
       content: {
-        title: 'Time for your medicine',
-        body: 'Open Pilly to see what’s due.',
+        title: medicineCount === 1 ? 'Medicine due now' : `${medicineCount} medicines due now`,
+        body: medicineCount === 1 ? 'Open Pilly to record it.' : 'Open Pilly to review them.',
         sound: 'default',
         data: {
           kind: 'medicineReminder',

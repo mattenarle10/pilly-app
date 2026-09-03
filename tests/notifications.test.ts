@@ -137,15 +137,15 @@ describe('local medicine reminders', () => {
     expect(scheduleNotification).not.toHaveBeenCalled();
   });
 
-  test('uses private recurring copy and schedules only the selected weekdays', async () => {
+  test('uses private single-medicine copy and schedules only the selected weekdays', async () => {
     await expect(scheduleLocalReminders([reminder])).resolves.toBe('scheduled');
 
     expect(scheduleNotification).toHaveBeenCalledTimes(2);
     expect(scheduleNotification).toHaveBeenNthCalledWith(1, {
       identifier: 'pilly-reminder:2:9:15',
       content: {
-        title: 'Time for your medicine',
-        body: 'Open Pilly to see what’s due.',
+        title: 'Medicine due now',
+        body: 'Open Pilly to record it.',
         sound: 'default',
         data: {
           kind: 'medicineReminder',
@@ -169,7 +169,7 @@ describe('local medicine reminders', () => {
     );
   });
 
-  test('combines medicines due at the same time into one private alert', async () => {
+  test('combines medicines due at the same time into one counted private alert', async () => {
     await scheduleLocalReminders([reminder, { ...reminder, id: 'schedule-2', weekdayMask: 1 }]);
 
     expect(scheduleNotification).toHaveBeenCalledTimes(2);
@@ -178,6 +178,8 @@ describe('local medicine reminders', () => {
       expect.objectContaining({
         identifier: 'pilly-reminder:2:9:15',
         content: expect.objectContaining({
+          title: '2 medicines due now',
+          body: 'Open Pilly to review them.',
           data: expect.objectContaining({ scheduleIds: ['schedule-1', 'schedule-2'] }),
         }),
       }),
