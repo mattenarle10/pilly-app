@@ -10,7 +10,7 @@ name: Edit archive restore and delete a medicine
 - runFlow: ../subflows/accept-app-link.yaml
 - runFlow: ../subflows/create-medicine.yaml
 - tapOn: 'Medicines'
-- tapOn: 'Open Test Medicine'
+- tapOn: 'Test Medicine.*Opens medicine details.*'
 - tapOn: 'Edit medicine'
 - assertVisible: 'Edit medicine'
 - tapOn:

@@ -16,7 +16,7 @@ name: Profile name export and Plus navigation
 - tapOn:
     text: 'Save'
     retryTapIfNoChange: true
-- assertVisible: 'Ada'
+- assertVisible: 'Ada profile initial'
 - tapOn: 'Export data'
 - assertVisible: 'Your data, ready to take with you.'
 - tapOn:

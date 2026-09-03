@@ -64,7 +64,7 @@
     "lint": "eslint .",
     "format:check": "prettier --check .",
     "test": "jest --runInBand",
-    "test:flows:installed": "maestro test .maestro/flows",
+    "test:flows:installed": "./scripts/test-installed-ios-flows.sh",
     "test:flows": "./scripts/test-ios-flows.sh",
     "verify": "bun run format:check && bun run typecheck && bun run lint && bun run test"
   },
