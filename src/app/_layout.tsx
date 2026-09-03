@@ -3,22 +3,10 @@ import { StatusBar } from 'expo-status-bar';
 
 import { AppProviders } from '@/providers/app-providers';
 import { configureNotificationPresentation } from '@/services/notifications';
+import { standardHeaderOptions } from '@/ui/navigation';
 import { colors } from '@/ui/tokens';
 
 configureNotificationPresentation();
-
-const standardHeaderOptions = {
-  headerShown: true,
-  headerBackButtonDisplayMode: 'minimal' as const,
-  headerBackButtonMenuEnabled: false,
-  headerBackAccessibilityLabel: 'Back',
-  headerBackTestID: 'BackButton',
-  headerShadowVisible: false,
-  headerStyle: { backgroundColor: colors.background },
-  headerTintColor: colors.textPrimary,
-  headerTitleAlign: 'center' as const,
-  headerTitleStyle: { color: colors.textPrimary, fontWeight: '600' as const },
-};
 
 export default function RootLayout() {
   return (
@@ -30,6 +18,7 @@ export default function RootLayout() {
           contentStyle: { backgroundColor: colors.background },
         }}
       >
+        <Stack.Screen name="(onboarding)" options={{ headerShown: false }} />
         <Stack.Screen
           name="medicine/new"
           options={{

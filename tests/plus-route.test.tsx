@@ -7,6 +7,7 @@ import { useAccountSession } from '@/hooks/use-account-session';
 import { usePlus, type PlusState } from '@/hooks/use-plus';
 import type { AccountSessionContextValue } from '@/providers/account-session-provider';
 import type { PlusOffer } from '@/services/plus-offers';
+import * as Haptics from 'expo-haptics';
 
 const mockPush = jest.fn();
 const mockSetParams = jest.fn();
@@ -23,11 +24,20 @@ jest.mock('expo-router', () => ({
 jest.mock('@/hooks/use-account-session', () => ({ useAccountSession: jest.fn() }));
 jest.mock('@/hooks/use-plus', () => ({ usePlus: jest.fn() }));
 jest.mock('@/ui/illustrations', () => ({ PillyPlusCompanion: () => null }));
+jest.mock('expo-haptics', () => ({ selectionAsync: jest.fn(async () => undefined) }));
 jest.mock('react-native-reanimated', () => {
   const { View } = jest.requireActual<typeof import('react-native')>('react-native');
+  const fadeIn = {
+    duration: () => fadeIn,
+    reduceMotion: () => fadeIn,
+  };
   return {
     __esModule: true,
     default: { View, createAnimatedComponent: (component: unknown) => component },
+    Easing: { cubic: 'cubic', out: (value: unknown) => value },
+    FadeIn: fadeIn,
+    interpolateColor: (value: number, _input: number[], output: string[]) =>
+      value === 1 ? output[1] : output[0],
     ReduceMotion: { System: 'system' },
     useAnimatedStyle: (updater: () => object) => updater(),
     useSharedValue: (value: unknown) => ({ value }),
@@ -161,6 +171,7 @@ describe('Pilly Plus route', () => {
     await waitFor(() => {
       expect(screen.getByLabelText(/Monthly, \$2\.99/).props.accessibilityState.checked).toBe(true);
     });
+    expect(Haptics.selectionAsync).toHaveBeenCalledTimes(1);
     fireEvent.press(screen.getByText('Continue'));
 
     expect(mockPush).toHaveBeenCalledWith({
@@ -206,7 +217,7 @@ describe('Pilly Plus route', () => {
 
     const screen = await render(<PlusRoute />, { wrapper });
 
-    expect(screen.getByLabelText(/Annual, \$19\.99/).props.accessibilityState).toEqual({
+    expect(screen.getByLabelText(/Annual, \$19\.99/).props.accessibilityState).toMatchObject({
       checked: true,
     });
     expect(screen.getByText('Start 1-week free trial')).toBeOnTheScreen();
@@ -219,6 +230,25 @@ describe('Pilly Plus route', () => {
     fireEvent.press(screen.getByText('Subscribe'));
 
     expect(purchase.mutateAsync).toHaveBeenCalledWith('monthly');
+  });
+
+  test('keeps plan choices and restore stable while checkout is opening', async () => {
+    mockedUseAccountSession.mockReturnValue(signedInAccount());
+    const purchase = mutation({ isPending: true });
+    const restore = mutation();
+    mockedUsePlus.mockReturnValue(
+      available({
+        purchase: purchase as unknown as PlusHookValue['purchase'],
+        restore: restore as unknown as PlusHookValue['restore'],
+      }),
+    );
+
+    const screen = await render(<PlusRoute />, { wrapper });
+
+    expect(screen.getByText('Opening checkout…')).toBeOnTheScreen();
+    expect(screen.getByLabelText(/Annual, \$19\.99/).props.accessibilityState.disabled).toBe(true);
+    expect(screen.getByLabelText(/Monthly, \$2\.99/).props.accessibilityState.disabled).toBe(true);
+    expect(screen.getByLabelText('Restore purchases').props.accessibilityState.disabled).toBe(true);
   });
 
   test('restores directly for a connected account', async () => {

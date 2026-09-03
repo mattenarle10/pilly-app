@@ -9,6 +9,8 @@ import Animated, {
   withTiming,
 } from 'react-native-reanimated';
 
+import { motionDurations } from '@/ui/tokens';
+
 type IoniconName = ComponentProps<typeof Ionicons>['name'];
 type Motion = 'none' | 'press' | 'horizontal' | 'turn';
 
@@ -86,7 +88,7 @@ export function PillyIcon({ name, size = 20, color, active = false }: Props) {
 
   useEffect(() => {
     progress.value = withTiming(active ? 1 : 0, {
-      duration: active ? 120 : 180,
+      duration: active ? motionDurations.pressIn : motionDurations.pressOut,
       reduceMotion: ReduceMotion.System,
     });
   }, [active, progress]);

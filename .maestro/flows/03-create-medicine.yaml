@@ -10,9 +10,9 @@ name: Create medicine with appearance and reminder
 - runFlow: ../subflows/accept-app-link.yaml
 - runFlow: ../subflows/create-medicine.yaml
 - tapOn: 'Medicines'
-- assertVisible: 'Open Test Medicine'
-- tapOn: 'Open Test Medicine'
-- assertVisible: 'medium capsule'
+- assertVisible: 'Test Medicine.*Opens medicine details.*'
+- tapOn: 'Test Medicine.*Opens medicine details.*'
+- assertVisible: 'Capsule · Rose + Peach'
 - tapOn: 'Dose history'
 - assertVisible: 'No recorded changes'
 - tapOn: 'Back'

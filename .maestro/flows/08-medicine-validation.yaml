@@ -19,7 +19,7 @@ name: Recover from an incomplete medicine form
     text: 'Add first medicine'
     retryTapIfNoChange: true
 - assertVisible: 'Add medicine'
-- tapOn: 'Add'
+- tapOn: '^Add$'
 - assertVisible: 'Enter the name from the label.'
 - tapOn:
     id: 'medicine-name'
@@ -27,11 +27,11 @@ name: Recover from an incomplete medicine form
 - hideKeyboard
 - runFlow:
     when:
-      visible: 'Pill appearance'
+      visible: 'Medicine type'
     commands:
       - tapOn: 'Done'
 - tapOn:
-    text: 'Add'
+    text: '^Add$'
     retryTapIfNoChange: true
 - assertVisible: 'Today'
 - assertVisible: 'Open details for Validated Medicine'

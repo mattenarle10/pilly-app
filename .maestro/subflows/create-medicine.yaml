@@ -21,7 +21,7 @@ name: Create a test medicine
 - hideKeyboard
 - runFlow:
     when:
-      notVisible: 'Pill appearance'
+      notVisible: 'Edit medicine type'
     commands:
       - swipe:
           start: 50%, 75%
@@ -29,21 +29,25 @@ name: Create a test medicine
           duration: 500
 - runFlow:
     when:
-      notVisible: 'Pill appearance'
+      visible: 'Edit medicine type'
     commands:
-      - tapOn: 'Edit pill appearance'
-- assertVisible: 'Pill appearance'
-- tapOn: 'Shape: Capsule'
+      - tapOn: 'Edit medicine type'
+- assertVisible: 'Medicine type'
+- tapOn:
+    text: 'Capsule'
+    retryTapIfNoChange: true
+- assertVisible:
+    text: 'Capsule'
+    selected: true
 - runFlow:
     when:
-      visible: 'Pill appearance'
+      visible: 'Medicine type'
     commands:
       - tapOn: 'Done'
 - scrollUntilVisible:
     element:
       text: 'Reminder for Morning dose'
     direction: DOWN
-- tapOn: 'Reminder for Morning dose'
 - tapOn:
     text: 'Add'
     retryTapIfNoChange: true

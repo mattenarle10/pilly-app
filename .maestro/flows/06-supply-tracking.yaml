@@ -21,7 +21,7 @@ name: Start and adjust medicine supply
     duration: 700
 - tapOn: 'Back'
 - tapOn: 'Medicines'
-- tapOn: 'Open Test Medicine'
+- tapOn: 'Test Medicine.*Opens medicine details.*'
 - assertVisible: 'About 2 days left'
 - tapOn: 'Decrease Supply'
 - assertVisible: 'About 1 day left'

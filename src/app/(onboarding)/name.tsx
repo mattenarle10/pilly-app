@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, StyleSheet, View } from 'react-native';
-import { Stack, useRouter } from 'expo-router';
+import { useRouter } from 'expo-router';
+import Animated, { FadeIn, ReduceMotion } from 'react-native-reanimated';
 
 import { useProfileName } from '@/hooks/use-profile';
 import { MedicationAppearance } from '@/ui/components/medication-appearance';
@@ -9,7 +10,7 @@ import { PillyButton } from '@/ui/components/pilly-button';
 import { PillyField } from '@/ui/components/pilly-field';
 import { PillyText } from '@/ui/components/pilly-text';
 import { Screen } from '@/ui/components/screen';
-import { colors, spacing } from '@/ui/tokens';
+import { colors, motionDurations, spacing } from '@/ui/tokens';
 
 export default function OnboardingNameRoute() {
   const router = useRouter();
@@ -22,105 +23,97 @@ export default function OnboardingNameRoute() {
     }
   }, [profile.displayName, profile.isLoading, profile.saveName.isIdle, router]);
 
-  const continueWithoutName = () => router.replace('/(onboarding)/start-small');
+  const continueWithoutName = () => router.push('/(onboarding)/start-small');
   const saveAndContinue = () => {
     profile.saveName.reset();
     profile.saveName.mutate(
       { firstName, lastName: '' },
-      { onSuccess: () => router.replace('/(onboarding)/start-small') },
+      { onSuccess: () => router.push('/(onboarding)/start-small') },
     );
   };
 
   return (
-    <>
-      <Stack.Screen
-        options={{
-          headerShown: true,
-          headerBackButtonDisplayMode: 'minimal',
-          headerBackButtonMenuEnabled: false,
-          headerShadowVisible: false,
-          headerStyle: { backgroundColor: colors.background },
-          headerTintColor: colors.textPrimary,
-          title: '',
-        }}
-      />
-      <Screen
-        safeAreaEdges={['bottom']}
-        contentInsetAdjustmentBehavior="never"
-        contentStyle={styles.screen}
-      >
-        {profile.isLoading || profile.displayName ? (
-          <View accessibilityLabel="Loading your profile" style={styles.loading}>
-            <ActivityIndicator color={colors.brand} />
-          </View>
-        ) : (
-          <View style={styles.composition}>
-            <View style={styles.intro}>
-              <View style={styles.medicineMark}>
-                <MedicationAppearance
-                  shape="capsule"
-                  size="large"
-                  color="#F3CCD7"
-                  secondaryColor="#FBE9DE"
-                />
-              </View>
-              <View style={styles.copy}>
-                <PillyText role="large-title" accessibilityRole="header" maxFontSizeMultiplier={2}>
-                  What should Pilly call you?
-                </PillyText>
-                <PillyText muted maxFontSizeMultiplier={2} style={styles.body}>
-                  Your first name makes Today feel personal. It stays on this iPhone.
-                </PillyText>
-              </View>
+    <Screen
+      safeAreaEdges={['bottom']}
+      contentInsetAdjustmentBehavior="never"
+      contentStyle={styles.screen}
+    >
+      {profile.isLoading || profile.displayName ? (
+        <View accessibilityLabel="Loading your profile" style={styles.loading}>
+          <ActivityIndicator color={colors.brand} />
+        </View>
+      ) : (
+        <Animated.View
+          entering={FadeIn.duration(motionDurations.contentEntrance).reduceMotion(
+            ReduceMotion.System,
+          )}
+          style={styles.composition}
+        >
+          <View style={styles.intro}>
+            <View style={styles.medicineMark}>
+              <MedicationAppearance
+                shape="capsule"
+                size="large"
+                color="#F3CCD7"
+                secondaryColor="#FBE9DE"
+              />
             </View>
+            <View style={styles.copy}>
+              <PillyText role="large-title" accessibilityRole="header" maxFontSizeMultiplier={2}>
+                What should Pilly call you?
+              </PillyText>
+              <PillyText muted maxFontSizeMultiplier={2} style={styles.body}>
+                Your first name makes Today feel personal. It stays on this iPhone.
+              </PillyText>
+            </View>
+          </View>
 
-            <PillyField
-              testID="onboarding-first-name"
-              label="First name"
-              value={firstName}
-              onChangeText={setFirstName}
-              placeholder="First name"
-              autoCapitalize="words"
-              autoComplete="name-given"
-              enterKeyHint="done"
-              maxLength={40}
-              returnKeyType="done"
-              onSubmitEditing={firstName.trim() ? saveAndContinue : undefined}
+          <PillyField
+            testID="onboarding-first-name"
+            label="First name"
+            value={firstName}
+            onChangeText={setFirstName}
+            placeholder="First name"
+            autoCapitalize="words"
+            autoComplete="name-given"
+            enterKeyHint="done"
+            maxLength={40}
+            returnKeyType="done"
+            onSubmitEditing={firstName.trim() ? saveAndContinue : undefined}
+          />
+
+          <View style={styles.actions}>
+            <PillyButton
+              label="Continue"
+              icon="next"
+              size="medium"
+              disabled={!firstName.trim()}
+              loading={profile.saveName.isPending}
+              onPress={saveAndContinue}
+              style={styles.primaryAction}
             />
-
-            <View style={styles.actions}>
-              <PillyButton
-                label="Continue"
-                icon="next"
-                size="medium"
-                disabled={!firstName.trim()}
-                loading={profile.saveName.isPending}
-                onPress={saveAndContinue}
-                style={styles.primaryAction}
+            <PillyButton
+              label="Skip for now"
+              variant="quiet"
+              size="compact"
+              disabled={profile.saveName.isPending}
+              onPress={continueWithoutName}
+            />
+            {profile.isError ? (
+              <PillyBanner
+                compact
+                kind="error"
+                message="Couldn’t check your saved profile. You can still continue."
+                actionLabel="Try again"
+                onAction={() => void profile.retry()}
               />
-              <PillyButton
-                label="Skip for now"
-                variant="quiet"
-                size="compact"
-                disabled={profile.saveName.isPending}
-                onPress={continueWithoutName}
-              />
-              {profile.isError ? (
-                <PillyBanner
-                  compact
-                  kind="error"
-                  message="Couldn’t check your saved profile. You can still continue."
-                  actionLabel="Try again"
-                  onAction={() => void profile.retry()}
-                />
-              ) : profile.saveName.isError ? (
-                <PillyBanner compact kind="error" message="Couldn’t save your name. Try again." />
-              ) : null}
-            </View>
+            ) : profile.saveName.isError ? (
+              <PillyBanner compact kind="error" message="Couldn’t save your name. Try again." />
+            ) : null}
           </View>
-        )}
-      </Screen>
-    </>
+        </Animated.View>
+      )}
+    </Screen>
   );
 }
 

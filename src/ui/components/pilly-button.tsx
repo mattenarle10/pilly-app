@@ -98,7 +98,7 @@ const styles = StyleSheet.create({
   primaryLabel: { color: colors.surface },
   brandLabel: { color: colors.brand },
   dangerLabel: { color: colors.danger },
-  pressed: { opacity: 0.76, transform: [{ scale: 0.98 }] },
+  pressed: { opacity: 0.88, transform: [{ scale: 0.985 }] },
   disabled: { opacity: 0.42 },
 });
 const sizeStyles = StyleSheet.create({

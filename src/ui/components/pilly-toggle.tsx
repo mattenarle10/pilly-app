@@ -7,7 +7,7 @@ import Animated, {
   withTiming,
 } from 'react-native-reanimated';
 
-import { colors, radii, shadows } from '@/ui/tokens';
+import { colors, motionDurations, radii, shadows } from '@/ui/tokens';
 
 type Props = {
   value: boolean;
@@ -23,7 +23,7 @@ export function PillyToggle({ value, label, disabled, onValueChange }: Props) {
       ? value
         ? 20
         : 0
-      : withTiming(value ? 20 : 0, { duration: 180 });
+      : withTiming(value ? 20 : 0, { duration: motionDurations.selection });
   }, [position, reducedMotion, value]);
   const thumbStyle = useAnimatedStyle(() => ({ transform: [{ translateX: position.value }] }));
   return (

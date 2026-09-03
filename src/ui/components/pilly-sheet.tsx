@@ -3,7 +3,7 @@ import { Modal, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated, { ReduceMotion, SlideInDown } from 'react-native-reanimated';
 
-import { colors, radii, spacing } from '@/ui/tokens';
+import { colors, motionDurations, radii, spacing } from '@/ui/tokens';
 import { PillyIconButton } from './pilly-icon-button';
 import { PillyText } from './pilly-text';
 
@@ -42,7 +42,9 @@ export function PillySheet({
           onPress={onClose}
         />
         <Animated.View
-          entering={SlideInDown.duration(220).reduceMotion(ReduceMotion.System)}
+          entering={SlideInDown.duration(motionDurations.contentEntrance).reduceMotion(
+            ReduceMotion.System,
+          )}
           accessibilityViewIsModal
           style={[styles.sheet, { paddingBottom: Math.max(insets.bottom, spacing.xl) }]}
         >

@@ -49,6 +49,6 @@ const styles = StyleSheet.create({
   },
   plain: { backgroundColor: 'transparent' },
   brand: { backgroundColor: colors.brand, ...shadows.soft },
-  pressed: { opacity: 0.72, transform: [{ scale: 0.97 }] },
+  pressed: { opacity: 0.86, transform: [{ scale: 0.985 }] },
   disabled: { opacity: 0.35 },
 });

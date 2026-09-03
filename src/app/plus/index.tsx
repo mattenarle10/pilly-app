@@ -1,6 +1,16 @@
 import { useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Linking, Pressable, StyleSheet, View } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
+import * as Haptics from 'expo-haptics';
+import Animated, {
+  Easing,
+  FadeIn,
+  interpolateColor,
+  ReduceMotion,
+  useAnimatedStyle,
+  useSharedValue,
+  withTiming,
+} from 'react-native-reanimated';
 
 import { useAccountSession } from '@/hooks/use-account-session';
 import { usePlus } from '@/hooks/use-plus';
@@ -17,7 +27,7 @@ import { PillyText } from '@/ui/components/pilly-text';
 import { Screen } from '@/ui/components/screen';
 import { PillyIcon, type PillyIconName } from '@/ui/icons';
 import { PillyPlusCompanion } from '@/ui/illustrations';
-import { colors, radii, shadows, spacing } from '@/ui/tokens';
+import { colors, motionDurations, radii, shadows, spacing } from '@/ui/tokens';
 
 const benefitItems = [
   { icon: 'private', title: 'Private backup', message: 'Medicines, schedules, and history.' },
@@ -111,9 +121,11 @@ export default function PlusRoute() {
       ) : (
         <>
           <PlusHero preview={preview} />
-          <Benefits />
-
-          <View style={styles.decision}>
+          <Animated.View
+            key={`${plus.state.kind}-${signedIn ? 'signed-in' : 'local'}`}
+            entering={FadeIn.duration(motionDurations.feedback).reduceMotion(ReduceMotion.System)}
+            style={styles.decision}
+          >
             {plus.state.kind === 'loading' || account.state.kind === 'loading' ? (
               <LoadingPlans />
             ) : plus.state.kind === 'error' ? (
@@ -160,11 +172,13 @@ export default function PlusRoute() {
                 compact
               />
             ) : null}
-          </View>
+          </Animated.View>
 
+          <Benefits />
           <PlusFooter
             canRestore={plus.state.canRestore}
             restoring={plus.restore.isPending}
+            busy={plus.purchase.isPending || plus.restore.isPending}
             websiteUrl={websiteUrl}
             onRestore={restore}
             onOpenLegal={openLegalPage}
@@ -244,6 +258,13 @@ function PurchaseDecision({
   onSelect: (plan: PlusPlan) => void;
   onContinue: () => void;
 }) {
+  const busy = purchasing || restoring;
+  const selectPlan = (plan: PlusPlan) => {
+    if (plan === selectedOffer.plan || busy) return;
+    void Haptics.selectionAsync().catch(() => undefined);
+    onSelect(plan);
+  };
+
   return (
     <>
       <PillyText role="headline" accessibilityRole="header">
@@ -254,19 +275,27 @@ function PurchaseDecision({
           <PlanOption
             offer={offers.annual}
             selected={selectedOffer.plan === 'annual'}
-            onPress={() => onSelect('annual')}
+            disabled={busy}
+            onPress={() => selectPlan('annual')}
           />
         ) : null}
         {offers.monthly ? (
           <PlanOption
             offer={offers.monthly}
             selected={selectedOffer.plan === 'monthly'}
-            onPress={() => onSelect('monthly')}
+            disabled={busy}
+            onPress={() => selectPlan('monthly')}
           />
         ) : null}
       </View>
       <PillyButton
-        label={signedIn ? plusPurchaseCtaLabel(selectedOffer) : 'Continue'}
+        label={
+          purchasing
+            ? 'Opening checkout…'
+            : signedIn
+              ? plusPurchaseCtaLabel(selectedOffer)
+              : 'Continue'
+        }
         accessibilityHint={
           signedIn
             ? `Opens Apple purchase confirmation for the ${selectedOffer.plan} plan`
@@ -287,12 +316,15 @@ function PurchaseDecision({
 function PlanOption({
   offer,
   selected,
+  disabled,
   onPress,
 }: {
   offer: PlusOffer;
   selected: boolean;
+  disabled: boolean;
   onPress: () => void;
 }) {
+  const selection = useSharedValue(selected ? 1 : 0);
   const intro = offer.introductoryOffer ? introductoryOfferLabel(offer.introductoryOffer) : null;
   const title = offer.plan === 'annual' ? 'Annual' : 'Monthly';
   const interval = offer.plan === 'annual' ? 'per year' : 'per month';
@@ -308,43 +340,55 @@ function PlanOption({
     intro,
   ].filter(Boolean);
 
+  useEffect(() => {
+    selection.value = withTiming(selected ? 1 : 0, {
+      duration: motionDurations.selection,
+      easing: Easing.out(Easing.cubic),
+      reduceMotion: ReduceMotion.System,
+    });
+  }, [selected, selection]);
+
+  const selectionStyle = useAnimatedStyle(() => ({
+    borderColor: interpolateColor(selection.value, [0, 1], ['transparent', colors.brand]),
+    backgroundColor: interpolateColor(selection.value, [0, 1], [colors.glass, colors.brandSoft]),
+  }));
+
   return (
     <Pressable
       accessibilityRole="radio"
       accessibilityLabel={accessibilityParts.join(', ')}
-      accessibilityState={{ checked: selected }}
+      accessibilityState={{ checked: selected, disabled }}
+      disabled={disabled}
       onPress={onPress}
-      style={({ pressed }) => [
-        styles.offer,
-        selected && styles.selectedOffer,
-        pressed && styles.pressed,
-      ]}
+      style={({ pressed }) => [styles.offerPressable, pressed && styles.pressed]}
     >
-      <View style={styles.offerCopy}>
-        <View style={styles.offerTitleRow}>
-          <PillyText role="label">{title}</PillyText>
-          {intro ? (
-            <View style={styles.introBadge}>
-              <PillyText role="caption" style={styles.brandText}>
-                {intro}
-              </PillyText>
-            </View>
+      <Animated.View style={[styles.offer, selectionStyle]}>
+        <View style={styles.offerCopy}>
+          <View style={styles.offerTitleRow}>
+            <PillyText role="label">{title}</PillyText>
+            {intro ? (
+              <View style={styles.introBadge}>
+                <PillyText role="caption" style={styles.brandText}>
+                  {intro}
+                </PillyText>
+              </View>
+            ) : null}
+          </View>
+          {monthlyEquivalent ? (
+            <PillyText role="caption" muted>
+              {monthlyEquivalent}
+            </PillyText>
           ) : null}
         </View>
-        {monthlyEquivalent ? (
-          <PillyText role="caption" muted>
-            {monthlyEquivalent}
+        <View style={styles.price}>
+          <PillyText role="label" style={selected ? styles.brandText : undefined}>
+            {offer.localizedPrice}
           </PillyText>
-        ) : null}
-      </View>
-      <View style={styles.price}>
-        <PillyText role="label" style={selected ? styles.brandText : undefined}>
-          {offer.localizedPrice}
-        </PillyText>
-        <PillyText role="caption" muted>
-          {interval}
-        </PillyText>
-      </View>
+          <PillyText role="caption" muted>
+            {interval}
+          </PillyText>
+        </View>
+      </Animated.View>
     </Pressable>
   );
 }
@@ -399,7 +443,10 @@ function ActivePlus({
   onDismissError: () => void;
 }) {
   return (
-    <>
+    <Animated.View
+      entering={FadeIn.duration(motionDurations.contentEntrance).reduceMotion(ReduceMotion.System)}
+      style={styles.active}
+    >
       <View style={styles.hero}>
         <PillyPlusCompanion compact />
         {preview ? <PreviewStatus /> : null}
@@ -441,19 +488,21 @@ function ActivePlus({
           />
         ) : null}
       </View>
-    </>
+    </Animated.View>
   );
 }
 
 function PlusFooter({
   canRestore,
   restoring,
+  busy,
   websiteUrl,
   onRestore,
   onOpenLegal,
 }: {
   canRestore: boolean;
   restoring: boolean;
+  busy: boolean;
   websiteUrl: string | null;
   onRestore: () => void;
   onOpenLegal: (path: 'privacy' | 'terms') => void;
@@ -464,6 +513,7 @@ function PlusFooter({
         {canRestore ? (
           <FooterAction
             label={restoring ? 'Restoring…' : 'Restore purchases'}
+            disabled={busy}
             onPress={onRestore}
           />
         ) : null}
@@ -481,14 +531,28 @@ function PlusFooter({
   );
 }
 
-function FooterAction({ label, onPress }: { label: string; onPress: () => void }) {
+function FooterAction({
+  label,
+  disabled = false,
+  onPress,
+}: {
+  label: string;
+  disabled?: boolean;
+  onPress: () => void;
+}) {
   return (
     <Pressable
       accessibilityRole="button"
       accessibilityLabel={label}
+      accessibilityState={{ disabled }}
+      disabled={disabled}
       hitSlop={4}
       onPress={onPress}
-      style={({ pressed }) => [styles.footerAction, pressed && styles.pressed]}
+      style={({ pressed }) => [
+        styles.footerAction,
+        pressed && styles.pressed,
+        disabled && styles.disabled,
+      ]}
     >
       <PillyText role="caption" style={styles.footerActionLabel}>
         {label}
@@ -510,7 +574,7 @@ function secureWebsiteUrl(value: string | undefined): string | null {
 }
 
 const styles = StyleSheet.create({
-  screen: { gap: spacing.xl, paddingTop: spacing.sm, paddingBottom: spacing.xxxl },
+  screen: { gap: spacing.lg, paddingTop: spacing.sm, paddingBottom: spacing.xxxl },
   hero: { alignItems: 'center', gap: spacing.xs },
   heroTitle: { maxWidth: 340, textAlign: 'center', fontWeight: '600' },
   heroCopy: { maxWidth: 330, textAlign: 'center' },
@@ -541,8 +605,12 @@ const styles = StyleSheet.create({
   benefitIcon: { width: 28, alignItems: 'center' },
   benefitCopy: { flex: 1, gap: 2 },
   separator: { height: StyleSheet.hairlineWidth, marginLeft: 60, backgroundColor: colors.border },
-  decision: { gap: spacing.md },
+  decision: { minHeight: 320, gap: spacing.md },
   offerList: { gap: spacing.sm },
+  offerPressable: {
+    borderRadius: radii.lg,
+    ...shadows.soft,
+  },
   offer: {
     minHeight: 76,
     flexDirection: 'row',
@@ -550,14 +618,11 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     gap: spacing.md,
     borderWidth: 1,
-    borderColor: 'transparent',
     borderRadius: radii.lg,
     paddingHorizontal: spacing.lg,
     paddingVertical: spacing.md,
     backgroundColor: colors.glass,
-    ...shadows.soft,
   },
-  selectedOffer: { borderColor: colors.brand, backgroundColor: colors.brandSoft },
   offerCopy: { flex: 1, gap: spacing.xs },
   offerTitleRow: { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: spacing.sm },
   introBadge: {
@@ -567,7 +632,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surface,
   },
   price: { alignItems: 'flex-end' },
-  purchaseTerms: { textAlign: 'center', paddingHorizontal: spacing.md },
+  purchaseTerms: { minHeight: 36, textAlign: 'center', paddingHorizontal: spacing.md },
   loading: {
     minHeight: 88,
     alignItems: 'center',
@@ -575,6 +640,7 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
   },
   activeActions: { gap: spacing.sm },
+  active: { gap: spacing.lg },
   footer: { alignItems: 'center', gap: spacing.sm },
   footerActions: {
     minHeight: 44,
@@ -592,4 +658,5 @@ const styles = StyleSheet.create({
   footerActionLabel: { color: colors.brand, textDecorationLine: 'underline' },
   freePromise: { textAlign: 'center' },
   pressed: { opacity: 0.72 },
+  disabled: { opacity: 0.5 },
 });
