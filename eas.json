@@ -9,7 +9,7 @@
       "autoIncrement": true,
       "environment": "production",
       "env": {
-        "EXPO_PUBLIC_PLUS_PURCHASES_ENABLED": "false"
+        "EXPO_PUBLIC_PLUS_PURCHASES_ENABLED": "true"
       }
     }
   },
