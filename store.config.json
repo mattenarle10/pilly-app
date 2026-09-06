@@ -1,0 +1,63 @@
+{
+  "configVersion": 0,
+  "apple": {
+    "version": "1.0",
+    "release": {
+      "automaticRelease": false
+    },
+    "info": {
+      "en-US": {
+        "description": "Know what’s due. Keep moving.\n\nPilly is a private medicine reminder and tracking app for iPhone. Start without creating an account and keep your everyday medicine routine clear.\n\n• Create flexible schedules for tablets, capsules, liquids, injections, drops, and inhalers\n• Receive private reminders without medicine names on your Lock Screen\n• Record taken or skipped doses and correct them when needed\n• Review your week, dose history, and supply estimate\n• See what’s next with small and medium Home Screen widgets\n• Personalize medicine forms and colors for easier recognition\n\nPilly Plus adds optional private backup and recovery, medicine photos, and a profile photo. Monthly and annual auto-renewing subscription options are available. The current localized price, billing period, and any eligible introductory offer are shown before purchase. You can restore purchases or manage your subscription from Pilly.\n\nPilly records information you enter. It does not identify medicines, recommend doses, diagnose conditions, or provide medical advice. Check with a qualified healthcare professional before making medical decisions.\n\nPrivacy Policy: https://getpilly.app/privacy\nTerms: https://getpilly.app/terms",
+        "keywords": [
+          "medication",
+          "pill",
+          "schedule",
+          "dose",
+          "adherence",
+          "refill",
+          "prescription",
+          "health",
+          "routine",
+          "widget"
+        ],
+        "marketingUrl": "https://getpilly.app/",
+        "promoText": "A calm way to keep medicine schedules, reminders, and dose history clear—right on your iPhone.",
+        "supportUrl": "https://getpilly.app/support",
+        "title": "Pilly: Medicine Tracker",
+        "subtitle": "Private medicine reminders",
+        "privacyPolicyUrl": "https://getpilly.app/privacy",
+        "privacyChoicesUrl": "https://getpilly.app/privacy"
+      }
+    },
+    "categories": ["HEALTH_AND_FITNESS"],
+    "advisory": {
+      "ageRatingOverride": "NONE",
+      "alcoholTobaccoOrDrugUseOrReferences": "NONE",
+      "contests": "NONE",
+      "gambling": false,
+      "gamblingSimulated": "NONE",
+      "horrorOrFearThemes": "NONE",
+      "kidsAgeBand": null,
+      "koreaAgeRatingOverride": "NONE",
+      "lootBox": false,
+      "matureOrSuggestiveThemes": "NONE",
+      "medicalOrTreatmentInformation": "NONE",
+      "profanityOrCrudeHumor": "NONE",
+      "sexualContentGraphicAndNudity": "NONE",
+      "sexualContentOrNudity": "NONE",
+      "unrestrictedWebAccess": false,
+      "violenceCartoonOrFantasy": "NONE",
+      "violenceRealistic": "NONE",
+      "violenceRealisticProlongedGraphicOrSadistic": "NONE",
+      "advertising": false,
+      "ageAssurance": false,
+      "ageRatingOverrideV2": "NONE",
+      "developerAgeRatingInfoUrl": null,
+      "gunsOrOtherWeapons": "NONE",
+      "healthOrWellnessTopics": false,
+      "messagingAndChat": false,
+      "parentalControls": false,
+      "userGeneratedContent": false
+    }
+  }
+}
