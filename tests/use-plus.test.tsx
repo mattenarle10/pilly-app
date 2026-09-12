@@ -15,7 +15,13 @@ import {
 } from '@/services/purchases';
 import { serializePlusEntitlementCache } from '@/services/plus-entitlement-cache';
 
-import { usePlus } from '@/hooks/use-plus';
+import {
+  plusStoreQueryOptions,
+  plusStoreStaleTime,
+  plusEntitlementSettingKey,
+  usePlus,
+  usePrefetchPlusStore,
+} from '@/hooks/use-plus';
 import { useAccountSession } from '@/hooks/use-account-session';
 import { useRepository } from '@/hooks/use-repository';
 
@@ -186,7 +192,12 @@ describe('usePlus', () => {
   });
 
   test('keeps cached Plus unlocked while the store refreshes', async () => {
-    mockedLoadSnapshot.mockReturnValue(new Promise(() => undefined));
+    let finishRefresh: ((snapshot: { kind: 'unconfigured' }) => void) | undefined;
+    mockedLoadSnapshot.mockReturnValue(
+      new Promise((resolve) => {
+        finishRefresh = resolve;
+      }),
+    );
     const { result } = await setup(freshActiveCache());
 
     await waitFor(() => expect(result.current.state.kind).toBe('active'));
@@ -196,6 +207,7 @@ describe('usePlus', () => {
       canRestore: false,
       offline: true,
     });
+    await act(async () => finishRefresh?.({ kind: 'unconfigured' }));
   });
 
   test('keeps saved access when store configuration is unavailable', async () => {
@@ -331,5 +343,66 @@ describe('usePlus', () => {
     });
 
     expect(mockedManageSubscription).toHaveBeenCalledWith('cognito-sub-1');
+  });
+
+  test('reuses a fresh prefetched store snapshot and persists it when observed', async () => {
+    const snapshot = {
+      kind: 'ready' as const,
+      active: true,
+      checkedAt,
+      offers: { annual: null, monthly: null },
+    };
+    mockedLoadSnapshot.mockResolvedValue(snapshot);
+    const repository = {
+      getSetting: jest.fn().mockResolvedValue(null),
+      setSetting: jest.fn().mockResolvedValue(undefined),
+    };
+    mockedUseRepository.mockReturnValue(repository as unknown as PillyRepository);
+    const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    queryClients.add(queryClient);
+    await queryClient.prefetchQuery(plusStoreQueryOptions('cognito-sub-1'));
+    const wrapper = ({ children }: PropsWithChildren) => (
+      <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
+    );
+
+    const { result } = await renderHook(() => usePlus(), { wrapper });
+
+    await waitFor(() => expect(result.current.state.kind).toBe('active'));
+    await waitFor(() =>
+      expect(repository.setSetting).toHaveBeenCalledWith(
+        plusEntitlementSettingKey('cognito-sub-1'),
+        serializePlusEntitlementCache(true, checkedAt),
+      ),
+    );
+    expect(mockedLoadSnapshot).toHaveBeenCalledTimes(1);
+  });
+
+  test('prefetches anonymous offers once and keeps them fresh for five minutes', async () => {
+    mockedUseAccountSession.mockReturnValue({
+      ...signedInAccount(),
+      state: { kind: 'local', user: null },
+    });
+    mockedLoadSnapshot.mockResolvedValue({
+      kind: 'ready',
+      active: false,
+      checkedAt,
+      offers: { annual: null, monthly: null },
+    });
+    const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    queryClients.add(queryClient);
+    const wrapper = ({ children }: PropsWithChildren) => (
+      <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
+    );
+    const now = jest.spyOn(Date, 'now').mockReturnValue(1_000);
+
+    await renderHook(() => usePrefetchPlusStore(), { wrapper });
+    await waitFor(() => expect(mockedLoadSnapshot).toHaveBeenCalledTimes(1));
+    await queryClient.fetchQuery(plusStoreQueryOptions(null));
+    expect(mockedLoadSnapshot).toHaveBeenCalledTimes(1);
+
+    now.mockReturnValue(1_000 + plusStoreStaleTime + 1);
+    await queryClient.fetchQuery(plusStoreQueryOptions(null));
+    expect(mockedLoadSnapshot).toHaveBeenCalledTimes(2);
+    now.mockRestore();
   });
 });

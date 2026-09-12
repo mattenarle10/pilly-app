@@ -1,4 +1,5 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useEffect } from 'react';
+import { queryOptions, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
 import {
   arePlusPurchasesEnabled,
@@ -42,6 +43,31 @@ type UsePlusOptions = {
   loadAnonymousOffers?: boolean;
 };
 
+export const plusStoreStaleTime = 5 * 60 * 1000;
+export const plusStoreGcTime = 10 * 60 * 1000;
+
+export function plusStoreQueryOptions(accountId: string | null) {
+  return queryOptions({
+    queryKey: queryKeys.plus.store(accountId ?? 'local'),
+    queryFn: () => loadPlusStoreSnapshot(accountId ?? undefined),
+    staleTime: plusStoreStaleTime,
+    gcTime: plusStoreGcTime,
+    networkMode: 'always' as const,
+  });
+}
+
+export function usePrefetchPlusStore() {
+  const account = useAccountSession();
+  const queryClient = useQueryClient();
+  const accountId = account.state.kind === 'signed-in' ? account.state.user.id : null;
+  const shouldPrefetch = getPlusPreviewMode() === 'store' && isPlusPurchasesSupported();
+
+  useEffect(() => {
+    if (!shouldPrefetch) return;
+    void queryClient.prefetchQuery(plusStoreQueryOptions(accountId));
+  }, [accountId, queryClient, shouldPrefetch]);
+}
+
 export function usePlus({ loadAnonymousOffers = false }: UsePlusOptions = {}) {
   const account = useAccountSession();
   const repository = useRepository();
@@ -58,19 +84,18 @@ export function usePlus({ loadAnonymousOffers = false }: UsePlusOptions = {}) {
     networkMode: 'always',
   });
   const store = useQuery({
-    queryKey: queryKeys.plus.store(accountId ?? 'local'),
-    queryFn: async () => {
-      const snapshot = await loadPlusStoreSnapshot(accountId ?? undefined);
-      if (snapshot.kind === 'ready' && entitlementSettingKey) {
-        const cached = serializePlusEntitlementCache(snapshot.active, snapshot.checkedAt);
-        await repository.setSetting(entitlementSettingKey, cached);
-        queryClient.setQueryData(queryKeys.setting(entitlementSettingKey), cached);
-      }
-      return snapshot;
-    },
+    ...plusStoreQueryOptions(accountId),
     enabled: shouldLoadStore,
-    networkMode: 'always',
   });
+
+  useEffect(() => {
+    if (store.data?.kind !== 'ready' || !entitlementSettingKey) return;
+    const cached = serializePlusEntitlementCache(store.data.active, store.data.checkedAt);
+    if (cachedEntitlement.data === cached) return;
+    void repository.setSetting(entitlementSettingKey, cached).then(() => {
+      queryClient.setQueryData(queryKeys.setting(entitlementSettingKey), cached);
+    });
+  }, [cachedEntitlement.data, entitlementSettingKey, queryClient, repository, store.data]);
 
   const acceptResult = async (result: PlusActionResult) => {
     if (result.kind !== 'active') return result;

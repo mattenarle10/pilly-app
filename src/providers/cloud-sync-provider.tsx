@@ -20,6 +20,7 @@ import {
 } from '@/services/cloud-sync-api';
 import { synchronizeCloudState } from '@/services/cloud-sync';
 import { reconcileLocalReminders } from '@/services/notifications';
+import { waitForActivePlusEntitlement } from '@/services/plus-activation';
 import { PillyRepository } from '@/storage/repository';
 import { PillySyncStore, type CloudSetupMode } from '@/storage/sync-store';
 
@@ -27,6 +28,7 @@ export type CloudSyncStatus =
   | { kind: 'local' }
   | { kind: 'checking' }
   | { kind: 'entitlement-required' }
+  | { kind: 'activation-pending'; retrying: boolean }
   | { kind: 'pending-backup' }
   | { kind: 'pending-restore' }
   | { kind: 'pending-merge' }
@@ -38,6 +40,7 @@ export type CloudSyncContextValue = {
   configured: boolean;
   status: CloudSyncStatus;
   chooseSetup: (mode: CloudSetupMode) => Promise<void>;
+  refreshAfterPurchase: () => Promise<boolean>;
   retry: () => Promise<void>;
 };
 
@@ -53,6 +56,11 @@ export function CloudSyncProvider({ children }: PropsWithChildren) {
   const [status, setStatus] = useState<CloudSyncStatus>({ kind: 'local' });
   const bootstrapRef = useRef<BootstrapResponse | null>(null);
   const syncPromiseRef = useRef<Promise<void> | null>(null);
+  const accountRef = useRef(account.state);
+
+  useEffect(() => {
+    accountRef.current = account.state;
+  }, [account.state]);
 
   const refreshAfterRemoteChanges = useCallback(async () => {
     await queryClient.invalidateQueries();
@@ -86,6 +94,28 @@ export function CloudSyncProvider({ children }: PropsWithChildren) {
     });
   }, [account.state, refreshAfterRemoteChanges, store]);
 
+  const applyBootstrap = useCallback(
+    async (accountId: string, bootstrap: BootstrapResponse) => {
+      bootstrapRef.current = bootstrap;
+      if (!bootstrap.entitlement.isActive) {
+        setStatus({ kind: 'entitlement-required' });
+        return;
+      }
+      const migrationState = store.resolveSetupState(accountId, bootstrap.hasCloudData);
+      if (migrationState === 'active') {
+        if (!store.getOrCreateState().accountId) {
+          store.configureAccount(accountId, 'empty', bootstrap);
+        }
+        setStatus({ kind: 'active', syncing: false, lastError: null });
+        await sync();
+      } else if (migrationState === 'pendingBackup') setStatus({ kind: 'pending-backup' });
+      else if (migrationState === 'pendingRestore') setStatus({ kind: 'pending-restore' });
+      else if (migrationState === 'pendingMerge') setStatus({ kind: 'pending-merge' });
+      else if (migrationState === 'blockedAccount') setStatus({ kind: 'blocked-account' });
+    },
+    [store, sync],
+  );
+
   const check = useCallback(async () => {
     if (account.state.kind === 'loading') {
       setStatus({ kind: 'checking' });
@@ -104,29 +134,30 @@ export function CloudSyncProvider({ children }: PropsWithChildren) {
     setStatus({ kind: 'checking' });
     try {
       const bootstrap = await fetchCloudBootstrap();
-      bootstrapRef.current = bootstrap;
-      if (!bootstrap.entitlement.isActive) {
-        setStatus({ kind: 'entitlement-required' });
-        return;
-      }
-      const migrationState = store.resolveSetupState(account.state.user.id, bootstrap.hasCloudData);
-      if (migrationState === 'active') {
-        if (!store.getOrCreateState().accountId) {
-          store.configureAccount(account.state.user.id, 'empty', bootstrap);
-        }
-        setStatus({ kind: 'active', syncing: false, lastError: null });
-        await sync();
-      } else if (migrationState === 'pendingBackup') setStatus({ kind: 'pending-backup' });
-      else if (migrationState === 'pendingRestore') setStatus({ kind: 'pending-restore' });
-      else if (migrationState === 'pendingMerge') setStatus({ kind: 'pending-merge' });
-      else if (migrationState === 'blockedAccount') setStatus({ kind: 'blocked-account' });
+      await applyBootstrap(account.state.user.id, bootstrap);
     } catch (error) {
       setStatus({
         kind: 'error',
         message: error instanceof Error ? error.message : 'Cloud backup is unavailable.',
       });
     }
-  }, [account.state, configured, store, sync]);
+  }, [account.state, applyBootstrap, configured, store]);
+
+  const refreshAfterPurchase = useCallback(async () => {
+    const currentAccount = accountRef.current;
+    if (currentAccount.kind !== 'signed-in' || !configured) return false;
+    const accountId = currentAccount.user.id;
+    setStatus({ kind: 'activation-pending', retrying: true });
+    const bootstrap = await waitForActivePlusEntitlement(fetchCloudBootstrap);
+    const latestAccount = accountRef.current;
+    if (latestAccount.kind !== 'signed-in' || latestAccount.user.id !== accountId) return false;
+    if (!bootstrap) {
+      setStatus({ kind: 'activation-pending', retrying: false });
+      return false;
+    }
+    await applyBootstrap(accountId, bootstrap);
+    return true;
+  }, [applyBootstrap, configured]);
 
   const chooseSetup = useCallback(
     async (mode: CloudSetupMode) => {
@@ -163,8 +194,8 @@ export function CloudSyncProvider({ children }: PropsWithChildren) {
   }, [sync]);
 
   const value = useMemo(
-    () => ({ configured, status, chooseSetup, retry: check }),
-    [check, chooseSetup, configured, status],
+    () => ({ configured, status, chooseSetup, refreshAfterPurchase, retry: check }),
+    [check, chooseSetup, configured, refreshAfterPurchase, status],
   );
   return <CloudSyncContext.Provider value={value}>{children}</CloudSyncContext.Provider>;
 }

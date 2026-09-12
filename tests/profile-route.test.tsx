@@ -23,6 +23,7 @@ jest.mock('expo-router', () => ({
 jest.mock('@/hooks/use-account-session', () => ({ useAccountSession: jest.fn() }));
 jest.mock('@/hooks/use-profile', () => ({ useProfile: jest.fn() }));
 jest.mock('@/hooks/use-profile-avatar', () => ({ useProfileAvatar: jest.fn() }));
+jest.mock('@/hooks/use-plus', () => ({ usePrefetchPlusStore: jest.fn() }));
 jest.mock('@/services/purchases', () => ({ isPlusPurchasesSupported: jest.fn() }));
 jest.mock('react-native-reanimated', () => {
   const { View } = jest.requireActual<typeof import('react-native')>('react-native');

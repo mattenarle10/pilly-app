@@ -1,10 +1,11 @@
 import type { PropsWithChildren } from 'react';
-import { cleanup, fireEvent, render, waitFor } from '@testing-library/react-native';
+import { act, cleanup, fireEvent, render, waitFor } from '@testing-library/react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import PlusRoute from '@/app/plus';
 import { useAccountSession } from '@/hooks/use-account-session';
 import { usePlus, type PlusState } from '@/hooks/use-plus';
+import { useCloudSync } from '@/hooks/use-cloud-sync';
 import type { AccountSessionContextValue } from '@/providers/account-session-provider';
 import type { PlusOffer } from '@/services/plus-offers';
 import * as Haptics from 'expo-haptics';
@@ -23,8 +24,13 @@ jest.mock('expo-router', () => ({
 }));
 jest.mock('@/hooks/use-account-session', () => ({ useAccountSession: jest.fn() }));
 jest.mock('@/hooks/use-plus', () => ({ usePlus: jest.fn() }));
+jest.mock('@/hooks/use-cloud-sync', () => ({ useCloudSync: jest.fn() }));
 jest.mock('@/ui/illustrations', () => ({ PillyPlusCompanion: () => null }));
-jest.mock('expo-haptics', () => ({ selectionAsync: jest.fn(async () => undefined) }));
+jest.mock('expo-haptics', () => ({
+  NotificationFeedbackType: { Success: 'success' },
+  notificationAsync: jest.fn(async () => undefined),
+  selectionAsync: jest.fn(async () => undefined),
+}));
 jest.mock('react-native-reanimated', () => {
   const { View } = jest.requireActual<typeof import('react-native')>('react-native');
   const fadeIn = {
@@ -47,6 +53,7 @@ jest.mock('react-native-reanimated', () => {
 
 const mockedUseAccountSession = jest.mocked(useAccountSession);
 const mockedUsePlus = jest.mocked(usePlus);
+const mockedUseCloudSync = jest.mocked(useCloudSync);
 const initialMetrics = {
   frame: { x: 0, y: 0, width: 390, height: 844 },
   insets: { top: 47, left: 0, right: 0, bottom: 34 },
@@ -148,6 +155,13 @@ function available(overrides: Partial<Omit<PlusHookValue, 'state'>> = {}): PlusH
 describe('Pilly Plus route', () => {
   beforeEach(() => {
     mockSearchParams = {};
+    mockedUseCloudSync.mockReturnValue({
+      configured: true,
+      status: { kind: 'local' },
+      chooseSetup: jest.fn(),
+      refreshAfterPurchase: jest.fn(async () => true),
+      retry: jest.fn(),
+    });
   });
 
   afterEach(async () => {
@@ -249,6 +263,44 @@ describe('Pilly Plus route', () => {
     expect(screen.getByLabelText(/Annual, \$19\.99/).props.accessibilityState.disabled).toBe(true);
     expect(screen.getByLabelText(/Monthly, \$2\.99/).props.accessibilityState.disabled).toBe(true);
     expect(screen.getByLabelText('Restore purchases').props.accessibilityState.disabled).toBe(true);
+  });
+
+  test('keeps the plan layout stable while prices are loading', async () => {
+    mockedUseAccountSession.mockReturnValue(account());
+    mockedUsePlus.mockReturnValue(plusState({ kind: 'loading', active: false, canRestore: false }));
+
+    const screen = await render(<PlusRoute />, { wrapper });
+
+    expect(screen.getByLabelText('Loading Pilly Plus plans')).toBeOnTheScreen();
+    expect(screen.queryByText('Loading plans…')).toBeNull();
+  });
+
+  test('shows immediate purchase success and starts backup activation in the background', async () => {
+    mockedUseAccountSession.mockReturnValue(signedInAccount());
+    const purchase = mutation();
+    const refreshAfterPurchase = jest.fn(async () => true);
+    mockedUseCloudSync.mockReturnValue({
+      configured: true,
+      status: { kind: 'local' },
+      chooseSetup: jest.fn(),
+      refreshAfterPurchase,
+      retry: jest.fn(),
+    });
+    mockedUsePlus.mockReturnValue(
+      available({ purchase: purchase as unknown as PlusHookValue['purchase'] }),
+    );
+
+    const screen = await render(<PlusRoute />, { wrapper });
+    await act(async () => {
+      fireEvent.press(screen.getByText('Start 1-week free trial'));
+    });
+
+    expect(await screen.findByText('You’re all set.')).toBeOnTheScreen();
+    expect(screen.getByText('Set up private backup')).toBeOnTheScreen();
+    expect(refreshAfterPurchase).toHaveBeenCalledTimes(1);
+    expect(Haptics.notificationAsync).toHaveBeenCalledWith(
+      Haptics.NotificationFeedbackType.Success,
+    );
   });
 
   test('restores directly for a connected account', async () => {
