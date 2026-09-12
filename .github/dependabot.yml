@@ -13,10 +13,27 @@ updates:
         dependency-type: production
         patterns:
           - '*'
+        update-types:
+          - minor
+          - patch
       development-dependencies:
         dependency-type: development
         patterns:
           - '*'
+        update-types:
+          - minor
+          - patch
+    # Expo SDK 57 owns these versions. Update them together with the SDK via
+    # `expo install --fix`, not as independent Dependabot upgrades.
+    ignore:
+      - dependency-name: '@react-native-community/datetimepicker'
+      - dependency-name: react
+      - dependency-name: react-native
+      - dependency-name: react-native-reanimated
+      - dependency-name: react-native-safe-area-context
+      - dependency-name: react-native-screens
+      - dependency-name: react-native-svg
+      - dependency-name: react-native-worklets
 
   - package-ecosystem: github-actions
     directory: /
