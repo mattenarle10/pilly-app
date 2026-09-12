@@ -9,10 +9,12 @@ import { PillyIcon } from '@/ui/icons';
 import { OnboardingJourney } from '@/ui/illustrations';
 import { colors, motionDelays, motionDurations, spacing } from '@/ui/tokens';
 import { isPlusPurchasesSupported } from '@/services/purchases';
+import { usePrefetchPlusStore } from '@/hooks/use-plus';
 
 export default function WelcomeRoute() {
   const router = useRouter();
   const plusSupported = isPlusPurchasesSupported();
+  usePrefetchPlusStore();
 
   return (
     <Screen contentStyle={styles.content}>

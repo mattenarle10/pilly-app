@@ -1,15 +1,13 @@
 import { Platform } from 'react-native';
-import type { CustomerInfoUpdateListener, IntroEligibility } from 'react-native-purchases';
+import type { CustomerInfoUpdateListener } from 'react-native-purchases';
 import { z } from 'zod';
 
-import {
-  normalizePlusOffers,
-  plusPackageForPlan,
-  type PlusOffer,
-  type PlusPlan,
-} from './plus-offers';
+import { plusPackageForPlan, type PlusPlan } from './plus-offers';
+import { createAsyncOperationQueue } from './async-operation-queue';
+import { hasPlus, loadPlusStoreSnapshotFromPurchases, type PlusStoreSnapshot } from './plus-store';
 
 export type { PlusOffer, PlusPlan } from './plus-offers';
+export type { PlusStoreSnapshot } from './plus-store';
 
 const purchaseEnvironmentSchema = z.object({
   EXPO_PUBLIC_REVENUECAT_IOS_KEY: z.string().min(1).optional(),
@@ -23,20 +21,10 @@ const purchaseEnvironment = purchaseEnvironmentSchema.parse({
   EXPO_PUBLIC_PLUS_PURCHASES_ENABLED: process.env.EXPO_PUBLIC_PLUS_PURCHASES_ENABLED || undefined,
 });
 
-const plusEntitlementIdentifier = 'plus';
-
 let configured = false;
+const serializeIdentityChange = createAsyncOperationQueue();
 
 export type PlusPreviewMode = 'store' | 'free' | 'active';
-
-export type PlusStoreSnapshot =
-  | { kind: 'unconfigured' }
-  | {
-      kind: 'ready';
-      active: boolean;
-      checkedAt: string;
-      offers: Record<PlusPlan, PlusOffer | null>;
-    };
 
 export type PlusActionResult = { kind: 'active' } | { kind: 'inactive' } | { kind: 'cancelled' };
 
@@ -49,14 +37,12 @@ async function purchasesModule(appUserId?: string) {
       ...(appUserId ? { appUserID: appUserId } : {}),
     });
     configured = true;
-  } else if (appUserId && (await Purchases.getAppUserID()) !== appUserId) {
-    await Purchases.logIn(appUserId);
+  } else if (appUserId) {
+    await serializeIdentityChange(async () => {
+      if ((await Purchases.getAppUserID()) !== appUserId) await Purchases.logIn(appUserId);
+    });
   }
   return Purchases;
-}
-
-function hasPlus(customerInfo: { entitlements: { active: Record<string, unknown> } }): boolean {
-  return customerInfo.entitlements.active[plusEntitlementIdentifier] !== undefined;
 }
 
 export function getPlusPreviewMode(): PlusPreviewMode {
@@ -79,36 +65,7 @@ export async function loadPlusStoreSnapshot(appUserId?: string): Promise<PlusSto
   const purchases = await purchasesModule(appUserId);
   if (!purchases) return { kind: 'unconfigured' };
 
-  const [customerInfo, offerings] = await Promise.all([
-    purchases.getCustomerInfo(),
-    purchases.getOfferings(),
-  ]);
-  const packages = {
-    annual: plusPackageForPlan(offerings.current, 'annual'),
-    monthly: plusPackageForPlan(offerings.current, 'monthly'),
-  };
-  const productIdentifiers = Object.values(packages).flatMap((offer) =>
-    offer ? [offer.product.identifier] : [],
-  );
-  let eligibility: Record<string, IntroEligibility> = {};
-  if (productIdentifiers.length > 0) {
-    try {
-      eligibility = await purchases.checkTrialOrIntroductoryPriceEligibility(productIdentifiers);
-    } catch {
-      // An eligibility lookup must not hide otherwise valid store products.
-    }
-  }
-
-  return {
-    kind: 'ready',
-    active: hasPlus(customerInfo),
-    checkedAt: customerInfo.requestDate,
-    offers: normalizePlusOffers(
-      offerings.current,
-      eligibility,
-      purchases.INTRO_ELIGIBILITY_STATUS.INTRO_ELIGIBILITY_STATUS_ELIGIBLE,
-    ),
-  };
+  return loadPlusStoreSnapshotFromPurchases(purchases, appUserId);
 }
 
 export async function purchasePlus(appUserId: string, plan: PlusPlan): Promise<PlusActionResult> {
@@ -170,6 +127,8 @@ export async function subscribeToPlusEntitlement(
 export async function disconnectPlusPurchasesIdentity(): Promise<void> {
   if (!configured || getPlusPreviewMode() !== 'store') return;
   const purchases = await purchasesModule();
-  if (!purchases || (await purchases.isAnonymous())) return;
-  await purchases.logOut();
+  if (!purchases) return;
+  await serializeIdentityChange(async () => {
+    if (!(await purchases.isAnonymous())) await purchases.logOut();
+  });
 }

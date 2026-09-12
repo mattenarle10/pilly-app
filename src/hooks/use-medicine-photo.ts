@@ -28,6 +28,7 @@ export function useMedicinePhoto(medicationId?: string) {
   const account = useAccountSession();
   const plus = usePlus();
   const [staged, setStaged] = useState<StagedMedicationImage | null>(null);
+  const [hasChanges, setHasChanges] = useState(false);
   const accountId = account.state.kind === 'signed-in' ? account.state.user.id : null;
   const available = accountId !== null && plus.state.active;
   const query = useQuery({
@@ -123,7 +124,8 @@ export function useMedicinePhoto(medicationId?: string) {
         setStaged(selection.image);
         return selection;
       }
-      await persistStaged(medicationId, selection.image);
+      await persistStaged(medicationId, selection.image, false);
+      setHasChanges(true);
       return selection;
     },
   });
@@ -152,16 +154,19 @@ export function useMedicinePhoto(medicationId?: string) {
         state: 'pendingDelete',
       });
       setImageQuery(medicationId, null);
-      try {
-        await deleteRemoteMedicinePhoto(medicationId);
-        await repository.removeMedicationImage(medicationId);
-      } catch (error) {
-        await repository.updateMedicationImageTransfer({
-          medicationId,
-          state: 'pendingDelete',
-          lastError: error instanceof Error ? error.message : 'Photo removal failed.',
-        });
-      }
+      setHasChanges(true);
+      void (async () => {
+        try {
+          await deleteRemoteMedicinePhoto(medicationId);
+          await repository.removeMedicationImage(medicationId);
+        } catch (error) {
+          await repository.updateMedicationImageTransfer({
+            medicationId,
+            state: 'pendingDelete',
+            lastError: error instanceof Error ? error.message : 'Photo removal failed.',
+          });
+        }
+      })();
     },
   });
 
@@ -193,6 +198,7 @@ export function useMedicinePhoto(medicationId?: string) {
     accountId,
     image,
     staged,
+    hasChanges,
     uri: cacheKey ? medicinePhotoUri(cacheKey) : null,
     isBusy: selectMutation.isPending || removeMutation.isPending || retryMutation.isPending,
     error,

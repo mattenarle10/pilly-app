@@ -25,6 +25,7 @@ jest.mock('expo-router', () => ({
 }));
 jest.mock('@/hooks/use-account-session', () => ({ useAccountSession: jest.fn() }));
 jest.mock('@/hooks/use-cloud-sync', () => ({ useCloudSync: jest.fn() }));
+jest.mock('@/hooks/use-plus', () => ({ usePrefetchPlusStore: jest.fn() }));
 jest.mock('@/ui/components/apple-sign-in-button', () => {
   const { Pressable } = jest.requireActual<typeof import('react-native')>('react-native');
   return {
@@ -79,6 +80,7 @@ describe('account route', () => {
       configured: true,
       status: { kind: 'local' },
       chooseSetup: jest.fn(),
+      refreshAfterPurchase: jest.fn(),
       retry: jest.fn(),
     });
   });
@@ -223,6 +225,7 @@ describe('account route', () => {
       configured: true,
       status: { kind: 'pending-backup' },
       chooseSetup,
+      refreshAfterPurchase: jest.fn(),
       retry: jest.fn(),
     });
     mockedUseAccountSession.mockReturnValue(
@@ -242,5 +245,65 @@ describe('account route', () => {
 
     fireEvent.press(screen.getByText('Back up this iPhone'));
     expect(chooseSetup).toHaveBeenCalledWith('backup');
+  });
+
+  test('offers a bounded activation retry without hiding local Plus', async () => {
+    const refreshAfterPurchase = jest.fn().mockResolvedValue(true);
+    mockedUseCloudSync.mockReturnValue({
+      configured: true,
+      status: { kind: 'activation-pending', retrying: false },
+      chooseSetup: jest.fn(),
+      refreshAfterPurchase,
+      retry: jest.fn(),
+    });
+    mockedUseAccountSession.mockReturnValue(
+      localAccount({
+        state: {
+          kind: 'signed-in',
+          user: {
+            id: 'account-1',
+            email: 'matt@example.com',
+            displayName: 'Matthew',
+            provider: 'apple',
+          },
+        },
+      }),
+    );
+
+    const screen = await render(<AccountRoute />, { wrapper });
+    expect(screen.getByText(/Pilly Plus is active/)).toBeOnTheScreen();
+    fireEvent.press(screen.getByText('Try again'));
+
+    expect(refreshAfterPurchase).toHaveBeenCalledTimes(1);
+  });
+
+  test('explains merge as combining both medicine collections', async () => {
+    const chooseSetup = jest.fn().mockResolvedValue(undefined);
+    mockedUseCloudSync.mockReturnValue({
+      configured: true,
+      status: { kind: 'pending-merge' },
+      chooseSetup,
+      refreshAfterPurchase: jest.fn(),
+      retry: jest.fn(),
+    });
+    mockedUseAccountSession.mockReturnValue(
+      localAccount({
+        state: {
+          kind: 'signed-in',
+          user: {
+            id: 'account-1',
+            email: 'matt@example.com',
+            displayName: 'Matthew',
+            provider: 'apple',
+          },
+        },
+      }),
+    );
+
+    const screen = await render(<AccountRoute />, { wrapper });
+    expect(screen.getByText(/Combine medicines from this iPhone/)).toBeOnTheScreen();
+    fireEvent.press(screen.getByText('Combine both'));
+
+    expect(chooseSetup).toHaveBeenCalledWith('merge');
   });
 });

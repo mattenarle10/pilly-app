@@ -1,5 +1,5 @@
-import { useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, Linking, Pressable, StyleSheet, View } from 'react-native';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { Linking, Pressable, StyleSheet, View } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import * as Haptics from 'expo-haptics';
 import Animated, {
@@ -13,6 +13,7 @@ import Animated, {
 } from 'react-native-reanimated';
 
 import { useAccountSession } from '@/hooks/use-account-session';
+import { useCloudSync } from '@/hooks/use-cloud-sync';
 import { usePlus } from '@/hooks/use-plus';
 import {
   introductoryOfferLabel,
@@ -41,6 +42,7 @@ const benefitItems = [
 
 export default function PlusRoute() {
   const account = useAccountSession();
+  const cloud = useCloudSync();
   const plus = usePlus({ loadAnonymousOffers: true });
   const params = useLocalSearchParams<{
     plan?: string | string[];
@@ -49,13 +51,27 @@ export default function PlusRoute() {
   const requestedPlan = plusPlan(firstParam(params.plan));
   const [selectedPlan, setSelectedPlan] = useState<PlusPlan>(requestedPlan ?? 'annual');
   const [linkError, setLinkError] = useState(false);
+  const [activationComplete, setActivationComplete] = useState(false);
   const resumedRestore = useRef(false);
   const preview = plus.state.kind === 'preview';
   const signedIn = account.state.kind === 'signed-in';
-  const active = signedIn && plus.state.active;
+  const active = signedIn && (plus.state.active || activationComplete);
   const offers = plus.state.kind === 'available' ? plus.state.offers : null;
   const selectedOffer = offers?.[selectedPlan] ?? offers?.annual ?? offers?.monthly ?? null;
   const websiteUrl = secureWebsiteUrl(process.env.EXPO_PUBLIC_WEBSITE_URL);
+
+  const acceptActionResult = useCallback(
+    async (action: () => Promise<{ kind: 'active' | 'inactive' | 'cancelled' }>) => {
+      const result = await action();
+      if (result.kind !== 'active') return;
+      setActivationComplete(true);
+      void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(
+        () => undefined,
+      );
+      void cloud.refreshAfterPurchase();
+    },
+    [cloud],
+  );
 
   useEffect(() => {
     if (
@@ -69,8 +85,8 @@ export default function PlusRoute() {
     }
     resumedRestore.current = true;
     router.setParams({ intent: undefined });
-    void plus.restore.mutateAsync().catch(() => undefined);
-  }, [params.intent, plus.restore, plus.state.canRestore, signedIn]);
+    void acceptActionResult(() => plus.restore.mutateAsync()).catch(() => undefined);
+  }, [acceptActionResult, params.intent, plus.restore, plus.state.canRestore, signedIn]);
 
   const continueWithPlan = () => {
     if (!selectedOffer) return;
@@ -81,7 +97,9 @@ export default function PlusRoute() {
       });
       return;
     }
-    void plus.purchase.mutateAsync(selectedOffer.plan).catch(() => undefined);
+    void acceptActionResult(() => plus.purchase.mutateAsync(selectedOffer.plan)).catch(
+      () => undefined,
+    );
   };
   const restore = () => {
     if (!signedIn) {
@@ -91,7 +109,7 @@ export default function PlusRoute() {
       });
       return;
     }
-    void plus.restore.mutateAsync().catch(() => undefined);
+    void acceptActionResult(() => plus.restore.mutateAsync()).catch(() => undefined);
   };
   const openLegalPage = async (path: 'privacy' | 'terms') => {
     if (!websiteUrl) return;
@@ -111,6 +129,7 @@ export default function PlusRoute() {
     >
       {active ? (
         <ActivePlus
+          newlyActivated={activationComplete}
           preview={preview}
           offline={plus.state.kind === 'active' && plus.state.offline}
           managing={plus.manage.isPending}
@@ -395,11 +414,11 @@ function PlanOption({
 
 function LoadingPlans() {
   return (
-    <View accessibilityLabel="Loading Pilly Plus plans" style={styles.loading}>
-      <ActivityIndicator color={colors.brand} />
-      <PillyText role="caption" muted>
-        Loading plans…
-      </PillyText>
+    <View accessibilityLabel="Loading Pilly Plus plans" style={styles.loadingPlans}>
+      <View style={[styles.skeletonLine, styles.skeletonHeading]} />
+      <View style={styles.skeletonOffer} />
+      <View style={styles.skeletonOffer} />
+      <View style={[styles.skeletonLine, styles.skeletonAction]} />
     </View>
   );
 }
@@ -428,6 +447,7 @@ function UnavailableDecision({
 }
 
 function ActivePlus({
+  newlyActivated,
   preview,
   offline,
   managing,
@@ -435,6 +455,7 @@ function ActivePlus({
   onManage,
   onDismissError,
 }: {
+  newlyActivated: boolean;
   preview: boolean;
   offline: boolean;
   managing: boolean;
@@ -451,10 +472,12 @@ function ActivePlus({
         <PillyPlusCompanion compact />
         {preview ? <PreviewStatus /> : null}
         <PillyText role="large-title" accessibilityRole="header" style={styles.heroTitle}>
-          Pilly Plus is active.
+          {newlyActivated ? 'You’re all set.' : 'Pilly Plus is active.'}
         </PillyText>
         <PillyText muted style={styles.heroCopy}>
-          Your backup and recovery access is ready.
+          {newlyActivated
+            ? 'Pilly Plus is active. Set up your private backup when you’re ready.'
+            : 'Your backup and recovery access is ready.'}
         </PillyText>
       </View>
 
@@ -463,21 +486,32 @@ function ActivePlus({
       ) : null}
       <Benefits />
       <View style={styles.activeActions}>
+        {newlyActivated ? (
+          <PillyButton
+            label="Set up private backup"
+            onPress={() => router.push('/account')}
+            fullWidth
+          />
+        ) : null}
         {!preview ? (
           <PillyButton
             label="Manage subscription"
+            variant={newlyActivated ? 'quiet' : 'primary'}
+            size={newlyActivated ? 'medium' : 'large'}
             onPress={onManage}
             loading={managing}
             fullWidth
           />
         ) : null}
-        <PillyButton
-          label="Manage account"
-          variant={preview ? 'primary' : 'quiet'}
-          size={preview ? 'large' : 'medium'}
-          onPress={() => router.push('/account')}
-          fullWidth
-        />
+        {!newlyActivated ? (
+          <PillyButton
+            label="Manage account"
+            variant={preview ? 'primary' : 'quiet'}
+            size={preview ? 'large' : 'medium'}
+            onPress={() => router.push('/account')}
+            fullWidth
+          />
+        ) : null}
         {manageError ? (
           <PillyBanner
             kind="error"
@@ -633,12 +667,15 @@ const styles = StyleSheet.create({
   },
   price: { alignItems: 'flex-end' },
   purchaseTerms: { minHeight: 36, textAlign: 'center', paddingHorizontal: spacing.md },
-  loading: {
-    minHeight: 88,
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: spacing.sm,
+  loadingPlans: { gap: spacing.md },
+  skeletonLine: { borderRadius: radii.round, backgroundColor: colors.surfaceSubtle },
+  skeletonHeading: { width: 132, height: 20 },
+  skeletonOffer: {
+    height: 76,
+    borderRadius: radii.lg,
+    backgroundColor: colors.surfaceSubtle,
   },
+  skeletonAction: { width: '100%', height: 48 },
   activeActions: { gap: spacing.sm },
   active: { gap: spacing.lg },
   footer: { alignItems: 'center', gap: spacing.sm },

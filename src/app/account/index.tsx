@@ -5,6 +5,7 @@ import type { AccountProvider } from '@/models/account';
 import type { PlusPlan } from '@/services/plus-offers';
 import { useAccountSession } from '@/hooks/use-account-session';
 import { useCloudSync } from '@/hooks/use-cloud-sync';
+import { usePrefetchPlusStore } from '@/hooks/use-plus';
 import { AccountProviderActions } from '@/ui/components/account-provider-actions';
 import { ConnectedAccountSummary } from '@/ui/components/connected-account-summary';
 import { PillyBanner } from '@/ui/components/pilly-banner';
@@ -16,6 +17,7 @@ import { colors, spacing } from '@/ui/tokens';
 export default function AccountRoute() {
   const account = useAccountSession();
   const cloud = useCloudSync();
+  usePrefetchPlusStore();
   const params = useLocalSearchParams<{
     returnTo?: string | string[];
     plan?: string | string[];
@@ -235,15 +237,32 @@ function CloudSetup({ cloud }: { cloud: ReturnType<typeof useCloudSync> }) {
         <View style={styles.cloudAction}>
           <PillyBanner
             kind="info"
-            message="This iPhone and your account both have medicine data."
+            message="Combine medicines from this iPhone with those in your private backup."
             compact
           />
           <PillyButton
-            label="Merge safely"
+            label="Combine both"
             onPress={() => void cloud.chooseSetup('merge')}
             fullWidth
           />
         </View>
+      );
+    case 'activation-pending':
+      return cloud.status.retrying ? (
+        <View accessibilityLabel="Finishing Pilly Plus activation" style={styles.cloudChecking}>
+          <ActivityIndicator color={colors.brand} />
+          <PillyText role="caption" muted>
+            Finishing backup activation…
+          </PillyText>
+        </View>
+      ) : (
+        <PillyBanner
+          kind="warning"
+          message="Pilly Plus is active, but private backup is still finishing activation."
+          actionLabel="Try again"
+          onAction={() => void cloud.refreshAfterPurchase()}
+          compact
+        />
       );
     case 'active':
       return (

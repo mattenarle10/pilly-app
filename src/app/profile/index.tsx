@@ -13,6 +13,7 @@ import { colors, radii, shadows, spacing } from '@/ui/tokens';
 import { useAccountSession } from '@/hooks/use-account-session';
 import { useProfile } from '@/hooks/use-profile';
 import { useProfileAvatar } from '@/hooks/use-profile-avatar';
+import { usePrefetchPlusStore } from '@/hooks/use-plus';
 import { accountProviderLabel } from '@/models/account';
 import { isPlusPurchasesSupported } from '@/services/purchases';
 import { showPhotoSourceMenu } from '@/ui/components/photo-source-menu';
@@ -22,6 +23,7 @@ export default function ProfileRoute() {
   const profile = useProfile();
   const avatar = useProfileAvatar();
   const plusSupported = isPlusPurchasesSupported();
+  usePrefetchPlusStore();
   const [nameModalOpen, setNameModalOpen] = useState(false);
   const [websiteError, setWebsiteError] = useState(false);
   const websiteUrl = process.env.EXPO_PUBLIC_WEBSITE_URL?.startsWith('https://')
