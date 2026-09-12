@@ -8,13 +8,6 @@ name: Optional Plus branch and profile name
 - runFlow: ../subflows/accept-app-link.yaml
 - runFlow:
     when:
-      visible: 'DEVELOPMENT SERVERS'
-    commands:
-      - tapOn:
-          point: '50%,22%'
-      - waitForAnimationToEnd
-- runFlow:
-    when:
       visible: 'See Pilly Plus'
     commands:
       - tapOn: 'See Pilly Plus'
