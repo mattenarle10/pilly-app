@@ -1,8 +1,29 @@
 appId: dev.sidequests.pilly
-name: Accept Pilly app link when iOS asks
+name: Open Pilly from a local app link
 ---
 - runFlow:
     when:
       visible: 'Open in.*Pilly.*'
     commands:
       - tapOn: 'Open'
+- runFlow:
+    when:
+      visible: 'DEVELOPMENT SERVERS'
+    commands:
+      - tapOn:
+          point: '50%,22%'
+      - waitForAnimationToEnd
+- runFlow:
+    when:
+      visible: 'Start with one medicine'
+    commands:
+      - tapOn:
+          id: 'BackButton'
+      - waitForAnimationToEnd
+- runFlow:
+    when:
+      visible: 'What should Pilly call you?'
+    commands:
+      - tapOn:
+          id: 'BackButton'
+      - waitForAnimationToEnd
