@@ -48,6 +48,9 @@ export default function StartSmallRoute() {
           style={styles.contentGroup}
         >
           <View style={styles.copy}>
+            <PillyText role="caption" muted>
+              2 of 2
+            </PillyText>
             <PillyText role="large-title" accessibilityRole="header" maxFontSizeMultiplier={2}>
               Start with one medicine
             </PillyText>
@@ -84,7 +87,7 @@ export default function StartSmallRoute() {
 const styles = StyleSheet.create({
   content: { minHeight: '100%' },
   hero: { flex: 1, justifyContent: 'center', gap: spacing.xxl, paddingVertical: spacing.xl },
-  contentGroup: { gap: spacing.xxl },
+  contentGroup: { gap: spacing.xl },
   copy: { alignItems: 'center', gap: spacing.md },
   body: { maxWidth: 330, textAlign: 'center' },
   actions: { width: '100%', alignItems: 'center', gap: spacing.md },

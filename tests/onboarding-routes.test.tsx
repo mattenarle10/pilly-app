@@ -36,6 +36,7 @@ jest.mock('expo-router', () => ({
 
 jest.mock('@/hooks/use-repository');
 jest.mock('@/hooks/use-profile', () => ({ useProfileName: () => mockUseProfileName() }));
+jest.mock('@/hooks/use-plus', () => ({ usePrefetchPlusStore: jest.fn() }));
 jest.mock('@/services/purchases');
 
 jest.mock('@/ui/illustrations', () => {
@@ -151,6 +152,8 @@ describe('onboarding routes', () => {
   test('saves a first name before continuing to Start Small', async () => {
     const screen = await render(<OnboardingNameRoute />, { wrapper: wrapper() });
 
+    expect(screen.getByText('1 of 2')).toBeOnTheScreen();
+
     await act(async () => {
       fireEvent.changeText(await screen.findByLabelText('First name'), '  Ada  ');
     });
@@ -202,6 +205,8 @@ describe('onboarding routes', () => {
     const setSetting = jest.fn().mockResolvedValue(undefined);
     mockedUseRepository.mockReturnValue({ setSetting } as unknown as PillyRepository);
     const screen = await render(<StartSmallRoute />, { wrapper: wrapper() });
+
+    expect(screen.getByText('2 of 2')).toBeOnTheScreen();
 
     await act(async () => {
       fireEvent.press(screen.getByText('Add first medicine'));

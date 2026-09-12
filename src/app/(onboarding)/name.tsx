@@ -50,6 +50,9 @@ export default function OnboardingNameRoute() {
           style={styles.composition}
         >
           <View style={styles.intro}>
+            <PillyText role="caption" muted>
+              1 of 2
+            </PillyText>
             <View style={styles.medicineMark}>
               <MedicationAppearance
                 shape="capsule"
@@ -124,11 +127,11 @@ const styles = StyleSheet.create({
     width: '100%',
     maxWidth: 420,
     alignSelf: 'center',
-    gap: spacing.xxl,
-    paddingTop: spacing.xxl,
+    gap: spacing.xl,
+    paddingTop: spacing.lg,
     paddingBottom: spacing.xxxl,
   },
-  intro: { gap: spacing.lg },
+  intro: { gap: spacing.md },
   medicineMark: { alignItems: 'flex-start' },
   copy: { gap: spacing.md },
   body: { maxWidth: 340 },
