@@ -158,4 +158,28 @@ describe('useMedicinePhoto', () => {
     expect(result.current.errorKind).toBeNull();
     queryClient.clear();
   });
+
+  test('marks a photo-only edit saved locally before its upload finishes', async () => {
+    let finishUpload: ((remoteVersion: string) => void) | undefined;
+    mockedUpload.mockReturnValue(
+      new Promise<string>((resolve) => {
+        finishUpload = resolve;
+      }),
+    );
+    const { queryClient, hook } = setup();
+    const { result } = await hook;
+    await waitFor(() => expect(result.current.image).toBeNull());
+
+    await act(async () => {
+      await result.current.select('library');
+    });
+
+    expect(result.current.hasChanges).toBe(true);
+    expect(result.current.isBusy).toBe(false);
+    expect(result.current.image?.transferState).toBe('pendingUpload');
+
+    await act(async () => finishUpload?.('version-1'));
+    await waitFor(() => expect(result.current.image?.transferState).toBe('uploaded'));
+    queryClient.clear();
+  });
 });

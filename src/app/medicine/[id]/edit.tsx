@@ -107,13 +107,20 @@ function EditMedicineForm({
     },
     [form, resetSaveMutation],
   );
+  const finish = () => {
+    if (isDirty) {
+      void form.handleSubmit();
+      return;
+    }
+    if (photo.hasChanges) setSaved(true);
+  };
 
   return (
     <MedicineFormShell
       actionLabel="Done"
       actionLoading={saveMutation.isPending}
-      actionDisabled={!isDirty || issue !== null}
-      onAction={() => void form.handleSubmit()}
+      actionDisabled={(!isDirty && !photo.hasChanges) || issue !== null}
+      onAction={finish}
       modal={
         <PillyConfirmationSheet
           visible={pendingNavigation !== null}
